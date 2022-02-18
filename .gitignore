@@ -2,3 +2,5 @@ tmp/
 pro_zips/
 .DS_Store
 .Rproj.user/
+# source ZIPs - too big to put in github
+zips/
