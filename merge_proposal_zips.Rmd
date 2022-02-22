@@ -7,6 +7,7 @@ params:
   pro_dir: ./pro_zips
   tmp_dir: ./tmp
   merged:  ./merged_proposals.tsv
+  status:  ./merged_status.tsv
   
 output: html_document
 ---
@@ -24,20 +25,21 @@ library(readxl)
 
 # Load CVs for QC
 ```{r load cvs}
-trib = read_excel(params$cv_xlsx,sheet = params$cv_sheet)
-cvDf = data.frame(trib[-1,])  # remove "select one" line
+cvDf = data.frame(read_excel(params$cv_xlsx,sheet = params$cv_sheet,col_names = FALSE))
+#cvDf = data.frame(trib[,])  # remove "select one" line
 
 cvList=list()
-for(cv_name in colnames(cvDf)) {
-  cv = cvDf[,cv_name]
-  cvList[[cv_name]]=cv[!is.na(cv)]
+for(cv_col in 1:ncol(cvDf)) {
+  cv_name = cvDf[1,cv_col]
+  cv = cvDf[,cv_col][-1]
+  cvList[[cv_name]]=c(cv[!is.na(cv)],NA)
 }
 ```
 
 # scan and extract zip files
 ```{r scan zip files}
 total_proposals=0
-zip_fnames = list.files(path=params$zip_dir, full.names=TRUE, pattern="*.zip")
+zip_fnames = list.files(path=params$zip_dir, full.names=TRUE, pattern="*.zip")# [2]#debug
 zips_toc = list()
 for(zip in zip_fnames) {
   cat("Scanning ", zip, "\n")
@@ -60,7 +62,7 @@ cat("# TOTAL PROPOSALS = ", total_proposals, "\n\n")
 #
 
 # dput(unname(as.vector(df[1,])))
-xlsx_row1=c("CURRENT TAXONOMY", NA_character_, NA_character_, 
+xlsx_row2=c("CURRENT TAXONOMY", NA_character_, NA_character_, 
     NA_character_, NA_character_, NA_character_, NA_character_, 
     NA_character_, NA_character_, NA_character_, NA_character_, 
     NA_character_, NA_character_, NA_character_, NA_character_, 
@@ -74,13 +76,13 @@ xlsx_row1=c("CURRENT TAXONOMY", NA_character_, NA_character_,
     NA_character_, NA_character_, NA_character_)
 
 # dput(unname(as.vector(df[2,])))
-xlsx_row2=c("Realm", "Subrealm", "Kingdom", "Subkingdom", 
+xlsx_row3=c("Realm", "Subrealm", "Kingdom", "Subkingdom", 
     "Phylum", "Subphylum", "Class", "Subclass", "Order", "Suborder", 
     "Family", "Subfamily", "Genus", "Subgenus", "Species", "Exemplar GenBank Accession Number", 
     "Realm", "Subrealm", "Kingdom", "Subkingdom", "Phylum", "Subphylum", 
     "Class", "Subclass", "Order", "Suborder", "Family", "Subfamily", 
     "Genus", "Subgenus", "Species", "Exemplar GenBank Accession Number", 
-    "Exemplar \r\nvirus name", "Virus name abbrevn", "Exemplar\r\nisolate designation", 
+    "Exemplar virus name", "Virus name abbrevn", "Exemplar isolate designation", 
     "Genome coverage", "Genome composition", "Host/Source", "Change", 
     "Rank", NA_character_, NA, NA, NA, NA_character_, NA_character_, 
     NA_character_, NA_character_, NA_character_)
@@ -99,68 +101,139 @@ xlsx_out_ranks=c("Realm", "Subrealm", "Kingdom", "Subkingdom",
 xlsx_out_accession=c("Exemplar GenBank Accession Number")
 xlsx_out_other=c( "Exemplar virus name", "Virus name abbrevn", "Exemplar isolate designation", 
     "Genome coverage", "Genome composition", "Host/Source",
-    "Change","Rank"
+    "Change","Rank","Comments"
 )
-xlsx_out_colnames = c(
-  "row_number","proposal_number","file",
+xlsx_in_colnames = c(  
   paste0(c(xlsx_out_ranks,xlsx_out_accession),"_current"),
   xlsx_out_ranks, xlsx_out_accession,
-  xlsx_out_other
+  xlsx_out_other )
+
+xlsx_out_colnames = c(
+  "row_number","proposal_number","file",
+  xlsx_in_colnames,
+  "errors"
 )
 
+outTemplateDf = setNames(data.frame(matrix(ncol = length(xlsx_out_colnames), nrow = 0)), xlsx_out_colnames)
 ```
 ## Build merged proposal
 
 ```{r load_and_merge}
 mergedDf = setNames(data.frame(matrix(ncol = length(xlsx_out_colnames), nrow = 0)), xlsx_out_colnames)
+statusDf = setNames(data.frame(matrix(ncol=6,nrow=0)),c("zip","file","nrow","ncol","nchanges","status"))
+statusRow =0
+
+# append DF for current proposal to the merged output
+mergeProDf = function(mergedDf, pro_df) {
+  # concat
+  mergedDf = rbind(mergedDf,pro_df[,1:45])
+  cat("After ", pro_xls_fname, " mergedDf has ", dim(mergedDf),"\n")
+  return(mergedDf)
+}
+mergeErrorDf = function(mergedDf, filename, error_str) {
+  # make DF for this proposal to hold error
+  errorDf = outTemplateDf
+  errorDf[1,c("file","errors")] = c(filename, error_str)
+  print(errorDf[,c("file","errors")])
+  mergedDf = mergeProDf(mergedDf, errorDf)
+  return(mergedDf)
+}
 
 for(zip in names(zips_toc)) {
   # zip = names(zips_toc)[1] # debug
   
   for(pro_zip in zips_toc[[zip]]) {
+    # pro_zip = zips_toc[[zip]][2] # debug
 
+    # track per-file status
+    statusRow = statusRow+1
+    statusDf[statusRow,c("zip","file","status")] = c(zip,NA,NA)
+    
     # extract proposal documents from zip
     
     ### QC that .xlsx filename matches .docx filename matches .zip filename (ignore extra docs and xls's)
     
-    # pro_zip = zips_toc[[zip]][1] # debug
     pro_zip_fname=file.path(params$pro_dir,pro_zip)
     pro_toc = unzip(zipfile=pro_zip_fname, list=TRUE)$Name
     pro_toc = grep(pro_toc, pattern="__MACOSX", value = T, invert = T)
     unzip(zipfile=pro_zip_fname,files = pro_toc, exdir=params$tmp_dir)
-    pro_xls_fname = grep(pro_toc, pattern=".xlsx", value = TRUE)
+    pro_xls_fname = grep(pro_toc, pattern="^[^/]+.xlsx", value = TRUE)
     if( length(pro_xls_fname) != 1) {
-      error_str = ifelse(length(pro_xls_fname)==0,"missing .xlsx file","multiple .xlsx files")
-      cat("ERROR: ",error_str," in [",zip,"] ",pro_zip_fname,"\n")
+      error_str = paste0("ERROR: ",ifelse(length(pro_xls_fname)==0,"missing .xlsx file","multiple .xlsx files"))
+      cat(error_str," in [",zip,"] ",pro_zip_fname,"\n")
       cat("\t",paste0(pro_toc,collapse="\n\t"),"\n")
+      error_str = paste0(error_str,":",paste0(pro_xls_fname,collapse=","))
+      # add error entry to output df
+      mergedDf=mergeErrorDf(mergedDf,pro_zip_fname,error_str)
+      statusDf[statusRow,c("file","status")] = c(pro_zip_fname,error_str)
       next
-    }
+    } 
+    statusDf[statusRow,"file"]=pro_xls_fname
+    
     # load proposal xlsx
     pro_xls_tmp_fname=file.path(params$tmp,pro_xls_fname)
-    trib = read_excel(pro_xls_tmp_fname)
-    df = data.frame(trib)
+    df = data.frame(read_excel(pro_xls_tmp_fname,trim_ws=TRUE,na="Please select",skip=2,range=cell_cols("A:AO"),col_names = FALSE ))
     # human readable column names
-    colnames(df)= c(LETTERS,paste0("A",LETTERS[1:15]))
+    colnames(df)=xlsx_in_colnames
+    statusDf[statusRow,c("nrow","ncol")]=c(nrow(df),ncol(df))
 
-    pro_code_assigned=colnames(trib)[6]
-    cat("# code_assigned=", pro_code_assigned, "\n")
-    
+    # extract code, QC cell(A1)=="Code assigned"
+    pro_code_from_xls=df[1,6]
+    if(df[1,1] == "Code assigned") {
+      cat("QC: ROW1: Ok\n")
+      cat("# code_assigned=", pro_code_from_xls, "\n",sep ="")
+    } else {
+      error_str = paste0("ERROR: ","A1 <> 'Code assigned'; A1='",df[1,1],"'")
+      cat(error_str," in [",zip,"] ",pro_zip_fname,"\n")
+      # add error entry to output df
+      mergedDf=mergeErrorDf(mergedDf,pro_zip_fname,error_str)
+      statusDf[statusRow,c("file","status")] = c(pro_xls_fname,error_str)
+      next
+    } 
+     
     #
     # QC columns
     #
-    if( sum(df[1,] != xlsx_row1,na.rm=T) == 0 ) {
-      cat("QC: ROW1: OK\n")
-    } else {
-      error_str = "xlsx row1 modified"
-      cat("ERROR: ",error_str," in [",zip,"] ",pro_zip_fname,"\n")
-      next
-    }
-    if( sum(df[2,] != xlsx_row2,na.rm=T) == 0 ) {
+    row2_errcols = which(as.character(df[2,]) != xlsx_row2[1:ncol(df)])
+    if( length(row2_errcols)==0 ) {
       cat("QC: ROW2: OK\n")
     } else {
-      error_str = "xlsx row2 modified"
-      cat("ERROR: ",error_str," in [",zip,"] ",pro_zip_fname,"\n")
+      error_str = paste0("ERROR: ",
+                         "xlsx row 2 modified: ",
+                         # add column names
+                         paste(colnames(df)[row2_errcols],
+                               # mismatched values
+                               paste(df[2,row2_errcols],xlsx_row2[row2_errcols],sep="<>")
+                               ,sep=":",collapse=";"
+                               )
+      )
+      cat(error_str," in [",zip,"] ",pro_zip_fname,"\n")
+      
+      # add error to output
+      mergedDf=mergeErrorDf(mergedDf,pro_zip_fname,error_str)
+      statusDf[statusRow,c("file","status")] = c(pro_xls_fname,error_str)
       next
+    }
+    row3_trimmed = gsub("\\s$","",gsub("\\s+"," ",as.character(df[3,])))
+    row3_errcols = which(row3_trimmed != xlsx_row3[1:ncol(df)])
+    if( length(row3_errcols)==0  ) {
+      cat("QC: ROW3: OK\n")
+    } else {
+      error_str = paste0("ERROR: ",
+                         "xlsx row 3 modified: ",
+                         # add column names
+                         paste(colnames(df)[row3_errcols],
+                               # mismatched values
+                               paste(row3_trimmed[row3_errcols],xlsx_row3[row3_errcols],sep="<>")
+                               ,sep=":",collapse=";"
+                               )
+      )
+      cat(error_str," in [",zip,"] ",pro_zip_fname,"\n")
+      # add error to output
+      mergedDf=mergeErrorDf(mergedDf,pro_zip_fname,error_str)
+      statusDf[statusRow,c("file","status")] = c(pro_xls_fname,error_str)
+      break # debug
+      #next
     }
     
     #
@@ -168,49 +241,82 @@ for(zip in names(zips_toc)) {
     #
     
     # find last valid row
-    changeCol=match("Change", xlsx_row2)
-    rankCol  =match("Rank",   xlsx_row2)
+    changeCol=match("Change", xlsx_row3)
+    rankCol  =match("Rank",   xlsx_row3)
     
     changeOk = !(is.na(df[,changeCol]) | df[,changeCol]%in%c("SPECIFY PROPOSED CHANGE", "Change", "Please select"))
     rankOk   = !(is.na(df[,rankCol  ]) | df[,rankCol  ]%in%c("SPECIFY PROPOSED CHANGE", "Rank",   "Please select"))
     okCount  = sum(changeOk==TRUE)
     # QC
     if( sum(changeOk != rankOk,na.rm=T)!=0) {
-      cat("ERROR: change and rank colomn discord\n")
+      error_str = "ERROR: change and rank colomn discord"
       df[changeOk != rankOk,c(changeCol,rankCol)]
+      cat(error_str," in [",zip,"] ",pro_zip_fname,"\n")
+ 
+      # add error to output
+      mergedDf=mergeErrorDf(mergedDf,pro_zip_fname,error_str)
+      statusDf[statusRow,c("file","status")] = c(pro_xls_fname,error_str)
+      next
     }
+    statusDf[statusRow,"nchanges"] = okCount
   
     # add on prefix columns
     pro_xls_number = gsub(pattern="([^.]+[.][^.]+)[.].*",replacement="\\1",x=pro_xls_fname)
+    if( pro_xls_number == pro_code_from_xls) {
+      cat("QC: CODE OK; xlsx[A1] matches filename\n")
+    } else {
+      error_str = paste0("ERROR: ","CODE mismatch: xlsx[A1]=",pro_code_from_xls,", filename=",pro_xls_number)
+      cat(error_str," in [",zip,"] ",pro_zip_fname,"\n")
+      # add error to output
+      mergedDf=mergeErrorDf(mergedDf,pro_zip_fname,error_str)
+      statusDf[statusRow,c("file","status")] = c(pro_xls_fname,error_str)
+      next
+    }
+    
     #### QQQ: QC ID in the spreadsheet vs the one from the filename
     pro_df = cbind(
         row_number=     rep(NA,okCount),
         proposal_number=rep(pro_xls_number,okCount),
         file=           rep(pro_xls_fname,okCount),
-        df[changeOk,]
+        df[changeOk,],
+        errors=         rep(NA,okCount)
     )
-
-    # QQQ convert "Please Select" to NA
-    # pull that value from the template. 
     
+    #
     # QC the controlled vocabularies (CVs) 
+    #
     errorList = list()
-    errorList[["Genome.coverage"]]=   !pro_df$AJ %in% cvList[["Genome.coverage"]]
-    errorList[["Genome.composition"]]=!pro_df$AK %in% cvList[["Genome.composition"]]
-    errorList[["Host.Source"]]=       !pro_df$AL %in% cvList[["Host.Source"]]
-    errorList[["Change"]]=            !pro_df$AM %in% cvList[["Change"]]
-    errorList[["Rank"]]=              !pro_df$AN %in% cvList[["Rank"]]
-    # QQQ Need one-line summary
-    # QQQ Add flag to pro_df
-    for(err in names(errorList)) {
-        cat(err, " N=", sum(errorList[[err]]),"\n")
+    errorSummary = ""
+    for(cv_name in names(cvList)) { 
+      errorList[[cv_name]]=   !pro_df[,cv_name] %in% cvList[[cv_name]]
+      errorCount=sum(errorList[[cv_name]])
+      if( errorCount > 0) { 
+        # set error column in offending rows
+        pro_df[errorList[[cv_name]],"errors"] = 
+          gsub("(\n\r)","*",
+               paste(pro_df[errorList[[cv_name]],"errors"],
+                     paste(cv_name,
+                           pro_df[errorList[[cv_name]],cv_name],sep="="),
+                     sep=";")
+          )
+        # create 1-line summary
+        errorSummary=paste0(errorSummary, ";", paste0(cv_name,"=",errorCount))
+      }
     }
-    
-    # concat
-    mergedDf = rbind(mergedDf,pro_df[,1:43])
-    cat("After ", pro_xls_fname, " mergedDf has ", dim(mergedDf),"\n")
+    cvErrorCt= sum(unlist(lapply(errorList,sum)))
+    if( cvErrorCt == 0 ) {
+      cat("QC: CVs OK\n")
+    } else { 
+      statusDf[statusRow,c("file","status")] = c(pro_xls_fname,paste0("WARNING: illegal CV terms N=",cvErrorCt))
+    }
+    # add proposal to master sheet
+    mergedDf = mergeProDf(mergedDf, pro_df)
+
+    # debug
+    if( pro_xls_number =="2021.006D") {
+      break
+    }
   }
-  
 }
 
 
@@ -224,7 +330,9 @@ for(zip in names(zips_toc)) {
 # save
 #
 write.table(mergedDf,file=file.path(params$merged),sep="\t",row.names = F, na = "")
-
-print(paste0("Wrote: ", params$merged_fname,": ", paste(dim(mergedDf),collapse=" lines, ")," cols"))
+print(paste0("Wrote: ", params$merged,": ", paste(dim(mergedDf),collapse=" lines, ")," cols"))
 dim(mergedDf)
+
+write.table(statusDf,file=file.path(params$status),sep="\t",row.names = F, na = "")
+print(paste0("Wrote: ", params$status,": ", paste(dim(statusDf),collapse=" lines, ")," cols"))
 ```
