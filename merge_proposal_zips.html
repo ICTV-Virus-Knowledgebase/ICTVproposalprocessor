@@ -474,7 +474,7 @@ xlsx_in_colnames = c(
   xlsx_out_other )
 
 xlsx_out_colnames = c(
-  &quot;filename&quot;, &quot;sort&quot;,&quot;proposal_abbrev&quot;,&quot;filename&quot;,&quot;spreadsheet&quot;,
+  &quot;dest_msl_release_num&quot;, &quot;filename&quot;, &quot;sort&quot;,&quot;proposal_abbrev&quot;,&quot;filename&quot;,&quot;spreadsheet&quot;,
   xlsx_in_colnames,
   &quot;errors&quot;
 )
@@ -637,13 +637,14 @@ for(pro_zip in rownames(zipDf) ) {
   
   #### QQQ: QC ID in the spreadsheet vs the one from the filename
   pro_df = cbind(
-    filename=       rep(params$merged, okCount), # output file name
-    sort=           rep(NA,            okCount), # arbitrary sort key (row number)
-    proposal_abbrev=rep(pro_xls_number,okCount), # proposal code
-    proposal=       rep(pro_zip,       okCount), # proposal.zip
-    spreadsheet=    rep(pro_xls_fname, okCount), # proposal.xlsx
+    dest_msl_release_num = rep(params$dest_msl, okCount), # target MSL
+    filename=              rep(params$merged,   okCount), # output file name
+    sort=                  rep(NA,              okCount), # arbitrary sort key (row number)
+    proposal_abbrev=       rep(pro_xls_number,  okCount), # proposal code
+    proposal=              rep(pro_zip,         okCount), # proposal.zip
+    spreadsheet=           rep(pro_xls_fname,   okCount), # proposal.xlsx
     df[changeOk,],
-    errors=         rep(NA,            okCount)
+    errors=                rep(NA,              okCount)
   )
   
   #
@@ -3110,7 +3111,7 @@ mergedDf$sort = 1:nrow(mergedDf)
 #
 write.table(mergedDf,file=file.path(params$merged),sep=&quot;\t&quot;,row.names = F, na = &quot;&quot;, quote = FALSE)
 print(paste0(&quot;Wrote: &quot;, params$merged,&quot;: &quot;, paste(dim(mergedDf),collapse=&quot; lines, &quot;),&quot; cols&quot;))</code></pre>
-<pre><code>## [1] &quot;Wrote: load_next_msl.msl36v1.txt: 5957 lines, 45 cols&quot;</code></pre>
+<pre><code>## [1] &quot;Wrote: load_next_msl.msl37v1.txt: 5957 lines, 45 cols&quot;</code></pre>
 <pre class="r"><code>dim(mergedDf)</code></pre>
 <pre><code>## [1] 5957   45</code></pre>
 <pre class="r"><code>write.table(statusDf,file=file.path(params$status),sep=&quot;\t&quot;,row.names = F, na = &quot;&quot;)
