@@ -41,6 +41,16 @@ for(cv_col in 1:ncol(cvDf)) {
   cvList[[cv_name]]=c(cv[!is.na(cv)],NA)
 }
 
+# map to output names
+cvNameMap = c(
+  "Genome coverage"=    "genomeCoverage",
+  "Genome composition"= "molecule",
+  "Host/Source"=        "hostSource",
+  "Change"=             "change",
+  "Rank"=               "rank"  
+)
+
+names(cvList)=cvNameMap[names(cvList)]
 ```
 
 # scan and extract zip files
@@ -125,18 +135,25 @@ xlsx_out_ranks=c("Realm", "Subrealm", "Kingdom", "Subkingdom",
     "Phylum", "Subphylum", "Class", "Subclass", "Order", "Suborder", 
     "Family", "Subfamily", "Genus", "Subgenus", "Species"
     )
-xlsx_out_accession=c("Exemplar GenBank Accession Number")
-xlsx_out_other=c( "Exemplar virus name", "Virus name abbrevn", "Exemplar isolate designation", 
-    "Genome coverage", "Genome composition", "Host/Source",
-    "Change","Rank","Comments"
+xlsx_out_accession=c("Accessions")
+xlsx_out_other=c( "exemplarName", 
+                  "Abbrev", 
+                  "exemplarIsolate", 
+                  "genomeCoverage", 
+                  "molecule", #Genome composition", 
+                  "hostSource",
+                  "change",
+                  "rank",
+                  "comments"
 )
 xlsx_in_colnames = c(  
-  paste0(c(xlsx_out_ranks,xlsx_out_accession),"_current"),
-  xlsx_out_ranks, xlsx_out_accession,
+  paste0("src",c(xlsx_out_ranks,xlsx_out_accession)),
+  tolower(xlsx_out_ranks), 
+  xlsx_out_accession,
   xlsx_out_other )
 
 xlsx_out_colnames = c(
-  "row_number","proposal_number","file",
+  "sort","proposal_abbrev","filename","spreadsheet",
   xlsx_in_colnames,
   "errors"
 )
@@ -147,7 +164,7 @@ outTemplateDf = setNames(data.frame(matrix(ncol = length(xlsx_out_colnames), nro
 
 ```{r load_and_merge}
 mergedDf = setNames(data.frame(matrix(ncol = length(xlsx_out_colnames), nrow = 0)), xlsx_out_colnames)
-statusDf = setNames(data.frame(matrix(ncol=6,nrow=0)),c("zip","file","nrow","ncol","nchanges","status"))
+statusDf = setNames(data.frame(matrix(ncol=6,nrow=0)),c("zip","spreadsheet","nrow","ncol","nchanges","status"))
 statusRow =0
 
 # append DF for current proposal to the merged output
@@ -157,11 +174,11 @@ mergeProDf = function(mergedDf, pro_df) {
   cat("After ", pro_xls_fname, " mergedDf has ", dim(mergedDf),"\n")
   return(mergedDf)
 }
-mergeErrorDf = function(mergedDf, filename, error_str) {
+mergeErrorDf = function(mergedDf, spreadsheet, error_str) {
   # make DF for this proposal to hold error
   errorDf = outTemplateDf
-  errorDf[1,c("file","errors")] = c(filename, error_str)
-  print(errorDf[,c("file","errors")])
+  errorDf[1,c("spreadsheet","errors")] = c(spreadsheet, error_str)
+  print(errorDf[,c("spreadsheet","errors")])
   mergedDf = mergeProDf(mergedDf, errorDf)
   return(mergedDf)
 }
@@ -172,7 +189,7 @@ for(pro_zip in rownames(zipDf) ) {
   zip = zipDf[pro_zip,"topZip"] # debug
   # track per-file status
   statusRow = statusRow+1
-  statusDf[statusRow,c("zip","file","status")] = c(zip,NA,NA)
+  statusDf[statusRow,c("zip","spreadsheet","status")] = c(zip,NA,NA)
   
   # extract proposal documents from zip
   
@@ -183,7 +200,7 @@ for(pro_zip in rownames(zipDf) ) {
   if( params$unzipPro) { unzip(zipfile=pro_zip_fname,files = pro_toc, exdir=zipDf[pro_zip,"xlsxDir"]) }
   pro_xls_fname = zipDf[pro_zip,"xlsx"]
   if( pro_xls_fname %in% pro_toc ) {
-    statusDf[statusRow,"file"]=pro_xls_fname
+    statusDf[statusRow,"spreadsheet"]=pro_xls_fname
   } else{ 
     error_str = "ERROR: missing main .xlsx file"
     cat(error_str," in [",zip,"] ",pro_zip_fname,"\n")
@@ -191,7 +208,7 @@ for(pro_zip in rownames(zipDf) ) {
     error_str = paste0(error_str,": ",pro_xls_fname, " NOT IN ",pro_zip_fname,"[",paste0(pro_toc,collapse=","),"]")
     # add error entry to output df
     mergedDf=mergeErrorDf(mergedDf,pro_zip_fname,error_str)
-    statusDf[statusRow,c("file","status")] = c(pro_zip_fname,error_str)
+    statusDf[statusRow,c("spreadsheet","status")] = c(pro_zip_fname,error_str)
     next
   } 
   
@@ -212,7 +229,7 @@ for(pro_zip in rownames(zipDf) ) {
     cat(error_str," in [",zip,"] ",pro_zip_fname,"\n")
     # add error entry to output df
     mergedDf=mergeErrorDf(mergedDf,pro_zip_fname,error_str)
-    statusDf[statusRow,c("file","status")] = c(pro_xls_fname,error_str)
+    statusDf[statusRow,c("spreadsheet","status")] = c(pro_xls_fname,error_str)
     next
   } 
   
@@ -236,7 +253,7 @@ for(pro_zip in rownames(zipDf) ) {
     
     # add error to output
     mergedDf=mergeErrorDf(mergedDf,pro_zip_fname,error_str)
-    statusDf[statusRow,c("file","status")] = c(pro_xls_fname,error_str)
+    statusDf[statusRow,c("spreadsheet","status")] = c(pro_xls_fname,error_str)
     next
   }
   row3_trimmed = gsub("\\s$","",gsub("\\s+"," ",as.character(df[3,])))
@@ -256,7 +273,7 @@ for(pro_zip in rownames(zipDf) ) {
     cat(error_str," in [",zip,"] ",pro_zip_fname,"\n")
     # add error to output
     mergedDf=mergeErrorDf(mergedDf,pro_zip_fname,error_str)
-    statusDf[statusRow,c("file","status")] = c(pro_xls_fname,error_str)
+    statusDf[statusRow,c("spreadsheet","status")] = c(pro_xls_fname,error_str)
     break # debug
     #next
   }
@@ -280,7 +297,7 @@ for(pro_zip in rownames(zipDf) ) {
     
     # add error to output
     mergedDf=mergeErrorDf(mergedDf,pro_zip_fname,error_str)
-    statusDf[statusRow,c("file","status")] = c(pro_xls_fname,error_str)
+    statusDf[statusRow,c("spreadsheet","status")] = c(pro_xls_fname,error_str)
     next
   }
   statusDf[statusRow,"nchanges"] = okCount
@@ -294,17 +311,18 @@ for(pro_zip in rownames(zipDf) ) {
     cat(error_str," in [",zip,"] ",pro_zip_fname,"\n")
     # add error to output
     mergedDf=mergeErrorDf(mergedDf,pro_zip_fname,error_str)
-    statusDf[statusRow,c("file","status")] = c(pro_xls_fname,error_str)
+    statusDf[statusRow,c("spreadsheet","status")] = c(pro_xls_fname,error_str)
     next
   }
   
   #### QQQ: QC ID in the spreadsheet vs the one from the filename
   pro_df = cbind(
-    row_number=     rep(NA,okCount),
-    proposal_number=rep(pro_xls_number,okCount),
-    file=           rep(pro_xls_fname,okCount),
+    sort=           rep(NA,            okCount),
+    proposal_abbrev=rep(pro_xls_number,okCount),
+    proposal=       rep(pro_zip,       okCount),
+    spreadsheet=    rep(pro_xls_fname, okCount),
     df[changeOk,],
-    errors=         rep(NA,okCount)
+    errors=         rep(NA,            okCount)
   )
   
   #
@@ -333,7 +351,7 @@ for(pro_zip in rownames(zipDf) ) {
   if( cvErrorCt == 0 ) {
     cat("QC: CVs OK\n")
   } else { 
-    statusDf[statusRow,c("file","status")] = c(pro_xls_fname,paste0("WARNING: illegal CV terms N=",cvErrorCt))
+    statusDf[statusRow,c("spreadsheet","status")] = c(pro_xls_fname,paste0("WARNING: illegal CV terms N=",cvErrorCt))
   }
   # add proposal to master sheet
   mergedDf = mergeProDf(mergedDf, pro_df)
@@ -354,7 +372,7 @@ for(pro_zip in rownames(zipDf) ) {
 # proposal level errors
 #
 statusErrors = !is.na(statusDf$status)
-kable(statusDf[statusErrors,c("file","status")],caption="proposal level errors")
+kable(statusDf[statusErrors,c("spreadsheet","status")],caption="proposal level errors")
 
 #
 # taxon level errors
@@ -370,7 +388,7 @@ kable(mergedDf[mergedErrors,c("errors")],caption="taxon level errors")
 #
 # add row numbers
 #
-mergedDf$row_number = 1:nrow(mergedDf)
+mergedDf$sort = 1:nrow(mergedDf)
 #
 # save
 #
