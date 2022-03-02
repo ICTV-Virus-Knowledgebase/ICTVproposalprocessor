@@ -11,7 +11,7 @@ params:
   # output files
   tmp_dir: ./tmp
   pro_dir: ./pro_zips
-  merged:  ./merged_proposals.tsv
+  merged:  ./load_next_msl.tsv
   status:  ./merged_status.tsv
   
 output: html_document
@@ -43,7 +43,7 @@ for(cv_col in 1:ncol(cvDf)) {
 
 # map to output names
 cvNameMap = c(
-  "Genome coverage"=    "genomeCoverage",
+  "Genome coverage"=    "isComplete",
   "Genome composition"= "molecule",
   "Host/Source"=        "hostSource",
   "Change"=             "change",
@@ -135,12 +135,12 @@ xlsx_out_ranks=c("Realm", "Subrealm", "Kingdom", "Subkingdom",
     "Phylum", "Subphylum", "Class", "Subclass", "Order", "Suborder", 
     "Family", "Subfamily", "Genus", "Subgenus", "Species"
     )
-xlsx_out_accession=c("Accessions")
+xlsx_out_accession=c("exemplarAccessions")
 xlsx_out_other=c( "exemplarName", 
                   "Abbrev", 
                   "exemplarIsolate", 
-                  "genomeCoverage", 
-                  "molecule", #Genome composition", 
+                  "isComplete", # Genome Coverage
+                  "molecule",   # Genome Composition", 
                   "hostSource",
                   "change",
                   "rank",
@@ -392,7 +392,7 @@ mergedDf$sort = 1:nrow(mergedDf)
 #
 # save
 #
-write.table(mergedDf,file=file.path(params$merged),sep="\t",row.names = F, na = "")
+write.table(mergedDf,file=file.path(params$merged),sep="\t",row.names = F, na = "", quote = FALSE)
 print(paste0("Wrote: ", params$merged,": ", paste(dim(mergedDf),collapse=" lines, ")," cols"))
 dim(mergedDf)
 
