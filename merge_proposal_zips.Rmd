@@ -12,7 +12,7 @@ params:
   tmp_dir: ./tmp
   pro_dir: ./pro_zips
   dest_msl: 37
-  merged:  load_next_msl.msl37v1.txt
+  merged:  load_next_msl.37v1.txt
   status:  merged_status.txt
   
 output: html_document
@@ -171,7 +171,7 @@ statusRow =0
 # append DF for current proposal to the merged output
 mergeProDf = function(mergedDf, pro_df) {
   # concat
-  mergedDf = rbind(mergedDf,pro_df[,1:45])
+  mergedDf = rbind(mergedDf,pro_df[,1:47])
   cat("After ", pro_xls_fname, " mergedDf has ", dim(mergedDf),"\n")
   return(mergedDf)
 }
