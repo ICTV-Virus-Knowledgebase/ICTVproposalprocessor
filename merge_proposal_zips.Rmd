@@ -187,6 +187,8 @@ mergeErrorDf = function(mergedDf, spreadsheet, error_str) {
 for(pro_zip in rownames(zipDf) ) {
   # pro_zip = rownames(zipDf)[2] # debug
   # pro_zip = "2021.036M.A.v1.Rhabdoviridae_sprename.zip"
+  # pro_zip = "2021.010P.A.v1.Emaravirus_1ns.zip" # has long-dash in exemplarAccessions
+  # pro_zip = '2021.010M.A.v1.Bornaviridae_sprename.zip' # has UTF8 characters
   zip = zipDf[pro_zip,"topZip"] # debug
   # track per-file status
   statusRow = statusRow+1
@@ -395,7 +397,12 @@ mergedDf$sort = 1:nrow(mergedDf)
 #
 # save
 #
+
+# native version
 write.table(mergedDf,file=file.path(params$merged),sep="\t",row.names = F, na = "", quote = FALSE)
+# UTF-16LE (aka Windows Unicode)
+write.table(mergedDf,file=file.path(paste0(params$merged,".utf-16le.txt")),fileEncoding = 'UTF-16LE', sep="\t",row.names = F, na = "", quote = FALSE)
+
 print(paste0("Wrote: ", params$merged,": ", paste(dim(mergedDf),collapse=" lines, ")," cols"))
 dim(mergedDf)
 
