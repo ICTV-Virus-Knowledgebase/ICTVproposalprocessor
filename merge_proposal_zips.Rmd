@@ -11,8 +11,8 @@ params:
   # output files
   tmp_dir: ./tmp
   pro_dir: ./pro_zips
-  merged:  ./load_next_msl.tsv
-  status:  ./merged_status.tsv
+  merged:  load_next_msl.msl36v1.txt
+  status:  merged_status.txt
   
 output: html_document
 ---
@@ -153,7 +153,7 @@ xlsx_in_colnames = c(
   xlsx_out_other )
 
 xlsx_out_colnames = c(
-  "sort","proposal_abbrev","filename","spreadsheet",
+  "filename", "sort","proposal_abbrev","filename","spreadsheet",
   xlsx_in_colnames,
   "errors"
 )
@@ -317,10 +317,11 @@ for(pro_zip in rownames(zipDf) ) {
   
   #### QQQ: QC ID in the spreadsheet vs the one from the filename
   pro_df = cbind(
-    sort=           rep(NA,            okCount),
-    proposal_abbrev=rep(pro_xls_number,okCount),
-    proposal=       rep(pro_zip,       okCount),
-    spreadsheet=    rep(pro_xls_fname, okCount),
+    filename=       rep(params$merged, okCount), # output file name
+    sort=           rep(NA,            okCount), # arbitrary sort key (row number)
+    proposal_abbrev=rep(pro_xls_number,okCount), # proposal code
+    proposal=       rep(pro_zip,       okCount), # proposal.zip
+    spreadsheet=    rep(pro_xls_fname, okCount), # proposal.xlsx
     df[changeOk,],
     errors=         rep(NA,            okCount)
   )
