@@ -5,3 +5,5 @@ pro_zips/
 # source ZIPs - too big to put in github
 zips/
 .Rproj.user
+.RData
+.Rhistory
