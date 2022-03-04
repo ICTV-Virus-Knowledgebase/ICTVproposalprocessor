@@ -7,7 +7,7 @@ params:
   zip_dir: ./zips
   # set to false when editing .xlsx files to fix
   unzipTop:    FALSE
-  unzipPro:    TRUE
+  unzipPro:    FALSE
   # output files
   tmp_dir: ./tmp
   pro_dir: ./pro_zips
@@ -18,6 +18,18 @@ params:
 output: html_document
 ---
 
+This script 
+  * scans params$zip_dir for *.zip (top level zips)
+  * iterates over top level zips and unzips them into params$pro_dir, resulting in a set of proposal-level zips in directories based on their top-level zip
+  * iterates over each proposal zip
+    * unzips it into params$tmp_dir
+    * reads the proposal.xlsx file into a data frame
+    * QC data, etc.
+    * merge (rbind) all proposal.xlsx rows into one merged dataframe
+  * QC merged data frame
+  * write merged data frame to a Unicode(UTF-16LE) TSV file (params$merged) that can be loaded into MSSQL on Windows using "Import Data...." 
+  * write a status sheet listing parsing and QC success/fail status for each proposal (params$status)
+  
 ```{r setup, include=FALSE}
 library(yaml)
 library(tidyverse)
@@ -154,7 +166,7 @@ xlsx_in_colnames = c(
   xlsx_out_other )
 
 xlsx_out_colnames = c(
-  "dest_msl_release_num", "filename", "sort","proposal_abbrev","filename","spreadsheet",
+  "dest_msl_release_num", "filename", "sort","proposal_abbrev","proposal","spreadsheet",
   xlsx_in_colnames,
   "errors"
 )
@@ -168,17 +180,30 @@ mergedDf = setNames(data.frame(matrix(ncol = length(xlsx_out_colnames), nrow = 0
 statusDf = setNames(data.frame(matrix(ncol=6,nrow=0)),c("zip","spreadsheet","nrow","ncol","nchanges","status"))
 statusRow =0
 
+# paste two string vectors, preserving double-NAs
+# example: pasteNA(x=c(NA,NA,"fred","sam"), y=c(NA,"lucy","george",NA),sep=";") #== c(NA, "lucy","fred;george","sam")
+pasteNA = function(x,y,...) {
+  ifelse(
+    is.na(x) & is.na(y),NA,  # (NA,NA) -> NA
+         ifelse(is.na(x),y,  # (NA,y) -> y
+                ifelse(is.na(y),x,  # (x,NA) -> x
+                       paste(x,y,...) # (x,y) -> paste0(x,y)
+                       )
+                )
+    )
+}
+
 # append DF for current proposal to the merged output
 mergeProDf = function(mergedDf, pro_df) {
   # concat
-  mergedDf = rbind(mergedDf,pro_df[,1:47])
+  mergedDf = rbind(mergedDf,pro_df[,1:48])
   cat("After ", pro_xls_fname, " mergedDf has ", dim(mergedDf),"\n")
   return(mergedDf)
 }
-mergeErrorDf = function(mergedDf, spreadsheet, error_str) {
+mergeErrorDf = function(mergedDf, spreadsheet_fname, error_str) {
   # make DF for this proposal to hold error
   errorDf = outTemplateDf
-  errorDf[1,c("spreadsheet","errors")] = c(spreadsheet, error_str)
+  errorDf[1,c("spreadsheet","errors")] = c(spreadsheet_fname, error_str)
   print(errorDf[,c("spreadsheet","errors")])
   mergedDf = mergeProDf(mergedDf, errorDf)
   return(mergedDf)
@@ -186,7 +211,8 @@ mergeErrorDf = function(mergedDf, spreadsheet, error_str) {
 
 for(pro_zip in rownames(zipDf) ) {
   # pro_zip = rownames(zipDf)[2] # debug
-  # pro_zip = "2021.036M.A.v1.Rhabdoviridae_sprename.zip"
+  # pro_zip = rownames(zipDf)[which(pro_zip == rownames(zipDf))+1];which(pro_zip == rownames(zipDf)) # debug "NEXT"
+  # pro_zip = "2021.004P.A.v1.Anulavirus_1ns.zip" # incorrect CODE
   # pro_zip = "2021.010P.A.v1.Emaravirus_1ns.zip" # has long-dash in exemplarAccessions
   # pro_zip = '2021.010M.A.v1.Bornaviridae_sprename.zip' # has UTF8 characters
   zip = zipDf[pro_zip,"topZip"] # debug
@@ -364,9 +390,13 @@ for(pro_zip in rownames(zipDf) ) {
   # debug
   #if( pro_xls_number =="2021.006D") {break}
 }
-
-
-
+```
+# additional QC
+```{r qc_global}
+# 
+# scan for inappropriate characters in exemplarAccessions
+#
+problemsExemplarAccessions = grep(mergedDf$exemplarAccession, pattern = '[–()-]')
 
 ```
 
@@ -394,6 +424,10 @@ kable(mergedDf[mergedErrors,c("errors")],caption="taxon level errors")
 # add row numbers
 #
 mergedDf$sort = 1:nrow(mergedDf)
+
+# copy errors into comments, so they hit the DB
+mergedDf$comments = pasteNA(mergedDf$comments, mergedDf$errors)
+
 #
 # save
 #
