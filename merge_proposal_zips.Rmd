@@ -1,7 +1,9 @@
 ---
-title: "ICTV merge zip'ed proposals"
+title: "ICTV validate proposals"
 params:
   # inputs
+  prev_taxa_fname: ./current_msl/taxonomy_node_names.all.txt
+  rank_fname: ./current_msl/taxonomy_level.txt
   cv_xlsx: ./TP_Template_Excel_module_2022_v2.xlsx
   cv_sheet: "Menu Items (Do not change)"
   zip_dir: ./zips
@@ -11,24 +13,28 @@ params:
   # output files
   tmp_dir: ./tmp
   pro_dir: ./pro_zips
-  dest_msl: 37
-  merged:  load_next_msl.37v1.txt
+  dest_msl: 38
+  merged:  load_next_msl.txt
   status:  merged_status.txt
   
 output: html_document
 ---
 
 This script 
-  * scans params$zip_dir for *.zip (top level zips)
-  * iterates over top level zips and unzips them into params$pro_dir, resulting in a set of proposal-level zips in directories based on their top-level zip
+  * load previous MSL data
+  * scans params$zip_dir for *.zip (proposal zips)
   * iterates over each proposal zip
     * unzips it into params$tmp_dir
     * reads the proposal.xlsx file into a data frame
-    * QC data, etc.
-    * merge (rbind) all proposal.xlsx rows into one merged dataframe
-  * QC merged data frame
-  * write merged data frame to a Unicode(UTF-16LE) TSV file (params$merged) that can be loaded into MSSQL on Windows using "Import Data...." 
+    * merge each row (change)
+      * match up to existing taxon
+      * QC data, etc.
+      * implement change in new MSL data frame
+      * record errors, warnings, etc
+      * create merged change set in one merged dataframe
+  * write merged proposal data frame to a Unicode(UTF-16LE) TSV file (params$merged) that can be loaded into MSSQL on Windows using "Import Data...." 
   * write a status sheet listing parsing and QC success/fail status for each proposal (params$status)
+  * write new MSL load & updates to prev_msl.out_*
   
 ```{r setup, include=FALSE}
 library(yaml)
@@ -42,7 +48,18 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```
 
-# Load CVs for QC
+# load previous MSLs
+```{r load prev MSL}
+
+taxonomy_node_names = c("taxnode_id","parent_id","tree_id","msl_release_num","level_id","name","ictv_id","molecule_id","abbrev_csv","genbank_accession_csv","genbank_refseq_accession_csv","refseq_accession_csv","isolate_csv","notes","is_ref","is_official","is_hidden","is_deleted","is_deleted_next_year","is_typo","is_renamed_next_year","is_obsolete","in_change","in_target","in_filename","in_notes","out_change","out_target","out_filename","out_notes","start_num_sort","row_num","filename","xref","realm_id","realm_kid_ct","realm_desc_ct","subrealm_id","subrealm_kid_ct","subrealm_desc_ct","kingdom_id","kingdom_kid_ct","kingdom_desc_ct","subkingdom_id","subkingdom_kid_ct","subkingdom_desc_ct","phylum_id","phylum_kid_ct","phylum_desc_ct","subphylum_id","subphylum_kid_ct","subphylum_desc_ct","class_id","class_kid_ct","class_desc_ct","subclass_id","subclass_kid_ct","subclass_desc_ct","order_id","order_kid_ct","order_desc_ct","suborder_id","suborder_kid_ct","suborder_desc_ct","family_id","family_kid_ct","family_desc_ct","subfamily_id","subfamily_kid_ct","subfamily_desc_ct","genus_id","genus_kid_ct","genus_desc_ct","subgenus_id","subgenus_kid_ct","subgenus_desc_ct","species_id","species_kid_ct","species_desc_ct","taxa_kid_cts","taxa_desc_cts","inher_molecule_id","left_idx","right_idx","node_depth","lineage","cleaned_name","cleaned_problem","flags","_numKids","_out_target_parent","_out_target_name","rank","tree","realm","subrealm","kingdom","subkingdom","phylum","subphylum","class","subclass","order","suborder","family","subfamily","genus","subgenus","species","molecule","inher_molecule")
+prevMSLs=read.delim(file=params$prev_taxa_fname,header=FALSE,stringsAsFactors=TRUE,col.names=taxonomy_node_names)
+
+# CV loads
+rankCV = read.delim(file=params$rank_fname,header=TRUE, stringsAsFactors=TRUE,na.strings=c("NULL"))
+rownames(rankCV) = rankCV$id
+
+```
+# Load CVs for Proposal QC
 ```{r load cvs}
 cvDf = data.frame(read_excel(params$cv_xlsx,sheet = params$cv_sheet,col_names = FALSE))
 #cvDf = data.frame(trib[,])  # remove "select one" line
