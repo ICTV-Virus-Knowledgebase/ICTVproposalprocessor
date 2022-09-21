@@ -31,7 +31,7 @@ CURRENT STATUS:
 <<<<<<<<<<
 << NEXT >>
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-  * work on processing code "# process changes function" et following
+  * process change: not actually added to global newMSL!!!!! Why!?!?
 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 This script 
   * load previous MSL data into a data frame
@@ -662,6 +662,16 @@ getLineage = function(realmSpecies) {
     return(NA)
   }
 }
+getTaxonRank = function(realmSpecies) {
+  nonNAs = !is.na(realmSpecies)
+  if( sum(nonNAs) > 0 ) {
+    return(rankCV$name[max(which(nonNAs))+1])
+  } else {
+    return(NA)
+  }
+}
+ 
+
 
 apply_changes = function(code,changeDf) {
   #
@@ -669,13 +679,39 @@ apply_changes = function(code,changeDf) {
   # 
   errorDf = allErrorDf[FALSE,]
   
+  # action mappings - externalize or move up
+  actionCV = c(
+    "create" = "create"
+    , "create new" = "create"
+  )
+  
   for(linenum in rownames(changeDf)) {
     # linenum = rownames(changeDf)[1] # debug
     # get this change's line
     change = changeDf[linenum,]
     action = change$change
     
-    # TODO: check CVs
+    #
+    # check CVs
+    #
+    
+    # clean action
+    actionClean = actionCV[tolower(action)]
+    if( is.na(actionClean) ) { 
+      errorDf = addError(errorDf,code,linenum,"ERROR","ACTION.UNK","Unknown action/change",action)
+    }
+    
+   
+    # rank
+    isRankOk = tolower(change$rank) %in% rankCV$name
+    if( !isRankOk ) {
+        errorDf=addError(errorDf,code,linenum, "WARNING", "RANK.UNK", "Rank name unknown", 
+                         paste0("XLSX ROW ",linenum,
+                                ", rank=", change$rank, 
+                                "; knownRanks=", paste(rankCV$name[-1],collapse = ","))
+        )
+   
+    }
     
     # linenum = rownames(changeDf)[1] # debug
     srcRealmSpecies = change[xlsx_change_srcCols]
@@ -683,74 +719,134 @@ apply_changes = function(code,changeDf) {
     
     # should these be a vector operation, adding columns to changeDF? 
     # if we do that, we need to separate srcTaxon's label (rank) and value (name)
-    srcTaxon=getTaxon(srcRealmSpecies)
-    srcLineage=getLineage(srcRealmSpecies)
-    destTaxon=getTaxon(destRealmSpecies)
-    destParent=getParentTaxon(destRealmSpecies)
-    destLineage=getLineage(destRealmSpecies)
+    srcTaxonName  =getTaxon(srcRealmSpecies)
+    srcTaxonRank  =getTaxonRank(srcRealmSpecies)
+    srcLineage    =getLineage(srcRealmSpecies)
+    destTaxonName =getTaxon(destRealmSpecies)
+    destTaxonRank =getTaxonRank(srcRealmSpecies)
+    destParentName=getParentTaxon(destRealmSpecies)
+    destLineage   =getLineage(destRealmSpecies)
     
-    # 
-    # check if srcTaxon already exists
-    #
-    if(action %in% c("Create New") ) {
-      # make sure no old taxon specified
-      if(!is.na(srcTaxon)) {
-        errorDf=addError(errorDf,code,linenum, "ERROR", "Change=NEW, but 'current taxonomy' is not empty", 
+    #  ---------------------------------------------------
+    # CREATE
+    #  ---------------------------------------------------
+    if(action %in% c("create") ) {
+ 
+      # check if srcTaxon was specified in xlsx (shouldn't me)
+      if(!is.na(srcTaxonName)) {
+        errorDf=addError(errorDf,code,linenum, "ERROR", "CREATE.W_SRC", "Change=CREATE, but 'current taxonomy' columns are  not empty", 
                          paste0("XLSX ROW ",linenum,", currentTaxonomy=", srcLineage)
         )
         next;
       }
+      #
       # make sure new taxon does not exist already
-      prevMatches=taxonomyDf$name==as.character(destTaxon)
-      if(sum(prevMatches)>0) {
-        matchDf = taxonomyDf[prevMatches,c("msl_release_num","lineage")]
-        matchDf = matchDf[order(matchDf$msl_release_num,decreasing = T)[1],]
+      #
+      curMatches=curMSL$name==as.character(destTaxonName)
+      oldMatches=oldMSLs$name==as.character(destTaxonName)
+      newMatches=newMSL$name==as.character(destTaxonName)
+      # check if exists in the current MSL
+      if(sum(curMatches)>0) {
+        matchDf = curMSL[curMatches,c("msl_release_num","lineage")]
+        matchDf = curMSL[order(matchDf$msl_release_num,decreasing = T)[1],]
         matchLineage = paste0( "MSL", matchDf$msl_release_num,":",matchDf$lineage)
-        errorDf=addError(errorDf,code,linenum, "ERROR", "Change=NEW, but 'proposed taxonomy' already exists", 
+        errorDf=addError(errorDf,code,linenum, "ERROR", "CREATE.IN_CUR", "Change=NEW, but 'proposed taxonomy' already exists", 
                          paste0("XLSX ROW ",linenum,
-                                ", proposedTaxonomy=", destTaxon, 
+                                ", proposedTaxonomy=", destTaxonName, 
                                 "; existingTaxon=", matchLineage)
         )
         next;
       }
-      #
-      # create the new taxon
-      #
-      
-      # find the parent
-      parentTaxon = subset(newTaxonomyDf,name==as.character(destParent) & msl_release_num==params$next_msl)
-      if( ncol(parentTaxon) == 0 ) {
-        # ERROR: can't find parent taxa
-        errorDf=addError(errorDf,code,linenum, "ERROR", "Change=NEW, proposed parent taxon doesn't exist", 
-                         paste0("XLSX ROW ",linenum,", missingParent=",destParent,", proposedLineage=", destLineage)
+      # check if exists in a historical MLS (not the most recent)
+      if(sum(oldMatches)>0) {
+        matchDf = oldMSLs[oldMatches,c("msl_release_num","lineage")]
+        matchDf = oldMSLs[order(matchDf$msl_release_num,decreasing = T)[1],]
+        matchLineage = paste0( "MSL", matchDf$msl_release_num,":",matchDf$lineage)
+        errorDf=addError(errorDf,code,linenum, "ERROR", "CREATE.IN_OLD", "Change=NEW, but 'proposed taxonomy' existed historically", 
+                         paste0("XLSX ROW ",linenum,
+                                ", proposedTaxonomy=", destTaxonName, 
+                                "; existingTaxon=", matchLineage)
         )
         next;
-      } else {
-        # create the node
-        newTaxnodeId=assignNextTaxnodeId(newTaxonomyDf,params$next_msl)
-        newTaxonomyDf[newTaxnodeId,c("taxnode_id","name")] = c(newTaxnodeId,destTaxon)
       }
-    }
-        prevTaxnode = taxonomyDf[taxonomyDf$name==as.character(srcTaxon),]
-    if( is.na(prevTaxnode) ) {
-       cat("TODO: need to check if action ")
-    } else {
+      # check if already created in newMSL
+      if(sum(newMatches)>0) {
+        matchDf = newMSL[newMatches,c("msl_release_num","lineage")]
+        matchDf = newMSL[order(matchDf$msl_release_num,decreasing = T)[1],]
+        matchLineage = paste0( "MSL", matchDf$msl_release_num,":",matchDf$lineage)
+        errorDf=addError(errorDf,code,linenum, "ERROR", "CREATE.IN_NEW", "Change=NEW, but 'proposed taxonomy' already created in new MSL", 
+                         paste0("XLSX ROW ",linenum,
+                                ", proposedTaxonomy=", destTaxonName, 
+                                "; existingTaxon=", matchLineage,
+                                "; otherProposal=", matchDf[1,"in_filename"]
+                              )
+        )
+        next;
+      }
+      
+      # 
+      # verify that PARENT taxon exists already in newMSL
       #
-      # validate that srcTaxon exists, 
-      # is from most recent MSL and has correct lineage
-      #
-      max(prevTaxnode$msl_release_num)
+      newMatches=newMSL$name==as.character(destParentName)
+      if(sum(newMatches)==1) {
+         errorDf=addError(errorDf,code,linenum, "ERROR", "CREATE.PARENT_NO_EXIST", "Change=CREATE, but parent rank taxon does not exist", 
+                         paste0("XLSX ROW ",linenum,", parentTaxon=", destParentName, ", proposedTaxonomy=", destLineage)
+         )
+         next;
+      } else if(sum(newMatches)>1) {
+        
+      } else {
+        # 
+        # create new taxon
+        #
+        
+        # check rank issues
+        if ( tolower(destTaxonRank) != tolower(change$rank) ) {
+          errorDf=addError(errorDf,code,linenum, "WARNING", "CREATE.RANK_MISMATCH", 
+                           "Change=CREATE, but proposed taxon rank does not match [rank] column", 
+                           paste0("XLSX ROW ",linenum,", rankColumn=", change$rank,
+                                  ", proposedTaxonRank=",destTaxonRank,
+                                  ", proposedTaxonomy=", destLineage)
+          )
+        }
+        
+        # get parent
+        newTaxon = newMSL[newMatches,]
+        # add new info - primary columns
+        newTaxon[1,"name"]       = destTaxonName
+        newTaxon[1,"level_id"]   = rankCV$id[rankCV$name==destTaxonRank]
+        newTaxon[1,"parent_id"]  = newTaxon[1,"taxnode_id"]
+        newTaxon[1,"taxnode_id"] = max(newMSL$taxnode_id)+1
+        newTaxon[1,"ictv_id"]    = newTaxon$taxnode_id
+        # TODO: genome compositition
+        # TODO: host/source
+        ## for species only
+        # TODO: acccession
+        # TODO: exemplar
+        # TODO: abbrev
+        # TODO: exemplar designation
+        # TODO: genome coverage
+        
+        # info-only columns
+        newTaxon[1,"rank"]       = destTaxonRank
+        newTaxon[1,"lineage"]    = destLineage
+
+        
+
+        # add new taxon to newMSL
+        newMSL=rbindlist(list(newMSL,newTaxon),fill=TRUE)
+      } # create new taxon
+      
+  
     }
-     
-    
     # now check if it's in the most recent MSL, error if no rows, only obsolete rows
     # QQQQQ
     # then check if srcLineage is as expected. 
     #
     
-  }
+  } # for each line in XLSX
   
-}
+} # apply_changes()
 ```
 
 # process changes
@@ -777,7 +873,7 @@ for( code in rownames(proposals)) {
     result=apply_changes(code,changeDf)
     errorDf = results[["errorDf"]]
     cat("# PROCed: ",code," with ",nrow(errorDf)," errors/warnings\n")
-    if(nrow(errorDf)>0){allErrorDf=rbind(allErrorDf,errorDf)}
-  }
-}
+    if(nrow(errorDf)>0){allErrorDf=rbindlist(list(allErrorDf,errorDf),fill=TRUE)}
+  } # if have proposal XLSX
+} # proposal code
 ```
