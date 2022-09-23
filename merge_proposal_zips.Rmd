@@ -25,14 +25,18 @@ output: html_document
 QC MSL38: https://uab-lefkowitz.atlassian.net/browse/IVK-123
 Merge++:  https://uab-lefkowitz.atlassian.net/browse/IVK-22
 
-CURRENT STATUS:
-  * loads and correlates XLSX/DOCX
-  * prevMSL, curMSL and newMSL all converted to data.frame
 <<<<<<<<<<
 << NEXT >>
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-  * process change: not actually added to global newMSL!!!!! Why!?!?
+  * report & fix Alphanumeric characters in taxon names
+    * allow spaces in species and isolate
+  * finish attributes on create taxa
+    * build new lineage from parent lineage+destTaxonName!
 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+CURRENT STATUS:
+  * loads and correlates XLSX/DOCX
+  * prevMSL, curMSL and newMSL all converted to data.frame
+
 This script 
   * load previous MSL data into a data frame
   * scans params$ ./proposals for *.(xlsx|docx) (proposals)
@@ -611,13 +615,15 @@ qc_proposal = function(code, proposalDf) {
   # 
   #TODO: remove leading/trailing spaces, quotes
   qc.spaces.leading =grep(changeDf,pattern="^ ")
-  if(params$verbose && length(qc.spaces.leading)>0) { cat("WARNING: ",code," has ",qc.spaces.leading," cells with leading spaces","\n")}
+  if(params$verbose && length(qc.spaces.leading)>0) { 
+    cat("WARNING: ",code," has ",length(qc.spaces.leading)," cells with leading spaces","\n");
+  }
   qc.spaces.trailing =grep(changeDf,pattern=" $")
-  if(params$verbose && length(qc.spaces.trailing)>0) { cat("WARNING: ",code," has ",qc.spaces.leading," cells with leading spaces","\n")}
+  if(params$verbose && length(qc.spaces.trailing)>0) { cat("WARNING: ",code," has ",length(qc.spaces.leading)," cells with leading spaces","\n")}
   qc.spaces.embed    =grep(changeDf,pattern=" ") # except species
-  if(params$verbose && length(qc.spaces.embed)>0) { cat("WARNING: ",code," has ",qc.spaces.leading," cells with leading spaces","\n")}
+  if(params$verbose && length(qc.spaces.embed)>0) { cat("WARNING: ",code," has ",length(qc.spaces.leading)," cells with leading spaces","\n")}
   qc.quotes          =grep(changeDf,pattern='"')
-  if(params$verbose && length(qc.quotes)>0) { cat("WARNING: ",code," has ",qc.spaces.leading," cells with leading spaces","\n")}
+  if(params$verbose && length(qc.quotes)>0) { cat("WARNING: ",code," has ",length(qc.spaces.leading)," cells with leading spaces","\n")}
   
   #TODO: reject embedded spaces, except for species
   #TODO other funny characters (curvy quotes, curvy appostrophies)
@@ -721,7 +727,7 @@ getTaxonRank = function(realmSpecies) {
  
 
 
-apply_changes = function(code,changeDf) {
+apply_changes = function(code,proposalBasename,changeDf) {
   #
   # iterate over changes
   # 
@@ -869,7 +875,6 @@ apply_changes = function(code,changeDf) {
         # get parent
         newTaxon = newMSL[newMatches,]
         
-     
         # WARN if PARENT_LINEAGE is not expected
         if( newTaxon$lineage != destParentLineage ) {
           errorDf=addError(errorDf,code,linenum, "WARNING", "CREATE.PARENT_LINEAGE", 
@@ -879,12 +884,20 @@ apply_changes = function(code,changeDf) {
                                   ", otherProposals=",newTaxon$prev_proposals)
           )
         }
+        
         # add new info - primary columns
+        newTaxon[1,"in_change"]   = "create"
+        newTaxon[1,"in_filename"] = paste0(proposalBasename,".zip")
+        newTaxon[1,"in_notes"]    = paste0("linenum=",linenum)
+        newTaxon[1,"in_target"]   = destLineage
+
         newTaxon[1,"name"]       = destTaxonName
         newTaxon[1,"level_id"]   = rankCV$id[rankCV$name==destTaxonRank]
         newTaxon[1,"parent_id"]  = newTaxon[1,"taxnode_id"]
         newTaxon[1,"taxnode_id"] = max(newMSL$taxnode_id)+1
         newTaxon[1,"ictv_id"]    = newTaxon$taxnode_id
+        
+        
         # TODO: genome compositition
         # TODO: host/source
         ## for species only
@@ -939,7 +952,7 @@ for( code in rownames(proposals)) {
     #
     # iterate over changes
     #
-    result=apply_changes(code,changeDf)
+    result=apply_changes(code,proposals[code,"basename"],changeDf)
     errorDf = results[["errorDf"]]
     cat("# PROCed: ",code," with ",nrow(errorDf)," errors/warnings\n")
     if(nrow(errorDf)>0){allErrorDf=rbindlist(list(allErrorDf,errorDf),fill=TRUE)}
@@ -948,11 +961,34 @@ for( code in rownames(proposals)) {
 
 ```
 
-# final stats
+# known problems
 
 ```{r final_stats}
 
 dim(curMSL)
 dim(newMSL)
 dim(allErrorDf)
+
+print("What is that ?space?: it's not a space, nor a tab:")
+newMSL[grep(newMSL$lineage, pattern="Orthornavirae.;"),c("taxnode_id","parent_id","lineage","name","cleaned_name","in_filename","in_notes")]
+  #                                                                                                         lineage         name cleaned_name
+# 1: Riboviria;Orthornavirae ;Kitrinoviricota;Flasuviricetes;Amarillovirales;Flaviviridae;Pestivirus;Pestivirus L Pestivirus L   Pestivirus
+# 2: Riboviria;Orthornavirae ;Kitrinoviricota;Flasuviricetes;Amarillovirales;Flaviviridae;Pestivirus;Pestivirus M Pestivirus M   Pestivirus
+# 3: Riboviria;Orthornavirae ;Kitrinoviricota;Flasuviricetes;Amarillovirales;Flaviviridae;Pestivirus;Pestivirus N Pestivirus N   Pestivirus
+# 4: Riboviria;Orthornavirae ;Kitrinoviricota;Flasuviricetes;Amarillovirales;Flaviviridae;Pestivirus;Pestivirus O Pestivirus O   Pestivirus
+# 5: Riboviria;Orthornavirae ;Kitrinoviricota;Flasuviricetes;Amarillovirales;Flaviviridae;Pestivirus;Pestivirus P Pestivirus P   Pestivirus
+# 6: Riboviria;Orthornavirae ;Kitrinoviricota;Flasuviricetes;Amarillovirales;Flaviviridae;Pestivirus;Pestivirus Q Pestivirus Q   Pestivirus
+# 7: Riboviria;Orthornavirae ;Kitrinoviricota;Flasuviricetes;Amarillovirales;Flaviviridae;Pestivirus;Pestivirus R Pestivirus R   Pestivirus
+# 8: Riboviria;Orthornavirae ;Kitrinoviricota;Flasuviricetes;Amarillovirales;Flaviviridae;Pestivirus;Pestivirus S Pestivirus S   Pestivirus
+
+newMSL[taxnode_id==202203151, c("taxnode_id","parent_id","lineage","name","cleaned_name","in_filename","in_notes")]
+#   taxnode_id parent_id                                                                                        lineage       name cleaned_name
+#1:  202203151 202203068 Riboviria;Orthornavirae;Kitrinoviricota;Flasuviricetes;Amarillovirales;Flaviviridae;Pestivirus Pestivirus   Pestivirus
+  
+# fix it
+(gsub(pattern="[^a-zA-Z]",replacement="",x$kingdom))
+
+#
+# but need to scan and report the problems before fixing them!!!!
+
 ```
