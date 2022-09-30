@@ -68,7 +68,13 @@ library(knitr) #kable
 # debug - echo everything
 knitr::opts_chunk$set(echo = TRUE)
 
+#
+# GLOBAL VARS
+# 
+newMSL = data.table()
+allErrorDf = data.table()
 ```
+
 
 # function to copy prev MSL to new MSL
 
@@ -85,6 +91,20 @@ createNewMSL = function(curMSL,prev_msl,dest_msl,taxnode_delta) {
   #
   # copy the rows
   newMSL=copy(subset(curMSL, msl_release_num==prev_msl))
+  
+  #
+  # add some admin rows
+  #
+  
+  # copy original taxnode_id's into a new column
+  newMSL[,"prev_taxnode_id"] = newMSL[,"taxnode_id"]
+  
+  # CSV of proposals that have already modified this taxon in this MSL
+  newMSL[,"prev_proposals"] = NA_character_
+  
+  #
+  # update all ids (taxnode_id and all FK's to taxnnode_id) for new MSL
+  #
   
   # update the node ids
   fkTaxnodeIdCols = c("taxnode_id","parent_id","tree_id",
@@ -169,10 +189,11 @@ oldMSLs = subset(taxonomyDt, msl_release_num < params$prev_msl)
 curMSL = subset(taxonomyDt, msl_release_num==params$prev_msl)
 
 #
+# !!!GLOBAL VAR!!!
 # copy prev MSL to make new MSL,
 # to which we will try and apply these edits
 #
-newMSL = createNewMSL(curMSL,params$prev_msl, params$next_msl, params$taxnode_delta)
+newMSL=createNewMSL(curMSL,params$prev_msl, params$next_msl, params$taxnode_delta)
 
 # CV loads
 rankCV = read.delim(file=params$rank_fname,header=TRUE, stringsAsFactors=TRUE,na.strings=c("NULL"))
@@ -586,9 +607,22 @@ qc_proposal = function(code, proposalDf) {
   }
   
   #
-  # save changes
+  # QC spaces, quotes, etc
   # 
-  #changeList[[code]] = changeDf
+  #TODO: remove leading/trailing spaces, quotes
+  qc.spaces.leading =grep(changeDf,pattern="^ ")
+  if(params$verbose && length(qc.spaces.leading)>0) { cat("WARNING: ",code," has ",qc.spaces.leading," cells with leading spaces","\n")}
+  qc.spaces.trailing =grep(changeDf,pattern=" $")
+  if(params$verbose && length(qc.spaces.trailing)>0) { cat("WARNING: ",code," has ",qc.spaces.leading," cells with leading spaces","\n")}
+  qc.spaces.embed    =grep(changeDf,pattern=" ") # except species
+  if(params$verbose && length(qc.spaces.embed)>0) { cat("WARNING: ",code," has ",qc.spaces.leading," cells with leading spaces","\n")}
+  qc.quotes          =grep(changeDf,pattern='"')
+  if(params$verbose && length(qc.quotes)>0) { cat("WARNING: ",code," has ",qc.spaces.leading," cells with leading spaces","\n")}
+  
+  #TODO: reject embedded spaces, except for species
+  #TODO other funny characters (curvy quotes, curvy appostrophies)
+  #TODO: diacritical marsk in taxa. 
+  
   
   # return errors, if any
   return(list(errorDf=errorDf,changeDf=changeDf))
@@ -639,6 +673,9 @@ kable(allErrorDf,caption = paste0("QC: Summary of ERRORs and WARNINGs"))
 
 ```{r process_changes_function, echo=FALSE}
 getTaxon = function(realmSpecies) {
+  # 
+  # get the NAME of the lowest ranked taxon
+  #
   nonNAs = !is.na(realmSpecies)
   if( sum(nonNAs) > 0 ) {
     return(realmSpecies[max(which(nonNAs))])
@@ -647,6 +684,9 @@ getTaxon = function(realmSpecies) {
   }
 }
 getParentTaxon = function(realmSpecies) {
+  #
+  # get the NAME of the penultimate low ranked taxon
+  #
   nonNAs = !is.na(realmSpecies)
   if( sum(nonNAs) > 1 ) {
     return(realmSpecies[sort(which(nonNAs),decreasing=T)[2]])
@@ -654,8 +694,13 @@ getParentTaxon = function(realmSpecies) {
     return(NA)
   }
 }
-getLineage = function(realmSpecies) {
+getLineage = function(realmSpecies,masks=c()) {
+  #   
+  # concat with ; all non-NA ranks, except those in masks
+  #
   nonNAs = !is.na(realmSpecies)
+  # is a matrix, rows=taxon, columns=ranks
+  nonNAs[,masks] = FALSE
   if( sum(nonNAs) > 0 ) {
     return(paste0(realmSpecies[nonNAs],collapse=";"))
   } else {
@@ -665,7 +710,10 @@ getLineage = function(realmSpecies) {
 getTaxonRank = function(realmSpecies) {
   nonNAs = !is.na(realmSpecies)
   if( sum(nonNAs) > 0 ) {
-    return(rankCV$name[max(which(nonNAs))+1])
+  # 
+  # get the rank of the lowest-rank taxon 
+  #
+    return(as.character(rankCV$name[max(which(nonNAs))+1]))
   } else {
     return(NA)
   }
@@ -687,6 +735,7 @@ apply_changes = function(code,changeDf) {
   
   for(linenum in rownames(changeDf)) {
     # linenum = rownames(changeDf)[1] # debug
+    # linenum = rownames(changeDf)[which(linenum==rownames(changeDf))+1]; linenum # debug: next row
     # get this change's line
     change = changeDf[linenum,]
     action = change$change
@@ -723,15 +772,16 @@ apply_changes = function(code,changeDf) {
     srcTaxonRank  =getTaxonRank(srcRealmSpecies)
     srcLineage    =getLineage(srcRealmSpecies)
     destTaxonName =getTaxon(destRealmSpecies)
-    destTaxonRank =getTaxonRank(srcRealmSpecies)
+    destTaxonRank =getTaxonRank(destRealmSpecies)
     destParentName=getParentTaxon(destRealmSpecies)
     destLineage   =getLineage(destRealmSpecies)
-    
+    destParentLineage =getLineage(destRealmSpecies,masks=c(destTaxonRank))
+
     #  ---------------------------------------------------
     # CREATE
     #  ---------------------------------------------------
-    if(action %in% c("create") ) {
- 
+    if(actionClean %in% c("create") ) {
+
       # check if srcTaxon was specified in xlsx (shouldn't me)
       if(!is.na(srcTaxonName)) {
         errorDf=addError(errorDf,code,linenum, "ERROR", "CREATE.W_SRC", "Change=CREATE, but 'current taxonomy' columns are  not empty", 
@@ -788,19 +838,20 @@ apply_changes = function(code,changeDf) {
       # verify that PARENT taxon exists already in newMSL
       #
       newMatches=newMSL$name==as.character(destParentName)
-      if(sum(newMatches)==1) {
+      if(params$verbose) {print(paste0("CREATE: findParent(",destParentName,")=",sum(newMatches)))}
+    
+      if(sum(newMatches)==0) {
          errorDf=addError(errorDf,code,linenum, "ERROR", "CREATE.PARENT_NO_EXIST", "Change=CREATE, but parent rank taxon does not exist", 
                          paste0("XLSX ROW ",linenum,", parentTaxon=", destParentName, ", proposedTaxonomy=", destLineage)
          )
          next;
       } else if(sum(newMatches)>1) {
-        
+         errorDf=addError(errorDf,code,linenum, "ERROR", "CREATE.PARENT_MANY", "Change=CREATE, multiple taxa exist with parent name", 
+                         paste0("XLSX ROW ",linenum,", parentTaxon=", destParentName, ", proposedTaxonomy=", destLineage)
+         )
+         next;
       } else {
-        # 
-        # create new taxon
-        #
-        
-        # check rank issues
+        # WARN: check if taxon rank matches change rank
         if ( tolower(destTaxonRank) != tolower(change$rank) ) {
           errorDf=addError(errorDf,code,linenum, "WARNING", "CREATE.RANK_MISMATCH", 
                            "Change=CREATE, but proposed taxon rank does not match [rank] column", 
@@ -810,8 +861,24 @@ apply_changes = function(code,changeDf) {
           )
         }
         
+        # 
+        # create new taxon
+        #
+        
+        
         # get parent
         newTaxon = newMSL[newMatches,]
+        
+     
+        # WARN if PARENT_LINEAGE is not expected
+        if( newTaxon$lineage != destParentLineage ) {
+          errorDf=addError(errorDf,code,linenum, "WARNING", "CREATE.PARENT_LINEAGE", 
+                           "Change=CREATE, proposed parent taxon exists, but not with expected lineage", 
+                           paste0("XLSX ROW ",linenum,", proposedParentLinage=", destParentLineage,
+                                  ", observedParentLineage=",newTaxon$lineage,
+                                  ", otherProposals=",newTaxon$prev_proposals)
+          )
+        }
         # add new info - primary columns
         newTaxon[1,"name"]       = destTaxonName
         newTaxon[1,"level_id"]   = rankCV$id[rankCV$name==destTaxonRank]
@@ -834,7 +901,8 @@ apply_changes = function(code,changeDf) {
         
 
         # add new taxon to newMSL
-        newMSL=rbindlist(list(newMSL,newTaxon),fill=TRUE)
+        if(params$verbose) {print(paste0("rbindlist(newMSL,",newTaxon[1,"taxnode_id"],":",destLineage,")"))}
+        newMSL <<- rbindlist(list(newMSL,newTaxon),fill=TRUE)
       } # create new taxon
       
   
@@ -845,7 +913,8 @@ apply_changes = function(code,changeDf) {
     #
     
   } # for each line in XLSX
-  
+
+  return(list(errorDf=errorDf))
 } # apply_changes()
 ```
 
@@ -876,4 +945,14 @@ for( code in rownames(proposals)) {
     if(nrow(errorDf)>0){allErrorDf=rbindlist(list(allErrorDf,errorDf),fill=TRUE)}
   } # if have proposal XLSX
 } # proposal code
+
+```
+
+# final stats
+
+```{r final_stats}
+
+dim(curMSL)
+dim(newMSL)
+dim(allErrorDf)
 ```
