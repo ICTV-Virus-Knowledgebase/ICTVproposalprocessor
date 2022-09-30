@@ -469,7 +469,7 @@ xlsx_col_info[c("srcSpecies","species","change"),"pattern"] = "([^[:alnum:] -]+)
 xlsx_col_info[c("srcSpecies","species","change"),"pat_warn"] = "non-(AlphaNumeric or hyphen or space)"
 xlsx_col_info[c("srcSpecies","species","change"),"pat_code"] = "XLSX.NON_ALPHA-NUMERIC-SPACE)"
 # lists
-xlsx_col_info[c( "exemplarAccession","exemplarName","Abbrev","exemplarIsolate"),"pattern"] = "([^[:alnum:],:;_ -]+)"
+xlsx_col_info[c( "exemplarAccession","exemplarName","Abbrev","exemplarIsolate"),"pattern"] = "([^[:alnum:],:;_/ -]+)"
 xlsx_col_info[c( "exemplarAccession","exemplarName","Abbrev","exemplarIsolate"),"pat_warn"] = "non-(AlphaNumeric or punctuation)"
 xlsx_col_info[c( "exemplarAccession","exemplarName","Abbrev","exemplarIsolate"),"pat_code"] = "XLSX.NON-ALPHA-NUM-LIST"
 # others just must be printable
@@ -1029,6 +1029,9 @@ for( code in rownames(proposals)) {
   } # if have proposal XLSX
 } # proposal code
 
+# write current error list
+write_xlsx(x=allErrorDf,path=file.path(params$out_dir,"QC.summary.xlsx"))
+
 ```
 
 # known problems
@@ -1041,7 +1044,7 @@ dim(allErrorDf)
 
 print("What is that ?space?: it's not a space, nor a tab:")
 newMSL[grep(newMSL$lineage, pattern="Orthornavirae.;"),c("taxnode_id","parent_id","lineage","name","cleaned_name","in_filename","in_notes")]
-  #                                                                                                         lineage         name cleaned_name
+#                                                                                                         lineage         name cleaned_name
 # 1: Riboviria;Orthornavirae ;Kitrinoviricota;Flasuviricetes;Amarillovirales;Flaviviridae;Pestivirus;Pestivirus L Pestivirus L   Pestivirus
 # 2: Riboviria;Orthornavirae ;Kitrinoviricota;Flasuviricetes;Amarillovirales;Flaviviridae;Pestivirus;Pestivirus M Pestivirus M   Pestivirus
 # 3: Riboviria;Orthornavirae ;Kitrinoviricota;Flasuviricetes;Amarillovirales;Flaviviridae;Pestivirus;Pestivirus N Pestivirus N   Pestivirus
@@ -1056,7 +1059,7 @@ newMSL[taxnode_id==202203151, c("taxnode_id","parent_id","lineage","name","clean
 #1:  202203151 202203068 Riboviria;Orthornavirae;Kitrinoviricota;Flasuviricetes;Amarillovirales;Flaviviridae;Pestivirus Pestivirus   Pestivirus
   
 # fix it
-(gsub(pattern="[^a-zA-Z]",replacement="",x$kingdom))
+#(gsub(pattern="[^a-zA-Z]",replacement="",x$kingdom))
 
 #
 # but need to scan and report the problems before fixing them!!!!
