@@ -454,6 +454,30 @@ xlsx_change_srcCols = c(1:15)
 xlsx_change_destCols = c(16:30)
 
 #
+# regex patterns to recognize illegal cell content
+#
+xlsx_col_info = data.frame(row.names=xlsx_change_colnames,
+                           pattern = rep(NA_character_,length(xlsx_change_colnames)),
+                           pat_warn = rep(NA_character_,length(xlsx_change_colnames))
+                           )
+# most taxa can only be alphanumeric plus a hyphen
+xlsx_col_info[c(xlsx_change_colnames[c(xlsx_change_srcCols,xlsx_change_destCols)],"rank"),"pattern"] = "([^[:alnum:]-]+)"
+xlsx_col_info[c(xlsx_change_colnames[c(xlsx_change_srcCols,xlsx_change_destCols)],"rank"),"pat_warn"] = "non-(AlphaNumeric or hyphen)"
+xlsx_col_info[c(xlsx_change_colnames[c(xlsx_change_srcCols,xlsx_change_destCols)],"rank"),"pat_code"] = "XLSX.NON_ALPHA-NUMERIC"
+# allow internal spaces on species and columns with lists/isolate names
+xlsx_col_info[c("srcSpecies","species","change"),"pattern"] = "([^[:alnum:] -]+)"
+xlsx_col_info[c("srcSpecies","species","change"),"pat_warn"] = "non-(AlphaNumeric or hyphen or space)"
+xlsx_col_info[c("srcSpecies","species","change"),"pat_code"] = "XLSX.NON_ALPHA-NUMERIC-SPACE)"
+# lists
+xlsx_col_info[c( "exemplarAccession","exemplarName","Abbrev","exemplarIsolate"),"pattern"] = "([^[:alnum:],:;_ -]+)"
+xlsx_col_info[c( "exemplarAccession","exemplarName","Abbrev","exemplarIsolate"),"pat_warn"] = "non-(AlphaNumeric or punctuation)"
+xlsx_col_info[c( "exemplarAccession","exemplarName","Abbrev","exemplarIsolate"),"pat_code"] = "XLSX.NON-ALPHA-NUM-LIST"
+# others just must be printable
+xlsx_col_info[is.na(xlsx_col_info$pattern),"pattern"] = "(^[:print]+)"
+xlsx_col_info[is.na(xlsx_col_info$pat_warn),"pat_warn"] = "unprintable/non-ASCII"
+xlsx_col_info[is.na(xlsx_col_info$pat_warn),"pat_code"] = "XLSX.NON_PRINTABLE"
+
+#
 # map xlsx VERSION columns to normalized "Change" columns
 #
 xlsx_v1_change_cols = c(
@@ -613,22 +637,65 @@ qc_proposal = function(code, proposalDf) {
   #
   # QC spaces, quotes, etc
   # 
-  #TODO: remove leading/trailing spaces, quotes
-  qc.spaces.leading =grep(changeDf,pattern="^ ")
-  if(params$verbose && length(qc.spaces.leading)>0) { 
-    cat("WARNING: ",code," has ",length(qc.spaces.leading)," cells with leading spaces","\n");
-  }
-  qc.spaces.trailing =grep(changeDf,pattern=" $")
-  if(params$verbose && length(qc.spaces.trailing)>0) { cat("WARNING: ",code," has ",length(qc.spaces.leading)," cells with leading spaces","\n")}
-  qc.spaces.embed    =grep(changeDf,pattern=" ") # except species
-  if(params$verbose && length(qc.spaces.embed)>0) { cat("WARNING: ",code," has ",length(qc.spaces.leading)," cells with leading spaces","\n")}
-  qc.quotes          =grep(changeDf,pattern='"')
-  if(params$verbose && length(qc.quotes)>0) { cat("WARNING: ",code," has ",length(qc.spaces.leading)," cells with leading spaces","\n")}
-  
-  #TODO: reject embedded spaces, except for species
-  #TODO other funny characters (curvy quotes, curvy appostrophies)
-  #TODO: diacritical marsk in taxa. 
-  
+  # TODO: remove leading/trailing spaces, quotes
+  for( col in rownames(xlsx_col_info) ) {
+    # col = "srcSpecies" # debug
+    
+    #
+    # leading white space
+    #
+    pattern="^([ \t]+)"; pat_warn="leading whitespace"
+    qc.matches =grep(changeDf[,col],pattern=pattern)
+    if(length(qc.matches)>0) { 
+      if(params$verbose) { cat("WARNING:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
+      errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
+                       "WARNING","XLSX.LEAD_SPACE", paste("XLSX has",pat_warn),
+                       paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":"))
+      # remove non-ascii chars
+      changeDf[,col] = gsub(pattern,"",changeDf[,col])
+    } 
+    #
+    # trailing white space
+    #
+    pattern="([ \t]+)$"; pat_warn="trailing whitespace"
+    qc.matches =grep(changeDf[,col],pattern=pattern)
+    if(length(qc.matches)>0) { 
+      if(params$verbose) { cat("WARNING:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
+      errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
+                       "WARNING","XLSX.TRAIL_SPACE", paste("XLSX has",pat_warn),
+                       paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":"))
+      # remove non-ascii chars
+      changeDf[,col] = gsub(pattern,"",changeDf[,col])
+    } 
+    #
+    # quotes
+    #
+    if( col != "comments" ) {
+      pattern='(["]+)'; pat_warn="quote"
+      qc.matches =grep(changeDf[,col],pattern=pattern)
+      if(length(qc.matches)>0) { 
+        if(params$verbose) { cat("WARNING:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
+        errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
+                         "WARNING","XLSX.QUOTES", paste("XLSX has",pat_warn),
+                         paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":"))
+        # remove non-ascii chars
+        changeDf[,col] = gsub(pattern,"",changeDf[,col])
+      } 
+    }
+    # 
+    # more rigorous for some columns
+    #
+    pattern=xlsx_col_info[col,"pattern"]; pat_warn=xlsx_col_info[col,"pat_warn"]
+    qc.matches =grep(changeDf[,col],pattern=pattern)
+    if(length(qc.matches)>0) { 
+      if(params$verbose) { cat("WARNING:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
+      errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
+                       "WARNING",xlsx_col_info[col,"pat_code"], paste("XLSX has",pat_warn),
+                       paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":"))
+      # remove non-ascii chars
+      changeDf[,col] = gsub(pattern,"",changeDf[,col])
+    }
+  }  # for col
   
   # return errors, if any
   return(list(errorDf=errorDf,changeDf=changeDf))
@@ -942,6 +1009,9 @@ apply_changes = function(code,proposalBasename,changeDf) {
 #
 for( code in rownames(proposals)) {
   # code = rownames(proposals)[1] # debug 
+  # code = rownames(proposals)[2] # debug 
+  # code = rownames(proposals)[3] # debug 
+  # code = rownames(proposals)[4] # debug 
   #
   # make sure we were able to load the changesDf
   #
