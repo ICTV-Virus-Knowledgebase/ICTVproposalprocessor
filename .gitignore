@@ -7,3 +7,5 @@ zips/
 .Rproj.user
 .RData
 .Rhistory
+# output not to track
+merge_proposal_zips.html
