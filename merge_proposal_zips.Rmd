@@ -5,9 +5,9 @@ params:
   prev_msl: 37
   next_msl: 38
   taxnode_delta: 100000
-  prev_taxa_fname: ./current_msl/taxonomy_node_names.all.txt
-  db_rank_fname: ./current_msl/taxonomy_level.txt
+  db_rank_fname:     ./current_msl/taxonomy_level.txt
   db_molecule_fname: ./current_msl/taxonomy_molecule.txt
+  prev_taxa_fname:   ./current_msl/taxonomy_node_export.txt
   cv_xlsx: ./TP_Template_Excel_module_2022_v2.xlsx
   cv_sheet: "Menu Items (Do not change)"
   templateURL: "https://ictv.global/taxonomy/templates"
@@ -121,11 +121,11 @@ createNewMSL = function(curMSL,prev_msl,dest_msl,taxnode_delta) {
   #
   
   # update the node ids
-  fkTaxnodeIdCols = c("taxnode_id","parent_id","tree_id",
-                 paste0(tolower(
-                   c("Realm", "Subrealm", "Kingdom", "Subkingdom", 
-                     "Phylum", "Subphylum", "Class", "Subclass", "Order", "Suborder", 
-                     "Family", "Subfamily", "Genus", "Subgenus", "Species")),"_id")
+  fkTaxnodeIdCols = c("taxnode_id","parent_id","tree_id"
+                 # ,paste0(tolower(
+                 #   c("Realm", "Subrealm", "Kingdom", "Subkingdom", 
+                 #     "Phylum", "Subphylum", "Class", "Subclass", "Order", "Suborder", 
+                 #     "Family", "Subfamily", "Genus", "Subgenus", "Species")),"_id")
   )
   newMSL[,(fkTaxnodeIdCols) := lapply(.SD, function(id) id+params$taxnode_delta),.SDcols=fkTaxnodeIdCols]
   
@@ -159,49 +159,51 @@ assignNextTaxnodeId = function(taxonomy_node,msl) {
 # this uses the DATABASE schema for the taxonomy_node table (ie, naming convention)
 #
 
-taxonomy_node_seq = "
-  select  * 
-  from taxonomy_node tn
-  where msl_release_num is not null
-  and tn.is_deleted = 0 
-  and (tn.level_id = 100 or tn.is_hidden = 0) 
-  and tn.is_obsolete=0
-  order by msl_release_num, left_idx
-"
+taxonomy_node_seq = "select  * from taxonomy_node_export"
 taxonomy_node_names = c(
   taxnode_id="integer",parent_id="integer",tree_id="integer",msl_release_num="integer",level_id="integer",
   name="character",
-  ictv_id="integer",molecule_id="integer",
-  abbrev_csv="character",genbank_accession_csv="character",genbank_refseq_accession_csv="character",refseq_accession_csv="character",isolate_csv="character",notes="character",
-  is_ref="factor",is_official="factor",is_hidden="factor",is_deleted="factor",is_deleted_next_year="factor",is_typo="factor",is_renamed_next_year="factor",
+  ictv_id="integer",
+  molecule_id="integer",
+  abbrev_csv="character",
+  genbank_accession_csv="character",
+  genbank_refseq_accession_csv="character",
+  refseq_accession_csv="character",
+  isolate_csv="character",
+  notes="character",
+  is_ref="factor",is_official="factor",is_hidden="factor",is_deleted="factor",
+  is_deleted_next_year="factor",is_typo="factor",is_renamed_next_year="factor",
   is_obsolete="factor",
   in_change="factor",in_target="character",in_filename="character",in_notes="character",
   out_change="factor",out_target="character",out_filename="character",out_notes="character",
-  start_num_sort="integer",
-  row_num="integer",filename="character",xref="character",
-  realm_id="integer",realm_kid_ct="integer",realm_desc_ct="integer",
-  subrealm_id="integer",subrealm_kid_ct="integer",subrealm_desc_ct="integer",
-  kingdom_id="integer",kingdom_kid_ct="integer",kingdom_desc_ct="integer",
-  subkingdom_id="integer",subkingdom_kid_ct="integer",subkingdom_desc_ct="integer",
-  phylum_id="integer",phylum_kid_ct="integer",phylum_desc_ct="integer",
-  subphylum_id="integer",subphylum_kid_ct="integer",subphylum_desc_ct="integer",
-  class_id="integer",class_kid_ct="integer",class_desc_ct="integer",
-  subclass_id="integer",subclass_kid_ct="integer",subclass_desc_ct="integer",
-  order_id="integer",order_kid_ct="integer",order_desc_ct="integer",
-  suborder_id="integer",suborder_kid_ct="integer",suborder_desc_ct="integer",
-  family_id="integer",family_kid_ct="integer",family_desc_ct="integer",
-  subfamily_id="integer",subfamily_kid_ct="integer",subfamily_desc_ct="integer",
-  genus_id="integer",genus_kid_ct="integer",genus_desc_ct="integer",
-  subgenus_id="integer",subgenus_kid_ct="integer",subgenus_desc_ct="integer",
-  species_id="integer",species_kid_ct="integer",species_desc_ct="integer",
-  taxa_kid_cts="character",taxa_desc_cts="character",
-  inher_molecule_id="integer",left_idx="integer",right_idx="integer",node_depth="integer",
+  # start_num_sort="integer",
+  # row_num="integer",filename="character",xref="character",
+  # realm_id="integer",realm_kid_ct="integer",realm_desc_ct="integer",
+  # subrealm_id="integer",subrealm_kid_ct="integer",subrealm_desc_ct="integer",
+  # kingdom_id="integer",kingdom_kid_ct="integer",kingdom_desc_ct="integer",
+  # subkingdom_id="integer",subkingdom_kid_ct="integer",subkingdom_desc_ct="integer",
+  # phylum_id="integer",phylum_kid_ct="integer",phylum_desc_ct="integer",
+  # subphylum_id="integer",subphylum_kid_ct="integer",subphylum_desc_ct="integer",
+  # class_id="integer",class_kid_ct="integer",class_desc_ct="integer",
+  # subclass_id="integer",subclass_kid_ct="integer",subclass_desc_ct="integer",
+  # order_id="integer",order_kid_ct="integer",order_desc_ct="integer",
+  # suborder_id="integer",suborder_kid_ct="integer",suborder_desc_ct="integer",
+  # family_id="integer",family_kid_ct="integer",family_desc_ct="integer",
+  # subfamily_id="integer",subfamily_kid_ct="integer",subfamily_desc_ct="integer",
+  # genus_id="integer",genus_kid_ct="integer",genus_desc_ct="integer",
+  # subgenus_id="integer",subgenus_kid_ct="integer",subgenus_desc_ct="integer",
+  # species_id="integer",species_kid_ct="integer",species_desc_ct="integer",
+  # taxa_kid_cts="character",taxa_desc_cts="character",
+  # inher_molecule_id="integer",left_idx="integer",right_idx="integer",node_depth="integer",
   lineage="character",
-  cleaned_name="character",cleaned_problem="character",flags="character",
-  "_numKids"="integer","_out_target_parent"="factor","_out_target_name"="factor",
-  rank="factor",tree="factor",
-  realm="factor",subrealm="factor",kingdom="factor",subkingdom="factor",phylum="factor",subphylum="factor",class="factor",subclass="factor",order="factor",suborder="factor",family="factor",subfamily="factor",genus="factor",subgenus="factor",species="factor",
-  molecule="factor",inher_molecule="factor"
+  cleaned_name="character",
+  # cleaned_problem="character",flags="character",
+  # "_numKids"="integer","_out_target_parent"="factor","_out_target_name"="factor",
+  rank="factor",
+  #tree="factor",
+#  realm="factor",subrealm="factor",kingdom="factor",subkingdom="factor",phylum="factor",subphylum="factor",class="factor",subclass="factor",order="factor",suborder="factor",family="factor",subfamily="factor",genus="factor",subgenus="factor",species="factor",
+  molecule="factor"
+  #inher_molecule="factor"
   )
 #taxonomyDf=read.delim(file=params$prev_taxa_fname,header=FALSE,col.names=names(taxonomy_node_names),stringsAsFactors=FALSE,na.strings="NULL")
 taxonomyDt=fread(file=params$prev_taxa_fname,
@@ -876,8 +878,8 @@ qc_proposal = function(code, proposalDf) {
 #
 changeList = list()
 codes = rownames(proposals) # all proposals
-#codes = c("2022.003S","2022.002S")  # tempaltes: V1, V2
-#codes = c("2022.007F", "2022.006P") # missing xlsx, typo in xlsx
+#codes = c("2022.003S","2022.002S")  # templates: V1, V2
+#codes = c(codes,"2022.007F", "2022.006P") # missing xlsx, typo in xlsx
 for( code in codes ) {
   # code = codes[1]; code
   # code = codes[which(code==codes)+1]; code; # next
@@ -1032,6 +1034,7 @@ apply_changes = function(code,proposalBasename,changeDf) {
     # linenum = rownames(changeDf)[1] ; linenum; changeDf[linenum,"change"];# debug
     # linenum = rownames(changeDf)[63] ; linenum; changeDf[linenum,"change"];# debug
     # linenum = rownames(changeDf)[which(linenum==rownames(changeDf))+1]; linenum # debug: next row
+    # linenum = "12"; linenum; changeDf[linenum,];
     # get this change's line
     change = changeDf[linenum,]
     action = change$change
@@ -1182,7 +1185,14 @@ apply_changes = function(code,proposalBasename,changeDf) {
       # 
       # verify that PARENT taxon exists already in newMSL
       #
-      parentDestNewMatches=(newMSL$name==as.character(destParentName))
+      if(is.na(destParentName)) {
+        # no parent - use root node
+        parentDestNewMatches=(newMSL$taxnode_id==newMSL$tree_id)
+      } else {
+        # find parent by name (must be unique)
+        parentDestNewMatches=(newMSL$name==as.character(destParentName))
+     }
+ 
       if(params$verbose) {print(paste0("CREATE: ",code," line ",linenum," '",destTaxonName, "' findParent(",destParentName,")=",sum(parentDestNewMatches)))}
     
       if(sum(parentDestNewMatches)==0) {
@@ -1215,7 +1225,7 @@ apply_changes = function(code,proposalBasename,changeDf) {
         newTaxon = newMSL[parentDestNewMatches,]
         
         # WARN if PARENT_LINEAGE is not expected
-        if( newTaxon$lineage != destParentLineage ) {
+        if( !is.na(destParentLineage) && (newTaxon$lineage != destParentLineage) ) {
           errorDf=addError(errorDf,code,linenum, "WARNING", "CREATE.PARENT_LINEAGE", 
                            "Change=CREATE, proposed parent taxon exists, but not with expected lineage", 
                            paste0("XLSX ROW ",linenum,", proposedParentLinage=", destParentLineage,
@@ -1395,6 +1405,8 @@ apply_changes = function(code,proposalBasename,changeDf) {
 
 # process changes
 
+RE-RUN FROM HERE!
+
 ```{r process_changes}
 
 # ------------------------------------------------------------------------------
@@ -1419,7 +1431,9 @@ newMSL=createNewMSL(curMSL,params$prev_msl, params$next_msl, params$taxnode_delt
 #
 # DEBUG ONLY - delete all load/QC errors in allErrorDf
 allErrorDf = allErrorDf[FALSE,] # debug - reset errors
-
+# debug 
+cat("allErrorDf:",tracemem(allErrorDf),"\n");
+summary(as.factor(errorDf$code)); summary(as.factor(allErrorDf$code));
 #
 # iterate through proposals
 #   iterate through changes
@@ -1432,9 +1446,10 @@ for( code in rownames(proposals)) {
   # code = rownames(proposals)[3]; code # debug 
   # code = rownames(proposals)[4]; code # debug 
   # code = rownames(proposals)[8]; code # debug - 20221013 current crash: around "Suid alphaherpesvirus 1"
-  # code = rownames(proposals)[which(code==rownames(proposals))+1];; code # DEBUG NEXT
   # make sure we were able to load the changesDf
-  #
+  # c0de='2022.001A' # create Itzamnaviridae in [tree root]
+  # code = rownames(proposals)[which(code==rownames(proposals))+1];code; # DEBUG NEXT
+  
   changeDf = changeList[[code]]
   if( is.null(changeDf) ) {
     skipped = skipped+1
@@ -1444,10 +1459,14 @@ for( code in rownames(proposals)) {
     # iterate over changes
     #
     cat("# START PROC: ",code," with ", nrow(changeDf), " changes\n")
-    result=apply_changes(code,proposals[code,"basename"],changeDf)
+    results=apply_changes(code,proposals[code,"basename"],changeDf)
     errorDf = results[["errorDf"]]
     cat("# PROCed: ",code," with ",nrow(errorDf)," errors/warnings\n")
     if(nrow(errorDf)>0){allErrorDf=rbindlist(list(allErrorDf,errorDf),fill=TRUE)}
+    # debug 
+    cat("errorDf/allErrorDf:\n")
+    summary(as.factor(errorDf$code))
+    summary(as.factor(allErrorDf$code));
     processed=processed+1
   } # if have proposal XLSX
 } # proposal code
