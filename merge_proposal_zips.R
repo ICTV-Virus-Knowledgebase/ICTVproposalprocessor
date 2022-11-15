@@ -1847,6 +1847,7 @@ cat("insert into [taxonomy_toc] ([tree_id],[msl_release_num],[comments]) ",
     ")\n",
     file=sqlout
 )
+
 for( row in order(newMSL$level_id) )  {
   #row=head(order(newMSL$level_id),n=1) # debug
   cat(paste0("insert into [taxonomy_node] ",
@@ -1856,7 +1857,12 @@ for( row in order(newMSL$level_id) )  {
              " values ",
              "(",
              paste0(
-               ifelse(is.na(newMSL[row,..colList]),"NULL",paste0("'",newMSL[row,..colList],"'")),
+               # convert NA to NULL (not 'NA')
+               ifelse(is.na(newMSL[row,..colList]),"NULL",
+                      paste0("'",
+                             # escape apostrophies as double-appostrophies (MSSQL)
+                             sub("'","''", newMSL[row,..colList])
+                             ,"'")),
                collapse=",")
              ,")"
   ),
