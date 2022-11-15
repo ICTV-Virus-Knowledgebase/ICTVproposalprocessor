@@ -1277,7 +1277,7 @@ apply_changes = function(code,proposalBasename,changeDf) {
         if( !is.na(destParentLineage) && (newTaxon$lineage != destParentLineage) ) {
           errorDf=addError(errorDf,code,linenum, "WARNING", "CREATE.PARENT_LINEAGE", 
                            "Change=CREATE, proposed parent taxon exists, but not with expected lineage, using observed lineage", 
-                           paste0("XLSX ROW ",linenum,", proposedParentLinage=", destParentLineage,
+                           paste0("XLSX ROW ",linenum,", proposedParentLineage=", destParentLineage,
                                   ", observedParentLineage=",newTaxon$lineage,
                                   ", otherProposals=",newTaxon$prev_proposals)
           )
@@ -1380,7 +1380,7 @@ apply_changes = function(code,proposalBasename,changeDf) {
         
         # change the name and update lineage
         .GlobalEnv$newMSL[srcNewTarget,"name"] = destTaxonName
-        .GlobalEnv$newMSL[srcNewTarget,"linage"] = paste(newMSL[srcNewParent,"lineage"],destTaxonName,sep=";") # should we do this? 
+        .GlobalEnv$newMSL[srcNewTarget,"lineage"] = paste(newMSL[srcNewParent,"lineage"],destTaxonName,sep=";") # should we do this? 
         # append proposal
         .GlobalEnv$newMSL[srcNewTarget,"prev_proposals"] = paste0(
           ifelse(is.na(.GlobalEnv$newMSL[srcNewTarget,"prev_proposals"]),"",paste0(.GlobalEnv$newMSL[srcNewTarget,"prev_proposals"],",")),
@@ -1416,7 +1416,7 @@ apply_changes = function(code,proposalBasename,changeDf) {
       srcPrevTarget=(.GlobalEnv$curMSL$taxnode_id==.GlobalEnv$newMSL[srcNewTarget,]$prev_taxnode_id)
 
       if(params$verbose) {print(paste0("ABOLISH: ",code," line ",linenum," '",srcTaxonName, "' findTarget(",srcTaxonName,")=",sum(srcNewTarget),"/",sum(srcPrevTarget)))}
-    
+      
       if(sum(srcNewTarget,na.rm=TRUE)==0) {
          errorDf=addError(errorDf,code,linenum, "ERROR", "ABOLISH.NO_EXIST", "Change=ABOLISH, but taxon does not exist", 
                          paste0("XLSX ROW ",linenum,", taxon=", srcTaxonName, ", lineage=",srcLineage,", proposedTaxon=", destTaxonName))
@@ -1442,7 +1442,7 @@ apply_changes = function(code,proposalBasename,changeDf) {
       #
       # remove taxon from NEW
       #
-      .GlobalEnv$newMSL = .GlobalEnv$newMSL[-srcNewTarget,]
+      .GlobalEnv$newMSL = .GlobalEnv$newMSL[!srcNewTarget,]
       
       # put out_* changes on curMSL
       .GlobalEnv$curMSL[srcPrevTarget,"out_updated"] = TRUE  # admin; mark this to save to db
@@ -1568,7 +1568,7 @@ apply_changes = function(code,proposalBasename,changeDf) {
         if( !is.na(destParentLineage) && (parentTaxon$lineage != destParentLineage) ) {
           errorDf=addError(errorDf,code,linenum, "WARNING", "MOVE.PARENT_LINEAGE", 
                            "Change=MOVE, proposed parent taxon exists, but not with expected lineage", 
-                           paste0("XLSX ROW ",linenum,", proposedParentLinage=", destParentLineage,
+                           paste0("XLSX ROW ",linenum,", proposedParentLineage=", destParentLineage,
                                   ", observedParentLineage=",parentTaxon$lineage,
                                   ", otherProposals=",parentTaxon$prev_proposals)
           )
@@ -1720,6 +1720,10 @@ for( code in codes) {
     #
     cat("# START PROC: ",code," with ", nrow(changeDf), " changes\n")
     results=apply_changes(code,proposals[code,"basename"],changeDf)
+    # DEBUG QQQQQQ
+    if(!(20070000 %in% .GlobalEnv$newMSL$ictv_id)) { if(!exists(badcode)){
+      badcode=code; 
+      }; cat("!!!!!!!!!!!!!!!! LOST ROOT NODE in ",badcode," !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");browser()}
     errorDf = results[["errorDf"]]
     cat("# PROCed: ",code," with ",nrow(errorDf)," errors/warnings\n")
     if(nrow(errorDf)>0){.GlobalEnv$allErrorDf=rbindlist(list(.GlobalEnv$allErrorDf,errorDf),fill=TRUE)}
@@ -1746,7 +1750,7 @@ dim(newMSL)
 dim(allErrorDf)
 
 print("What is that ?space?: it's not a space, nor a tab:")
-newMSL[grep(newMSL$lineage, pattern="Orthornavirae.;"),c("taxnode_id","parent_id","lineage","name","cleaned_name","in_filename","in_notes")]
+newMSL[grep(newMSL$lineage, pattern="Orthornavirae;"),c("taxnode_id","parent_id","lineage","name","cleaned_name","in_filename","in_notes")]
 #                                                                                                         lineage         name cleaned_name
 # 1: Riboviria;Orthornavirae ;Kitrinoviricota;Flasuviricetes;Amarillovirales;Flaviviridae;Pestivirus;Pestivirus L Pestivirus L   Pestivirus
 # 2: Riboviria;Orthornavirae ;Kitrinoviricota;Flasuviricetes;Amarillovirales;Flaviviridae;Pestivirus;Pestivirus M Pestivirus M   Pestivirus
@@ -1768,3 +1772,97 @@ newMSL[taxnode_id==202203151, c("taxnode_id","parent_id","lineage","name","clean
 # but need to scan and report the problems before fixing them!!!!
 
 # ```
+
+# 
+# # Export SQL to update the db
+# 
+# ```{r sql_export}
+
+#### open issues #####
+# 1. why is there a "molecule" column?
+# 2. notes vs comments columns? 
+#
+#
+# SQL to insert new MSL
+#
+# column names and data codings in newMSL should match the taxonomy_node table. 
+#
+# cat(paste0('"',paste(names(newMSL),collapse='",\n"'),'"'))
+colList = c("taxnode_id",
+            "parent_id",
+            "tree_id",
+            "msl_release_num",
+            "level_id",
+            "name",
+            "ictv_id",
+            "molecule_id",
+            "abbrev_csv",
+            "genbank_accession_csv",
+            "genbank_refseq_accession_csv",
+            "refseq_accession_csv",
+            "isolate_csv",
+            "notes",
+            # historic columns we don't update
+            #"is_ref",
+            #"is_official",
+            "is_hidden",
+            #"is_deleted",
+            #"is_deleted_next_year",
+            #"is_typo",
+            #"is_renamed_next_year",
+            #"is_obsolete",
+            "in_change",
+            "in_target",
+            "in_filename",
+            "in_notes",
+            "out_change",
+            "out_target",
+            "out_filename",
+            "out_notes"
+            #"lineage", # computed by trigger in db
+            #"cleaned_name", # computed by trigger in db
+            #"rank", # should be in level_id
+            # "molecule", # should be in molecule_id
+            # program admin columns - not in db
+            #"out_updated",
+            #"prev_taxnode_id",
+            #"prev_proposals",
+            # NOTE: column does not (yet) exist in [taxonomy_node], only in [load_next_msl##]
+            #"host_source",
+            # NOTE: column does not (yet) exist in [taxonomy_node], only in [load_next_msl##]
+            #"exemplar_name",
+            # NOTE: column does not (yet) exist in [taxonomy_node], only in [load_next_msl##]
+            #"genome_coverage",
+            #"comments" # doesn't exist in db, should be notes???
+            #"lineage"  # computed by trigger in db
+            )
+sqlout=file("results/msl_load.sql","wt")
+
+cat("insert into [taxonomy_toc] ([tree_id],[msl_release_num],[comments]) ",
+    "values (", paste(
+     sort(levels(as.factor(newMSL$tree_id)),decreasing = T)[1],
+      params$next_msl,
+      "NULL",
+    sep=","),
+    ")\n",
+    file=sqlout
+)
+for( row in order(newMSL$level_id) )  {
+  #row=head(order(newMSL$level_id),n=1) # debug
+  cat(paste0("insert into [taxonomy_node] ",
+             "([",
+             paste0(colList,collapse="],["),
+             "])",
+             " values ",
+             "(",
+             paste0(
+               ifelse(is.na(newMSL[row,..colList]),"NULL",paste0("'",newMSL[row,..colList],"'")),
+               collapse=",")
+             ,")"
+  ),
+  "\n",
+  file=sqlout)
+}
+
+close(sqlout)
+
