@@ -1067,8 +1067,8 @@ apply_changes = function(code,proposalBasename,changeDf) {
   
   # action mappings - externalize or move up
   actionCV = c(
-    "create" = "create"
-    ,"create new" = "create"
+    "create" = "new"
+    ,"create new" = "new"
     ,"rename" = "rename"
     ,"abolish" = "abolish"
     ,"move" = "move"
@@ -1208,7 +1208,7 @@ apply_changes = function(code,proposalBasename,changeDf) {
     #
     # Note: doesn't fix left_idx/right_idx, etc
     #  -------------------------------------------------------------------------
-    if(actionClean %in% c("create") ) {
+    if(actionClean %in% c("new") ) {
 
       # check if srcTaxon was specified in xlsx (shouldn't be)
       if(!is.na(srcTaxonName)) {
@@ -1285,9 +1285,9 @@ apply_changes = function(code,proposalBasename,changeDf) {
         }
         
         # add new info - primary columns
-        newTaxon[1,"in_change"]   = "create"
+        newTaxon[1,"in_change"]   = "new"
         newTaxon[1,"in_filename"] = proposalZip
-        newTaxon[1,"in_notes"]    = paste0("linenum=",linenum)
+        newTaxon[1,"in_notes"]    = paste0("xlsx_row=",linenum)
         newTaxon[1,"in_target"]   = destLineage
 
         newTaxon[1,"name"]        = destTaxonName
@@ -1773,6 +1773,7 @@ newMSL[taxnode_id==202203151, c("taxnode_id","parent_id","lineage","name","clean
 
 # ```
 
+# ------------------------------------------------------------------------------
 # 
 # # Export SQL to update the db
 # 
@@ -1782,11 +1783,21 @@ newMSL[taxnode_id==202203151, c("taxnode_id","parent_id","lineage","name","clean
 # 1. why is there a "molecule" column?
 # 2. notes vs comments columns? 
 #
+# ------------------------------------------------------------------------------
 #
 # SQL to insert new MSL
 #
 # column names and data codings in newMSL should match the taxonomy_node table. 
 #
+# convert newMSL to a data.frame, so we can convert factor columns to character, 
+# then generate SQL
+#
+# remember to 
+#   1. don't quote NULLs (is.na)
+#   2. escape apostrophies
+#   3. single-quote values
+#
+# ------------------------------------------------------------------------------
 # cat(paste0('"',paste(names(newMSL),collapse='",\n"'),'"'))
 colList = c("taxnode_id",
             "parent_id",
@@ -1847,28 +1858,127 @@ cat("insert into [taxonomy_toc] ([tree_id],[msl_release_num],[comments]) ",
     ")\n",
     file=sqlout
 )
-
-for( row in order(newMSL$level_id) )  {
-  #row=head(order(newMSL$level_id),n=1) # debug
-  cat(paste0("insert into [taxonomy_node] ",
-             "([",
-             paste0(colList,collapse="],["),
-             "])",
-             " values ",
-             "(",
-             paste0(
-               # convert NA to NULL (not 'NA')
-               ifelse(is.na(newMSL[row,..colList]),"NULL",
-                      paste0("'",
-                             # escape apostrophies as double-appostrophies (MSSQL)
-                             sub("'","''", newMSL[row,..colList])
-                             ,"'")),
-               collapse=",")
-             ,")"
-  ),
-  "\n",
-  file=sqlout)
+#
+# convert factors to character
+# (was easier to do on a data.frame, because of data.table FAQ 1.1)
+#
+newMslStr = as.data.frame(newMSL)
+for( col in colList)  {
+  if( class(newMslStr[,col]) == 'factor' ) {
+    cat("factor: ",col, "\n")
+  }
+  newMslStr[,col] = as.character(newMslStr[,col])
 }
 
+#
+# output an insert statement for each row
+#
+rowCount = 1
+batchSize = 200 # rows
+for(  row in order(newMSL$level_id) )  {
+  #row=head(order(newMSL$level_id),n=1) # debug
+  
+  # insert several rows per batch insert  statement
+  # much faster - fewer trigger calls
+  # but makes localizing errors harder
+  if( rowCount %% batchSize == 1 ) {
+    cat(paste0("insert into [taxonomy_node] ",
+               "([",
+               paste0(colList,collapse="],["),
+               "])",
+               "\n",
+               " values ",
+               "\n"
+    ),file=sqlout)
+  } else {
+    # separate each value "(x,y,..)" in the batch by a comma
+    cat(",",file=sqlout)
+  }
+  #
+  # actual row values
+  #
+  cat(paste0("(",
+             paste0(
+               # convert NA to NULL (not 'NA')
+               ifelse(is.na(newMslStr[row, colList]), "NULL",
+                      paste0("'",
+                             # escape apostrophies as double-appostrophies (MSSQL)
+                             sub(
+                               "'", "''", newMslStr[row, colList]
+                             )
+                             , "'")),
+               collapse = ","
+             )
+             , ")"),
+      " -- lineage=",
+      as.character(newMslStr[row, "lineage"]) ,
+      "\n",
+      file = sqlout
+    )
+  #
+  # count rows
+  # 
+  rowCount=rowCount+1
+}
+
+#
+# close/flush file
+#
 close(sqlout)
+
+# ------------------------------------------------------------------------------
+#
+# SQL to update out_ in prevMSL
+#
+# column names and data codings in newMSL should match the taxonomy_node table. 
+#
+# convert newMSL to a data.frame, so we can convert factor columns to character, 
+# then generate SQL
+#
+# ------------------------------------------------------------------------------
+curMslColList = c("out_change","out_target","out_filename","out_notes")
+
+curSqlout=file("results/msl_update_prev.sql","wt")
+#
+# convert factors to character
+# (was easier to do on a data.frame, because of data.table FAQ 1.1)
+#
+curMslStr = as.data.frame(curMSL %>% filter(!is.na(out_change)) )
+for( col in curMslColList)  {
+  if( class(curMslStr[,col]) == 'factor' ) {
+    cat("factor: ",col, "\n")
+  }
+  curMslStr[,col] = as.character(curMslStr[,col])
+}
+
+#
+# output an insert statement for each row
+#
+for(  row in rownames(curMslStr) )  {
+  row=head(rownames(curMslStr),n=1) # debug
+  cat(paste0("update [taxonomy_node] set ",
+             
+             paste0(
+               paste0(
+                 # column names
+                 "[",curMslColList,"]=",
+                 # convert NA to NULL (not 'NA')
+                 ifelse(is.na(curMslStr[row,curMslColList]),"NULL",
+                        paste0("'",
+                               # escape apostrophes as double-apostrophes (MSSQL)
+                               sub("'","''", curMslStr[row,curMslColList])
+                               ,"'"))
+               ,collapse=","),
+             " where [taxnode_id]=",
+             curMslStr[row,"taxnode_id"]
+             ) 
+  ),
+  "\n",
+  file=curSqlout)
+}
+
+#
+# close/flush file
+#
+close(curSqlout)
 
