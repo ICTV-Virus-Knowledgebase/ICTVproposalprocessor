@@ -17,9 +17,11 @@ params = list(
   ,merged="load_next_msl.txt"
   ,status="merged_status.txt"
   # debug output: 0=none, 1=some, 2=details
-  ,verbose=1
+  ,verbose=0
 )
 
+# rm("xlxsList","changeList") # to re-run xlsx file loading & QC, delete these caches
+# rm("changeList") # to re-run only QC, delete this cache
 
 # QC MSL38: https://uab-lefkowitz.atlassian.net/browse/IVK-123
 # Merge++:  https://uab-lefkowitz.atlassian.net/browse/IVK-22
@@ -877,7 +879,10 @@ qc_proposal = function(code, proposalDf) {
 #
 # extracted changes
 #
-changeList = list()
+
+# make this re-entrant - only create/delete lists if they don't exist
+if(!exists("xlsxList"))   { xlsxList   = list() }
+if(!exists("changeList")) { changeList = list() }
 codes = rownames(proposals) # all proposals
 #codes = c("2022.003S","2022.002S")  # templates: V1, V2
 #codes = c(codes,"2022.007F", "2022.006P") # missing xlsx, typo in xlsx
@@ -887,7 +892,7 @@ for( code in codes ) {
   # code = codes[which(code==codes)+1]; code; # next
   # code = "2022.003S" # V1
   # code = "2022.002S" # V2
-  #  code =  "2022.009D" # CV error
+  #  code =  "2022.016P" # space in docx filename
   #
   # load
   #
@@ -897,13 +902,19 @@ for( code in codes ) {
     # LOAD
     xlsx_fname=proposals[code,"xlsx"]
     if(is.na(xlsx_fname)) {
-      cat("# SKIPED: ",code," (no .xlsx)\n")
+      cat("# SKIPPED: ",code," (no .xlsx)\n")
     } else {
       #
       # try to load proposal
       #
-      proposalDf = load_proposal(code)
-      cat("# LOADED: ",code,"\n")
+      if(is.null(xlsxList[[code]])){
+        # load raw xlsx file
+        xlsxList[[code]] = load_proposal(code)
+        cat("# LOADED: ",code,"\n")
+      } else {
+        cat("# FROM CACHE: ",code,"\n")
+      }
+      proposalDf = xlsxList[[code]]
       #
       # qc
       #
@@ -924,6 +935,9 @@ cat("changeList: ",paste(names(changeList)),"\n")
 # error summary
 write_xlsx(x=allErrorDf,path=file.path(params$out_dir,"QC.summary.xlsx"))
 kable(allErrorDf,caption = paste0("QC: Summary of ERRORs and WARNINGs"))
+ 
+# DEBUG: break to RStudio debugger after file load/QC
+#if(interactive()){browser()}
 
 # ```
 # 
@@ -946,7 +960,12 @@ update_lineage = function(parent_id,parent_lineage){
 
     # recurse
     for(kid_row in kid_rows ) {
-      cat("update_lineage: ",.GlobalEnv$newMSL$taxnode_id[kid_row]," ",.GlobalEnv$newMSL$lineage[kid_row]," (",as.character(.GlobalEnv$newMSL$rank[kid_row]),")\n")
+      if(params$verbose>1) {
+        cat("update_lineage: ",
+            .GlobalEnv$newMSL$taxnode_id[kid_row]," ",
+            .GlobalEnv$newMSL$lineage[kid_row],
+            " (",as.character(.GlobalEnv$newMSL$rank[kid_row]),")\n")
+      }
       ct = ct + update_lineage(.GlobalEnv$newMSL$taxnode_id[kid_row],.GlobalEnv$newMSL$lineage[kid_row])
     }
   }
@@ -1105,7 +1124,8 @@ apply_changes = function(code,proposalBasename,changeDf) {
                                 ", rank=", change$rank, 
                                 "; knownRanks=", paste(rankCV$name[-1],collapse = ","))
         )
-   
+    } else {
+      rankClean = tolower(change$rank)
     }
     
     # linenum = rownames(changeDf)[1] # debug
@@ -1482,6 +1502,31 @@ apply_changes = function(code,proposalBasename,changeDf) {
       }
       
       #
+      # validate that this move does NOT change rank (not a promote/demote)
+      #
+      if( srcTaxonRank != rankClean || destTaxonRank != rankClean ) {
+        # src/dest ranks mis-match (promote/demote)
+        if( srcTaxonRank != destTaxonRank ) {
+          errorDf=addError(errorDf,code,linenum, "ERROR", "MOVE.DIFF_RANK", 
+                           "Change=MOVE, but 'current taxonomy' and 'proposed taxonomy' ranks differ; use promote or demote, not move, to change rank", 
+                           paste0("XLSX ROW ",linenum,
+                                  ": srcTaxonomy=[", srcTaxonRank,"]",srcLineage,
+                                  ", destTaxonomy=[", destTaxonRank,"]", destLineage)
+          )
+          next;
+        } else {
+          # rank column doesn't match src & dest ranks (but they match each other)
+          errorDf=addError(errorDf,code,linenum, "WARNING", "MOVE.RANK_WRONG", 
+                           "Change=MOVE, but 'rank' column does not match 'current taxonomy' or 'proposed taxonomy'; use promote or demote, not move, to change rank", 
+                           paste0("XLSX ROW ",linenum,
+                                  ": rank=", rankClean, 
+                                  ", srcTaxonomy=[", srcTaxonRank,"]", srcLineage,
+                                  ", destTaxonomy=[", destTaxonRank,"]", destLineage)
+          )
+        }
+        
+      }
+      #
       # find the SRC target to MOVE in NEW and CUR
       #
       srcNewTarget =(.GlobalEnv$newMSL$name==as.character(srcTaxonName))
@@ -1719,18 +1764,23 @@ for( code in codes) {
     # iterate over changes
     #
     cat("# START PROC: ",code," with ", nrow(changeDf), " changes\n")
+    
+    # debug if code of interest
+    if( code %in% c("2022.043B.fixed") ) { cat("DEBUG ",code,"\n"); if(interactive()) {browser() }}
+    
+    
+    # Apply the Change
     results=apply_changes(code,proposals[code,"basename"],changeDf)
-    # DEBUG QQQQQQ
-    if(!(20070000 %in% .GlobalEnv$newMSL$ictv_id)) { if(!exists(badcode)){
-      badcode=code; 
-      }; cat("!!!!!!!!!!!!!!!! LOST ROOT NODE in ",badcode," !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");browser()}
+    
+    # Internal sanity check
+    if(!(20070000 %in% .GlobalEnv$newMSL$ictv_id)) { 
+      cat("!!!!!!!!!!!!!!!! LOST ROOT NODE in ",code," !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+      if(interactive()) {browser()}
+    }
     errorDf = results[["errorDf"]]
     cat("# PROCed: ",code," with ",nrow(errorDf)," errors/warnings\n")
     if(nrow(errorDf)>0){.GlobalEnv$allErrorDf=rbindlist(list(.GlobalEnv$allErrorDf,errorDf),fill=TRUE)}
-    # debug 
-    cat("errorDf/allErrorDf:\n")
-    summary(as.factor(errorDf$code))
-    summary(as.factor(allErrorDf$code));
+    
     processed=processed+1
   } # if have proposal XLSX
 } # proposal code
@@ -1847,8 +1897,19 @@ colList = c("taxnode_id",
             #"comments" # doesn't exist in db, should be notes???
             #"lineage"  # computed by trigger in db
             )
-sqlout=file("results/msl_load.sql","wt")
+newSqlFilename = "results/msl_load.sql"
+sqlout=file(newSqlFilename,"wt")
+cat("Writing ",newSqlFilename,"\n")
 
+#
+# output start transaction
+# 
+cat("begin transaction\n", file=sqlout)
+cat("-- rollback transaction\n", file=sqlout)
+
+#
+# add new MSL to [taxonomy_toc]
+#
 cat("insert into [taxonomy_toc] ([tree_id],[msl_release_num],[comments]) ",
     "values (", paste(
      sort(levels(as.factor(newMSL$tree_id)),decreasing = T)[1],
@@ -1870,6 +1931,8 @@ for( col in colList)  {
   newMslStr[,col] = as.character(newMslStr[,col])
 }
 
+#
+# add taxa to [taxonomy_node]
 #
 # output an insert statement for each row
 #
@@ -1921,11 +1984,30 @@ for(  row in order(newMSL$level_id) )  {
   rowCount=rowCount+1
 }
 
-#
-# close/flush file
-#
-close(sqlout)
+# QC queries
+cat("-- QC queries \n", file=sqlout)
+cat(paste("
+select level_id,
+    new_ct=count(case when in_change like 'new' then 1 end), 
+  	other_ct=count(case when in_change<>'new' then 1 end),
+  	null_ct=count(case when in_change is null then 1 end),
+  	total_ct=count(*)
+from taxonomy_node
+where msl_release_num = ",params$next_msl,"
+group by level_id
+order by level_id
+"), file=sqlout)
 
+# QC query
+cat(paste("-- QC Query
+select 
+     level_id,in_change, ct=count(*)
+from taxonomy_node
+where msl_release_num = ",params$next_msl,"
+group by level_id,in_change
+order by level_id,in_change
+
+"), file=sqlout)
 # ------------------------------------------------------------------------------
 #
 # SQL to update out_ in prevMSL
@@ -1936,9 +2018,12 @@ close(sqlout)
 # then generate SQL
 #
 # ------------------------------------------------------------------------------
-curMslColList = c("out_change","out_target","out_filename","out_notes")
 
-curSqlout=file("results/msl_update_prev.sql","wt")
+cat("Writing out_* updates for prevMSL\n")
+#
+# only update these columns
+#
+curMslColList = c("out_change","out_target","out_filename","out_notes")
 #
 # convert factors to character
 # (was easier to do on a data.frame, because of data.table FAQ 1.1)
@@ -1952,10 +2037,16 @@ for( col in curMslColList)  {
 }
 
 #
+# output start transaction
+# 
+cat("begin transaction\n", file=sqlout)
+cat("-- rollback transaction\n", file=sqlout)
+
+#
 # output an insert statement for each row
 #
 for(  row in rownames(curMslStr) )  {
-  row=head(rownames(curMslStr),n=1) # debug
+  #row=head(rownames(curMslStr),n=1) # debug
   cat(paste0("update [taxonomy_node] set ",
              
              paste0(
@@ -1974,11 +2065,58 @@ for(  row in rownames(curMslStr) )  {
              ) 
   ),
   "\n",
-  file=curSqlout)
+  file=sqlout)
 }
+# QC SQL
+cat("\n-- build deltas (~7min) \n
+exec rebuild_delta_nodes NULL
 
+", file=sqlout)
+cat(paste("
+-- NOW check if all newMSL have delta in, and prevMSL have delta out
+select 'prevMSL w/o delta to new', count(*) from taxonomy_node
+where msl_release_num = ",params$next_msl-1,"
+and taxnode_id not in (select prev_taxid from taxonomy_node_delta)
+union all
+select  'newMSL w/o delta to prev',  count(*) from taxonomy_node
+where msl_release_num = ",params$next_msl,"
+and taxnode_id not in (select new_taxid from taxonomy_node_delta)
+"),
+file=sqlout)
+
+# QC query
+cat(paste("-- QC Query
+select 
+     level_id,out_change, ct=count(*)
+from taxonomy_node
+where msl_release_num = ",params$next_msl-1,"
+group by level_id,out_change
+order by level_id,out_change
+
+"), file=sqlout)
 #
 # close/flush file
 #
-close(curSqlout)
+close(sqlout)
+cat("WROTE   ", newSqlFilename, "\n")
 
+#
+# stats to match in db
+#
+summary(as.factor(newMSL$in_change))
+# new      split  NA's 
+# 1043     0      13653 
+summary(as.factor(curMSL$out_change))
+#abolish  demote   merge    move promote  rename    type    NA's 
+#     20       0       0      20       0    1662       0   11971
+
+# summarize taxa by rank/change in new MSL
+data.frame(in_change=summary(as.factor(paste0(newMSL$rank,".",newMSL$in_change))))
+data.frame(in_change=summary(as.factor(paste0(newMSL$in_change))))
+
+# summarize taxa by rank/change in new MSL
+data.frame(out_change=summary(as.factor(paste0(curMSL$rank,".",curMSL$out_change))))
+data.frame(out_change=summary(as.factor(paste0(curMSL$out_change))))
+
+save.image()
+cat("WROTE ./.RData \n")

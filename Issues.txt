@@ -2,7 +2,68 @@ Issues
 
 Code           Status            Issue
 -------------------------------------------------------
-CODE=SQL_ERR   STATUS=debugging  ISSUE=Factors saved as INTs
+CODE=?        STATUS=research   ISSUE=promote/move create duplicate
+
+Was this a promote where the taxon already existed, or a move I miss-implmented?
+
+select * from taxonomy_node where msl_release_num in (37,38) and name in ('Tamkungvirus','Tamkungvirus ST4')
+order by msl_release_num, left_idx
+
+msl_release_num	taxnode_id	ictv_id	lineage	out_change	out_target	out_filename	out_notes
+37	202107761	201907761	Duplodnaviria;Heunggongvirae;Uroviricota;Caudoviricetes;Tamkungvirus	NULL	NULL	NULL	NULL
+37	202107762	201907762	Duplodnaviria;Heunggongvirae;Uroviricota;Caudoviricetes;Tamkungvirus;Tamkungvirus ST4	move	Duplodnaviria;Heunggongvirae;Uroviricota;Caudoviricetes;Kyanoviridae;Tamkungvirus	2022.043B.N.v1.Kyanoviridae_7ng.zip	linenum=4
+38	202207762	201907762	Duplodnaviria;Heunggongvirae;Uroviricota;Caudoviricetes;Kyanoviridae;Tamkungvirus	NULL	NULL	NULL	NULL
+38	202207761	201907761	Duplodnaviria;Heunggongvirae;Uroviricota;Caudoviricetes;Tamkungvirus	NULL	NULL	NULL	NULL
+
+Code           Status            Issue
+-------------------------------------------------------
+CODE=SQL_ERR   STATUS=fixed  ISSUE=in_change='new' SPECIES not inserted
+
+PROPOSED SOLUTION: add debuggging transaction/query code to msl_load.sql output in R, then try again, to avoid large cut and paste. 
+
+They appear in the "msl_load.sql" file, but don't get inserted. 
+NOPE - the msl_load.sql file contents were not fully copied to the MSSQL upload file. 
+
+
+First one is 
+  202214003 Noravirus melanogastri
+But when I insert that single record by hand, it succeeds
+-- test missing "new" species
+insert into [taxonomy_node] ([taxnode_id],[parent_id],[tree_id],[msl_release_num],[level_id],[name],[ictv_id],[molecule_id],[abbrev_csv],[genbank_accession_csv],[genbank_refseq_accession_csv],[refseq_accession_csv],[isolate_csv],[notes],[is_hidden],[in_change],[in_target],[in_filename],[in_notes],[out_change],[out_target],[out_filename],[out_notes])
+ values 
+('202214003','202214002','202200000','38','600','Noravirus melanogastri','202214003','4',NULL,'GQ257737',NULL,NULL,'Umea 2007',NULL,'0','new','Riboviria;Orthornavirae;Pisuviricota;Pisoniviricetes;Picornavirales;Noraviridae;Noravirus;Noravirus melanogastri','2022.001S.N.v1.Picornavirales_1nf.zip','xlsx_row=6',NULL,NULL,NULL,NULL)  -- lineage= Riboviria;Orthornavirae;Pisuviricota;Pisoniviricetes;Picornavirales;Noraviridae;Noravirus;Noravirus melanogastri
+
+
+-- database 
+select level_id, in_ct=count( in_change), ct=count(*)
+from taxonomy_node
+where msl_release_num = 38
+group by level_id
+order by level_id
+-- .... 
+-- 600  in_ct=0  ct=10160
+# R
+summary(as.factor(paste0(newMSL$level_id,newMSL$in_change)))
+# 100NA  120NA  140NA  160NA 160new  170NA  180NA 180new  200NA 200new  250NA  300NA 300new  400NA 400new  500NA 500new  550NA  600NA 600new 
+#     1      6     10     17      4      2     39      1     65      7      8    233     33    168     14   2606    214     84  10414    770 
+
+-- build deltas
+exec rebuild_delta_nodes NULL
+
+select prev_tags,ct=count(*) from taxonomy_node_dx where msl_release_num = 38  group by prev_tags
+
+msl	change_type	counts
+38	UNCHANGED	11889
+38	Abolished,	20
+38	Moved,	109
+38	New,	1043
+38	Renamed,	1465
+38	Renamed,Moved,	187
+38	Renamed,Moved,Promoted,	2
+
+
+-------------------------------------------------------
+CODE=SQL_ERR   STATUS=FIXED      ISSUE=Factors saved as INTs
 
 The INSERT statement conflicted with the FOREIGN KEY constraint "FK_taxonomy_node_taxonomy_change_in"
 Duplornaviricota (10th record)
