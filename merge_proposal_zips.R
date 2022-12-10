@@ -17,7 +17,7 @@ params = list(
   ,merged="load_next_msl.txt"
   ,status="merged_status.txt"
   # debug output: 0=none, 1=some, 2=details
-  ,verbose=0
+  ,verbose=1
 )
 
 # rm("xlxsList","changeList") # to re-run xlsx file loading & QC, delete these caches
@@ -142,6 +142,9 @@ createNewMSL = function(curMSL,prev_msl,dest_msl,taxnode_delta) {
   clearCols = c(grep(names(newMSL),pattern="^(in|out)_",value=T))
   newMSL[,(clearCols) := NA]
   
+  # add admin columns
+  newMSL[,".emptyReported"] = NA_character_
+  
   # add the new rows
   #return(rbind(taxonomy_node, newMSL))
   return(newMSL)
@@ -219,6 +222,9 @@ cat("Previous taxa:",dim(taxonomyDt), " from ",params$prev_taxa_fname,"\n")
 # 
 # # load db CV tables 
 # ```{r load db cv tables, echo=F}
+
+#### SECTION load CVs and preMSLs #### 
+
 #
 # this uses the DATABASE schema for the taxonomy_node table (ie, naming convention)
 #
@@ -311,15 +317,19 @@ allErrorDf = data.table(
   "docx" = character(),
   "xlsx" = character(),
   "row"  = integer(),
+  "change" = character(),
+  "rank" = character(),
+  "taxon" = character(),
   "level" = factor(levels=c("ERROR","WARNING","INFO")),
   "error" = character(),
   "message" = character(),
   "notes" = character()
 )
+loadErrorDf = allErrorDf %>% filter(FALSE)
 dir.create(params$out_dir,recursive=T,showWarnings = F)
 
 #
-# scan DOCX
+#### SECTION scan DOCX #### 
 #
 # break filename into proposal code, filenaem and folder name
 #
@@ -338,17 +348,17 @@ if(sum(dups) > 0) {
   errorDf$level = "ERROR"
   errorDf$error = "DUPCODE.DOCX"
   errorDf$message = "duplicate proposal ID"
-  allErrorDf = rbindlist(list(allErrorDf, errorDf),fill=TRUE)
+  loadErrorDf = rbindlist(list(loadErrorDf, errorDf),fill=TRUE)
   # output
   kable(errorDf,caption = paste0("QC01: ERRORS: dupliate docx proposal IDs"))
   write_xlsx(x=errorDf,path=file.path(params$out_dir,"QC01.docx_duplicate_ids.xlsx"))
-  write_xlsx(x=allErrorDf,path=file.path(params$out_dir,"QC.summary.xlsx"))
+  write_xlsx(x=loadErrorDf,path=file.path(params$out_dir,"QC.summary.xlsx"))
 
 }
 rownames(proposals)=proposals$code
 
 #
-# scan XLSX
+#### SECTION: scan XLSX #### 
 #
 xlsxs = data.frame(xlsxpath=list.files(path="proposals",pattern="^20[0-9][0-9].[^.]+.*.v*.*.xlsx", recursive=T, full.names=TRUE) )
 xlsxs$path     = gsub(     "^(.*/)(20[0-9]+.[0-9A-Z]+).[^/]+.xlsx$","\\1",xlsxs$xlsxpath)
@@ -365,15 +375,23 @@ xlsxs=xlsxs[-(sups),]
 dups = duplicated(xlsxs$code)
 allDups =xlsxs$code %in% xlsxs$code[dups]
 if( sum(dups) > 0 ) {
+  # error details
   errorDf = xlsxs[allDups, c("folder", "code", "xlsx")]
   errorDf$level = "ERROR"
   errorDf$error = "DUPCODE.XLSX"
-  errorDf$message = "duplicate proposal ID"
-  allErrorDf = rbindlist(list(allErrorDf, errorDf),fill=TRUE)
+  for( code in xlsxs$code[dups] ) {
+    # build list of all xlsxs using duplicate codes
+    errorDf[errorDf$code==code,"message"] = 
+      paste0("duplicate proposal ID: ",
+             paste(xlsxs$xlsx[xlsxs$code==code],collapse=","))
+    
+  }
+  # append to global list
+  loadErrorDf = rbindlist(list(loadErrorDf, errorDf),fill=TRUE)
   # output
   kable(errorDf,caption = paste0("QC01: ERRORS: dupliate docx proposal IDs"))
   write_xlsx(x=errorDf,path=file.path(params$out_dir,"QC01.docx_duplicate_ids.xlsx"))
-  write_xlsx(x=allErrorDf,path=file.path(params$out_dir,"QC.summary.xlsx"))
+  write_xlsx(x=loadErrorDf,path=file.path(params$out_dir,"QC.summary.xlsx"))
 
   kable(caption=paste0("ERROR: XLSX dupliate proposal IDs"),
         x=proposals[proposals$code %in% proposals$code[dups],])
@@ -392,7 +410,7 @@ if( sum(missing) > 0 ) {
   errorDf$xlsx= NA 
   errorDf$row = NA
   errorDf$level= "ERROR"
-  errorDf$error = "MISS.XLSX"
+  errorDf$error = "XLSX.MISSING"
   errorDf$message = "DOCX has no matching XLSX"
   errorDf$notes= "Suggestions: contact corresponding author"
   for(row in rownames(errorDf) ) {
@@ -404,7 +422,7 @@ if( sum(missing) > 0 ) {
       errorDf[row,]$xlsx = proposals[row,"xlsx"]
       errorDf[row,]$row = NA
       errorDf[row,]$level = "WARNING"
-      errorDf[row,]$error = "APROX.XSLX"
+      errorDf[row,]$error = "XSLX.TYPO"
       errorDf[row,]$notes = paste("Using best guess:",proposals[row,"xlsx"])
     } else if( guesses > 1 ) {
       # just list all the options we found
@@ -417,10 +435,11 @@ if( sum(missing) > 0 ) {
       proposals[]
     }
   }
+  # append to global list
+  loadErrorDf = rbindlist(list(loadErrorDf, errorDf),fill=TRUE)
   # QC output
   kable(errorDf,caption = paste0("QC02: ERRORS: DOCX without matching XLSX"))
   write_xlsx(x=errorDf,path=file.path(params$out_dir,"QC02.docx_without_matching_xlsx.xlsx"))
-  allErrorDf=rbindlist(list(allErrorDf,errorDf),fill=TRUE)
   write_xlsx(x=errorDf,path=file.path(params$out_dir,"QC.summary.xlsx"))
 
   }
@@ -436,7 +455,7 @@ if( sum(missing) > 0 ) {
 # ## QC setup
 # ```{r qc_setup_template_versions, echo=TRUE}
 
-
+####  SECTION: QC setup #### 
 #
 # this uses the PROPOSAL.XLSX schema (naming convention)
 #
@@ -581,6 +600,74 @@ xlsx_v2_change_cols = c(
   32:41  # other
 )
 # ```
+# # process changes function
+# 
+# ```{r process_changes_helper_functions, echo=FALSE}
+#
+# this uses the DATABASE schema for the taxonomy_node table (ie, naming convention)
+#
+
+realmSpeciesCols = 1:15
+
+getTaxon = function(realmSpecies) {
+  # 
+  # get the NAME of the lowest ranked taxon
+  #
+  nonNAs = !is.na(realmSpecies[realmSpeciesCols])
+  if( sum(nonNAs) > 0 ) {
+    return(realmSpecies[max(which(nonNAs))])
+  } else {
+    return(NA)
+  }
+}
+getParentTaxon = function(realmSpecies) {
+  #
+  # get the NAME of the penultimate low ranked taxon
+  #
+  nonNAs = !is.na(realmSpecies[realmSpeciesCols])
+  if( sum(nonNAs) > 1 ) {
+    return(realmSpecies[sort(which(nonNAs),decreasing=T)[2]])
+  } else {
+    return(NA)
+  }
+}
+getLineage = function(realmSpecies,masks=c()) {
+  #   
+  # concat with ; all non-NA ranks, except those in masks
+  #
+  nonNAs = !is.na(realmSpecies[realmSpeciesCols])
+  # is a matrix, rows=taxon, columns=ranks
+  if(!is.null(masks) ) {
+    # change to FALSE all the listed ranks
+    nonNAs[tolower(xlsx_change_ranks) %in% tolower(masks)] = FALSE
+  }
+  if( sum(nonNAs) > 0 ) {
+    return(paste0(realmSpecies[nonNAs],collapse=";"))
+  } else {
+    return(NA)
+  }
+}
+getParentLineage = function(realmSpecies) {
+  nonNAs = !is.na(realmSpecies[realmSpeciesCols])
+  if( sum(nonNAs) > 0 ) {
+    rank=getTaxonRank(realmSpecies)
+    return(getLineage(realmSpecies,masks=c(rank)))
+  } else {
+    return(NA)
+  }
+}
+getTaxonRank = function(realmSpecies) {
+  nonNAs = !is.na(realmSpecies[realmSpeciesCols])
+  if( sum(nonNAs) > 0 ) {
+    # 
+    # get the rank of the lowest-rank taxon 
+    #
+    return(as.character(rankCV$name[max(which(nonNAs))+1]))
+  } else {
+    return(NA)
+  }
+}
+
 # 
 # # QC functions
 # 
@@ -618,18 +705,21 @@ load_proposal = function(code) {
 # QC the .xlsx data at the sheet level
 #
 # returns: errorDf
-addError=function(errorDf,code,row,levelStr,errorCode,errorStr,notes) {
+addError=function(errorDf,code,row,change,rank,taxon,levelStr,errorCode,errorStr,notes) {
   nextErrorDf = data.frame(
     folder = proposals[code,]$folder,
     code = code,
     row = row,
+    change = change, 
+    rank=rank,
+    taxon = taxon,
     docx = proposals[code,]$docx,
     xlsx = proposals[code,]$xlsx,
     level = levelStr,
     error = errorCode,
     message = errorStr, 
     notes = notes)
-  return(rbind(errorDf,nextErrorDf))
+  return(rbind(errorDf,nextErrorDf,fill=TRUE))
 }
 
 # id="2022.003S"; proposalDf=load_proposal(id) # V1 template
@@ -672,7 +762,7 @@ qc_proposal = function(code, proposalDf) {
   if (templateLine2Version != templateLine2Version || "unrecognized" %in% c(templateLine2Version,templateLine3Version)) {
     
     proposals[code,"templateVersion"]="error"   
-    errorDf=addError(errorDf,code,3,"ERROR","XLSX.TEMPLATE_UNK","XLSX template version",paste0("ROW2 is ",templateLine2Version,
+    errorDf=addError(errorDf,code,3,NA,NA,NA,"ERROR","XLSX.TEMPLATE_UNK","XLSX template version",paste0("ROW2 is ",templateLine2Version,
                                                                       ", ROW3 is ", templateLine3Version))
     return(list(errorDf=errorDf))
   } else {
@@ -682,7 +772,7 @@ qc_proposal = function(code, proposalDf) {
   proposals[code,"templateVersion"]=templateVersion
   if( templateVersion == "v1") {
     # WARNING for outdated templates
-    errorDf=addError(errorDf,code,3,"WARNING","OLD_TEMPL1", "XLSX template version",
+    errorDf=addError(errorDf,code,3,NA,NA,NA,"WARNING","XLSX.OLD_TEMPLATE_V1", "XLSX template version",
                      paste0("You are using version ",templateVersion,". Please get the latest version from ",params$templateURL)
     )
   }
@@ -698,13 +788,13 @@ qc_proposal = function(code, proposalDf) {
   if( templateVersion == "v2" ) { codeValue= proposalDf[3,1]; codeCell="A3"; codeRow=3 }
   if( codeValue != code ) {
     if( str_starts(codeValue,"Code") ) {
-      errorDf=addError(errorDf,code,codeRow,"WARNING","CODE_MISS", "XLSX code missing", 
+      errorDf=addError(errorDf,code,codeRow,NA,NA,NA,"WARNING","XLSX.CODE_MISS", "XLSX code missing", 
                        paste0("XLSX cell ",codeCell,
                               " is ", "'",codeValue, 
                               "'; replace with the actual code: '",code,"'")
       )
     } else {
-      errorDf=addError(errorDf,code,codeRow,"WARNING", "CODE_BAD","XLSX code wrong", 
+      errorDf=addError(errorDf,code,codeRow,NA,NA,NA,"WARNING", "XLSX.CODE_BAD","XLSX code wrong", 
                        paste0("XLSX cell ",codeCell,
                               " does not match proposal code from filename: ", 
                               "'",codeValue, "' should be '", code,"' ")
@@ -725,16 +815,33 @@ qc_proposal = function(code, proposalDf) {
   colnames(changeDf) = xlsx_change_colnames
   # a flag to exclude rows with irrecoverable errors
   changeDf[,".noErrors"] = TRUE
+  changeDf[,".errors"] = NA_character_
   
   # find non-empty rows
   hasData = apply(changeDf[,xlsx_change_srcDest_colnames],1,function(row){return(sum(is.na(row))!=length(row))})
   changeDf=changeDf[hasData,]
   if( nrow(changeDf) == 0 ) {
-    errorDf=addError(errorDf,code,firstDataRow,"ERROR", "XLSX_EMPTY","XLSX no change rows found", "")
+    errorDf=addError(errorDf,code,firstDataRow,NA,NA,NA,"ERROR", "XLSX.EMPTY","XLSX no change rows found", "")
     return(list(errorDf=errorDf))
   } else {
     proposals[code,"nChanges"] = nrow(changeDf)
   }
+  
+  #
+  # extract src/dest taxon names for error reporting
+  #
+  changeDf$.srcTaxon =     apply(changeDf[,xlsx_change_srcCols], 1,getTaxon)
+  changeDf$.srcRank =      apply(changeDf[,xlsx_change_srcCols], 1,getTaxonRank)
+  changeDf$.srcLineage =   apply(changeDf[,xlsx_change_srcCols], 1,getLineage)
+
+  changeDf$.destTaxon =         apply(changeDf[,xlsx_change_destCols],1,getTaxon)
+  changeDf$.destRank =          apply(changeDf[,xlsx_change_destCols],1,getTaxonRank)
+  changeDf$.destLineage =       apply(changeDf[,xlsx_change_destCols], 1,getLineage)
+  changeDf$.destParentName =    apply(changeDf[,xlsx_change_destCols], 1,getParentTaxon)
+  changeDf$.destParentLineage = apply(changeDf[,xlsx_change_destCols], 1,getParentLineage)
+  
+  # active taxon: src, or, if missing, dest
+  changeDf$.changeTaxon = with(changeDf,ifelse(!is.na(.srcTaxon),.srcTaxon,.destTaxon))
   
   #
   # QC spaces, quotes, etc
@@ -752,6 +859,7 @@ qc_proposal = function(code, proposalDf) {
     if(length(qc.matches)>0) { 
       if(params$verbose) { cat("WARNING:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
       errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
+                       changeDf$change[qc.matches],changeDf$rank,changeDf$.changeTaxon[qc.matches],
                        "WARNING","XLSX.LEAD_SPACE", paste("XLSX has",pat_warn),
                        paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":"))
       # backup original values
@@ -767,6 +875,7 @@ qc_proposal = function(code, proposalDf) {
     if(length(qc.matches)>0) { 
       if(params$verbose) { cat("WARNING:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
       errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
+                       changeDf$change[qc.matches],changeDf$rank, changeDf$.changeTaxon[qc.matches],
                        "WARNING","XLSX.TRAIL_SPACE", paste("XLSX has",pat_warn),
                        paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":"))
       # backup original values
@@ -783,6 +892,7 @@ qc_proposal = function(code, proposalDf) {
       if(length(qc.matches)>0) { 
         if(params$verbose) { cat("WARNING:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
         errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
+                         changeDf$change[qc.matches],changeDf$rank,changeDf$.changeTaxon[qc.matches],
                          "WARNING","XLSX.QUOTES", paste("XLSX has",pat_warn),
                          paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":"))
         # backup original values
@@ -799,6 +909,7 @@ qc_proposal = function(code, proposalDf) {
     if(length(qc.matches)>0) { 
       if(params$verbose) { cat("WARNING:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
       errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
+                       changeDf$change[qc.matches],changeDf$rank[qc.matches], changeDf$.changeTaxon[qc.matches],
                        "WARNING",xlsx_col_info[col,"pat_code"], paste("XLSX has",pat_warn),
                        paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":"))
       # backup original values
@@ -817,7 +928,9 @@ qc_proposal = function(code, proposalDf) {
   missingCvNames = names(cvList)[!names(cvList) %in% names(changeDf)]
   if(length(missingCvNames)>0) {
     if(params$verbose) { cat("ERROR:",code,"missing CV columns [",paste(missingCvNames, collapse=","),"] on row 3\n") }
-    errorDf=addError(errorDf,code,3,"ERROR","XLSX.MISSING_COLUMN",paste("XLSX missing column"),
+    errorDf=addError(errorDf,code,3,
+                     NA,NA,NA,
+                     "ERROR","XLSX.MISSING_COLUMN",paste("XLSX missing column"),
                      paste("XLSX missing header [",missingCvNames,"]")) 
     return(list(errorDf=errorDf))
   }
@@ -838,25 +951,35 @@ qc_proposal = function(code, proposalDf) {
     # 
     # reject unknown terms
     #
-    badTerms=changeDf[!isTermClose,cv, drop=FALSE]
+    badTerms=changeDf[!isTermClose,]
     if(nrow(badTerms)>0) {
       # complain
       if(params$verbose) { cat("ERROR:",code,"illegal term in CV column '",cv,"':",
                               "[",paste(paste0(rownames(badTerms),":",badTerms[,cv]), collapse=","),"] on rows (",paste(rownames(badTerms),collapse=","),")\n") }
-      errorDf=addError(errorDf,code,rownames(badTerms),"ERROR","XLSX.INVALID_TERM",paste("XLSX incorrect term in column",cv),
+       errorDf=addError(errorDf,code,rownames(badTerms),
+                       badTerms$change,badTerms$rank, badTerms$.changeTaxon,
+                       "ERROR","XLSX.INVALID_TERM",paste("XLSX incorrect term in column",cv),
                      paste("XLSX incorrect value [",badTerms[,cv],"]. Valid terms: [",paste0(cvList[[cv]],collapse=","),"]")) 
-      # remove offending line
-      changeDf[rownames(badTerms),".noErrors"] = FALSE
+      # for optional CVs, NA the term, for obligatory ones, flag the line
+      if(cv %in% c("genomeCoverage","molecule","hostSource") ) {
+          changeDf[rownames(badTerms),cv] = NA
+      } else {
+         changeDf[rownames(badTerms),".noErrors"] = FALSE
+      }
+      changeDf[rownames(badTerms),".errors"] = paste("CV '",cv,"' incorrect value [",badTerms[,cv],"]. Valid terms: [",paste0(cvList[[cv]],collapse=","),"]")
+      #browser()
     } # if badTerms
     #
     # whine about terms with spacing/caps problems
     #
-    flawedTerms=changeDf[isTermClose & !isTermPerfect,cv, drop=FALSE]
+    flawedTerms=changeDf[isTermClose & !isTermPerfect,] #cv, drop=FALSE]
     if(nrow(flawedTerms)>0) {
       # complain
       if(params$verbose) { cat("WARNING:",code,"typo in CV column '",cv,"':",
                                "[",paste(paste0(rownames(flawedTerms),":",flawedTerms[,cv]), collapse=","),"] on rows (",paste(rownames(flawedTerms),collapse=","),")\n") }
-      errorDf=addError(errorDf,code,rownames(flawedTerms),"WARNING","XLSX.TYPO_TERM",paste("XLSX term with typo (space,caps) in column",cv),
+      errorDf=addError(errorDf,code,rownames(flawedTerms),
+                       flawedTerms$change, flawedTerms$rank, flawedTerms$.changeTaxon,
+                       "WARNING","XLSX.TYPO_TERM",paste("XLSX term with typo (space,caps) in column",cv),
                        paste("XLSX incorrect value [",flawedTerms[,cv],"]. Valid terms: [",paste0(cvList[[cv]],collapse=","),"]")) 
     } # if flawedTerms
   } # for cvList
@@ -871,7 +994,7 @@ qc_proposal = function(code, proposalDf) {
 # 
 # ```{r load_and_qc}
 
-
+#### SECTION: load and QC xlsx's #### 
 #
 # this uses the PROPOSAL.XLSX schema (naming convention)
 #
@@ -921,7 +1044,7 @@ for( code in codes ) {
       results = qc_proposal(code,proposalDf)
       errorDf = results[["errorDf"]]
       cat("# QCed: ",code," with ",nrow(errorDf)," errors/warnings\n")
-      if(nrow(errorDf)>0){allErrorDf=rbindlist(list(allErrorDf,errorDf),fill=TRUE)}
+      if(nrow(errorDf)>0){.GlobalEnv$loadErrorDf=rbindlist(list(.GlobalEnv$loadErrorDf,errorDf),fill=TRUE)}
       changeDf = results[["changeDf"]]
       if(!is.null(changeDf)) {
         changeList[[code]]=changeDf
@@ -933,7 +1056,7 @@ for( code in codes ) {
 cat("changeList: ",paste(names(changeList)),"\n")
 
 # error summary
-write_xlsx(x=allErrorDf,path=file.path(params$out_dir,"QC.summary.xlsx"))
+write_xlsx(x=loadErrorDf,path=file.path(params$out_dir,"QC.summary.xlsx"))
 kable(allErrorDf,caption = paste0("QC: Summary of ERRORs and WARNINGs"))
  
 # DEBUG: break to RStudio debugger after file load/QC
@@ -982,61 +1105,7 @@ if( FALSE ) {
   sum(oldLineage!=.GlobalEnv$newMSL$lineage,na.rm=T)
 }
 # ```
-# # process changes function
-# 
-# ```{r process_changes_helper_functions, echo=FALSE}
-#
-# this uses the DATABASE schema for the taxonomy_node table (ie, naming convention)
-#
 
-
-getTaxon = function(realmSpecies) {
-  # 
-  # get the NAME of the lowest ranked taxon
-  #
-  nonNAs = !is.na(realmSpecies)
-  if( sum(nonNAs) > 0 ) {
-    return(realmSpecies[max(which(nonNAs))])
-  } else {
-    return(NA)
-  }
-}
-getParentTaxon = function(realmSpecies) {
-  #
-  # get the NAME of the penultimate low ranked taxon
-  #
-  nonNAs = !is.na(realmSpecies)
-  if( sum(nonNAs) > 1 ) {
-    return(realmSpecies[sort(which(nonNAs),decreasing=T)[2]])
-  } else {
-    return(NA)
-  }
-}
-getLineage = function(realmSpecies,masks=c()) {
-  #   
-  # concat with ; all non-NA ranks, except those in masks
-  #
-  nonNAs = !is.na(realmSpecies)
-  # is a matrix, rows=taxon, columns=ranks
-  nonNAs[,masks] = FALSE
-  if( sum(nonNAs) > 0 ) {
-    return(paste0(realmSpecies[nonNAs],collapse=";"))
-  } else {
-    return(NA)
-  }
-}
-getTaxonRank = function(realmSpecies) {
-  nonNAs = !is.na(realmSpecies)
-  if( sum(nonNAs) > 0 ) {
-  # 
-  # get the rank of the lowest-rank taxon 
-  #
-    return(as.character(rankCV$name[max(which(nonNAs))+1]))
-  } else {
-    return(NA)
-  }
-}
- 
 #
 # This uses changes (in the PROPOSAL.XLSX schema) to make changes (one per line)
 # to the curMSL (in the database taxonomy_node table schema)
@@ -1111,7 +1180,8 @@ apply_changes = function(code,proposalBasename,changeDf) {
     # clean action
     actionClean = actionCV[tolower(action)]
     if( is.na(actionClean) ) { 
-      errorDf = addError(errorDf,code,linenum,"ERROR","ACTION.UNK","Unknown action/change",action)
+      errorDf = with(changeDf[linenum,],addError(errorDf,code,linenum,change,rank,.changeTaxon,"
+                                                 ERROR","ACTION.UNK","Unknown action/change",action))
       next;
     }
     
@@ -1119,9 +1189,9 @@ apply_changes = function(code,proposalBasename,changeDf) {
     # rank
     isRankOk = tolower(change$rank) %in% rankCV$name
     if( !isRankOk ) {
-        errorDf=addError(errorDf,code,linenum, "WARNING", "RANK.UNK", "Rank name unknown", 
-                         paste0("XLSX ROW ",linenum,
-                                ", rank=", change$rank, 
+        errorDf=addError(errorDf,code,linenum,change$change, change$rank, change$.changeTaxon,
+                         "WARNING", "RANK.UNK", "Rank name unknown", 
+                         paste0(", rank=", change$rank, 
                                 "; knownRanks=", paste(rankCV$name[-1],collapse = ","))
         )
     } else {
@@ -1134,6 +1204,7 @@ apply_changes = function(code,proposalBasename,changeDf) {
     
     # should these be a vector operation, adding columns to changeDF? 
     # if we do that, we need to separate srcTaxon's label (rank) and value (name)
+    # QQQQ: use the columns already in changeDf [.srcTaxon,.srcRank, etc]
     srcTaxonName  =getTaxon(srcRealmSpecies)
     srcTaxonRank  =getTaxonRank(srcRealmSpecies)
     srcLineage    =getLineage(srcRealmSpecies)
@@ -1150,20 +1221,37 @@ apply_changes = function(code,proposalBasename,changeDf) {
     destOldMatches=(.GlobalEnv$oldMSLs$name==as.character(destTaxonName))
 
     # debug
-    #print(paste0(code,":",linenum," ", actionClean, "(",srcLineage,", ",destLineage,")"))
-    #print(paste("srcNewMatches=",sum(srcNewMatches),", destCurMatches=",sum(destCurMatches),",destOldMatches=",sum(destOldMatches),",destNewMatches=",sum(destNewMatches)))
-    # browser()
+    if(change$.destTaxon %in% c('Innmovirus hailarense','Innmovirus') ) {
+      print(paste0(code,":",linenum," ", actionClean, "(",srcLineage,", ",destLineage,")"))
+      print(paste("srcNewMatches=",sum(srcNewMatches),", destCurMatches=",sum(destCurMatches),",destOldMatches=",sum(destOldMatches),",destNewMatches=",sum(destNewMatches)))
+      #browser()
+    }
     
     #
     # check that at least one of dest/src taxa were given
     #
     if(is.na(srcTaxonName) && is.na(destTaxonName)) {
-         errorDf=addError(errorDf,code,linenum, "WARNING", "XLSX.NO_SRC_DEST", 
+         errorDf=addError(errorDf,code,linenum,change$change,change$rank,change$.changeTaxon, 
+                          "ERROR", "XLSX.NO_SRC_DEST", 
                          paste0("Change=",toupper(action),", but neither 'current taxonomy', nor 'proposed taxonomy', were specified"), 
-                         paste0("XLSX ROW ",linenum)
+                         ""
         )
         next;
      
+    }
+    #
+    # check if lineage not correct in "current" 
+    #
+    if( sum(srcNewMatches,na.rm=T)==1 ) {
+      if(change$.srcLineage != .GlobalEnv$newMSL[srcNewMatches,"lineage"]) {
+        
+        errorDf=addError(errorDf,code,linenum,change$change,change$rank,change$.changeTaxon, 
+                         "WARNING", "SRC.LINEAGE_WRONG", 
+                         paste0("'current taxonomy' in proposal doesn't match current MSL. Typo?"), 
+                         paste0("proposal 'current taxonomy'=", change$.srcLineage, 
+                                "; MSL lineage=", .GlobalEnv$newMSL[srcNewMatches,"lineage"])
+        )
+      }
     }
     #
     # make sure new taxon does not exist already
@@ -1174,10 +1262,10 @@ apply_changes = function(code,proposalBasename,changeDf) {
         matchDf = .GlobalEnv$curMSL[destCurMatches,c("msl_release_num","lineage")]
         matchDf = .GlobalEnv$curMSL[order(matchDf$msl_release_num,decreasing = T)[1],]
         matchLineage = paste0( "MSL", matchDf$msl_release_num,":",matchDf$lineage)
-        errorDf=addError(errorDf,code,linenum, "ERROR", "DEST.IN_CUR", 
+        errorDf=addError(errorDf,code,linenum,change$change,change$rank,change$.changeTaxon,
+                         "ERROR", "DEST.IN_CUR", 
                          paste0("Change=",toupper(action),", but 'proposed taxonomy' already exists"), 
-                         paste0("XLSX ROW ",linenum,
-                                ", proposedTaxonomy=", destTaxonName, 
+                         paste0(", proposedTaxonomy=", destTaxonName, 
                                 "; existingTaxon=", matchLineage)
         )
         next;
@@ -1187,10 +1275,10 @@ apply_changes = function(code,proposalBasename,changeDf) {
         matchDf = .GlobalEnv$oldMSLs[destOldMatches,c("msl_release_num","lineage")]
         matchDf = .GlobalEnv$oldMSLs[order(matchDf$msl_release_num,decreasing = T)[1],]
         matchLineage = paste0( "MSL", matchDf$msl_release_num,":",matchDf$lineage)
-        errorDf=addError(errorDf,code,linenum, "ERROR", "DEST.IN_OLD", 
+        errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
+                         "ERROR", "DEST.IN_OLD", 
                          paste0("Change=",toupper(action),",  but 'proposed taxonomy' existed historically"), 
-                         paste0("XLSX ROW ",linenum,
-                                ", proposedTaxonomy=", destTaxonName, 
+                         paste0("proposedTaxonomy=", destTaxonName, 
                                 "; existingTaxon=", matchLineage)
         )
         next;
@@ -1200,10 +1288,10 @@ apply_changes = function(code,proposalBasename,changeDf) {
         matchDf = .GlobalEnv$newMSL[destNewMatches,c("msl_release_num","lineage")]
         matchDf = .GlobalEnv$newMSL[order(matchDf$msl_release_num,decreasing = T)[1],]
         matchLineage = paste0( "MSL", matchDf$msl_release_num,":",matchDf$lineage)
-        errorDf=addError(errorDf,code,linenum, "ERROR", "DEST.IN_NEW", 
+        errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
+                         "ERROR", "DEST.IN_NEW", 
                          paste0("Change=",toupper(action),", but 'proposed taxonomy' already created in new MSL"), 
-                         paste0("XLSX ROW ",linenum,
-                                ", proposedTaxonomy=", destTaxonName, 
+                         paste0("proposedTaxonomy=", destTaxonName, 
                                 "; existingTaxon=", matchLineage,
                                 "; otherProposal=", matchDf[1,"in_filename"]
                               )
@@ -1212,17 +1300,22 @@ apply_changes = function(code,proposalBasename,changeDf) {
       }
       # WARN: check if taxon rank matches change rank
       if ( tolower(destTaxonRank) != tolower(change$rank) ) {
-        errorDf=addError(errorDf,code,linenum, "WARNING", "DEST.RANK_MISMATCH", 
+        errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
+                         "WARNING", "DEST.RANK_MISMATCH", 
                          paste0("Change=",toupper(action)," but proposed taxon rank does not match [rank] column"), 
-                         paste0("XLSX ROW ",linenum,", rankColumn=", change$rank,
+                         paste0("rankColumn=", change$rank,
                                 ", proposedTaxonRank=",destTaxonRank,
                                 ", proposedTaxonomy=", destLineage)
         )
       }
     } # if(!is.na(destTaxonName))
     
+    # debug
+    #if(code=="2022.003M" && interactive()) {browser()}
+    
     #  -------------------------------------------------------------------------
-    # CREATE 
+    #
+    #### CREATE ####
     #
     # TODO: also handle SPLIT?
     #
@@ -1232,19 +1325,21 @@ apply_changes = function(code,proposalBasename,changeDf) {
 
       # check if srcTaxon was specified in xlsx (shouldn't be)
       if(!is.na(srcTaxonName)) {
-        errorDf=addError(errorDf,code,linenum, "ERROR", "CREATE.W_SRC", "Change=CREATE, but 'current taxonomy' columns are  not empty", 
-                         paste0("XLSX ROW ",linenum,", currentTaxonomy=", srcLineage)
+        errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.destTaxon,
+                         "WARNING", "CREATE.W_SRC", "Change=CREATE, but 'current taxonomy' columns are not empty", 
+                         paste0("currentTaxonomy=", change$.srcLineage,
+                                ", prposedTaxonomy=",change$.destLineage)
         )
-        next;
-      }
+       }
      
       #
       # check if same accession number already exists
       #
       isDupAccession = (.GlobalEnv$newMSL$genbank_accession_csv == change$exemplarAccession)
       if(sum(isDupAccession, na.rm=TRUE)>0) {
-        errorDf=addError(errorDf,code,linenum, "ERROR", "CREATE.DUP_ACC", "Change=CREATE, a species with this accession number already exists", 
-                         paste0("XLSX ROW ",linenum,", accession=", change$exemplarAccession, ", existingSpecies=",.GlobalEnv$newMSL[isDupAccession,]$lineage)
+        errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.destTaxon,
+                         "ERROR", "CREATE.DUP_ACC", "Change=CREATE, a species with this accession number already exists", 
+                         paste0("accession=", change$exemplarAccession, ", existingSpecies=",.GlobalEnv$newMSL[isDupAccession,]$lineage)
         )
         ## QQQ what proposal created this? (from this round? historically? Need a function: last_modified())
         next;
@@ -1264,22 +1359,25 @@ apply_changes = function(code,proposalBasename,changeDf) {
       if(params$verbose) {print(paste0("CREATE: ",code," line ",linenum," '",destTaxonName, "' findParent(",destParentName,")=",sum(parentDestNewMatches)))}
     
       if(sum(parentDestNewMatches)==0) {
-         errorDf=addError(errorDf,code,linenum, "ERROR", "CREATE.PARENT_NO_EXIST", "Change=CREATE, but parent rank taxon does not exist", 
-                         paste0("XLSX ROW ",linenum,", parentTaxon=", destParentName, ", proposedTaxonomy=", destLineage)
+         errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.destTaxon,
+                          "ERROR", "CREATE.PARENT_NO_EXIST", "Change=CREATE, but parent rank taxon does not exist", 
+                          paste0("parentTaxon=", destParentName, ", proposedTaxonomy=", destLineage)
          )
          next;
       } else if(sum(parentDestNewMatches)>1) {
          # this should never happen
-         errorDf=addError(errorDf,code,linenum, "ERROR", "CREATE.PARENT_MANY", "Change=CREATE, multiple taxa exist with parent name", 
-                         paste0("XLSX ROW ",linenum,", parentTaxon=", destParentName, ", proposedTaxonomy=", destLineage)
+         errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.destTaxon,
+                          "ERROR", "CREATE.PARENT_MANY", "Change=CREATE, multiple taxa exist with parent name", 
+                          paste0("parentTaxon=", destParentName, ", proposedTaxonomy=", destLineage)
          )
          next;
       } else {
         # WARN: check if taxon rank matches change rank
         if ( tolower(destTaxonRank) != tolower(change$rank) ) {
-          errorDf=addError(errorDf,code,linenum, "WARNING", "CREATE.RANK_MISMATCH", 
+          errorDf=addError(errorDf,code,linenum,change$change,change$rank,change$.destTaxon,
+                           "WARNING", "CREATE.RANK_MISMATCH", 
                            "Change=CREATE, but proposed taxon rank does not match [rank] column", 
-                           paste0("XLSX ROW ",linenum,", rankColumn=", change$rank,
+                           paste0("ankColumn=", change$rank,
                                   ", proposedTaxonRank=",destTaxonRank,
                                   ", proposedTaxonomy=", destLineage)
           )
@@ -1295,9 +1393,10 @@ apply_changes = function(code,proposalBasename,changeDf) {
         
         # WARN if PARENT_LINEAGE is not expected, AND USE PARENT LINEAGE
         if( !is.na(destParentLineage) && (newTaxon$lineage != destParentLineage) ) {
-          errorDf=addError(errorDf,code,linenum, "WARNING", "CREATE.PARENT_LINEAGE", 
+          errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.destTaxon,
+                           "WARNING", "CREATE.PARENT_LINEAGE", 
                            "Change=CREATE, proposed parent taxon exists, but not with expected lineage, using observed lineage", 
-                           paste0("XLSX ROW ",linenum,", proposedParentLineage=", destParentLineage,
+                           paste0("proposedParentLineage=", destParentLineage,
                                   ", observedParentLineage=",newTaxon$lineage,
                                   ", otherProposals=",newTaxon$prev_proposals)
           )
@@ -1364,17 +1463,27 @@ apply_changes = function(code,proposalBasename,changeDf) {
     
       #  -------------------------------------------------------------------------
       #
-      # RENAME 
+      #### RENAME ####
       #
       #  -------------------------------------------------------------------------
 
       # check if srcTaxon was specified in xlsx (required)
       if(is.na(srcTaxonName)) {
-        errorDf=addError(errorDf,code,linenum, "ERROR", "RENAME.WO_SRC", "Change=RENAME, but 'current taxonomy' columns are empty", 
-                         paste0("XLSX ROW ",linenum,", currentTaxonomy=", srcLineage, ", destTaxonomy=", destLineage)
+        errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
+                         "ERROR", "RENAME.WO_SRC", "Change=RENAME, but 'current taxonomy' columns are empty", 
+                         paste0("currentTaxonomy=", srcLineage, ", destTaxonomy=", destLineage)
         )
         next;
       }
+      
+      # check if renamed taxon has the same name (TP:Error-R1)
+      if(srcTaxonName == destTaxonName) {
+        errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
+                         "WARNING", "RENAME.SAME_NAME", "Change=RENAME, but new name is the same; might this be a move?", 
+                         paste0("currentTaxonomy=", srcLineage, ", destTaxonomy=", destLineage)
+        )
+      }
+      
       
       #
       # find the target to rename in NEW
@@ -1383,12 +1492,14 @@ apply_changes = function(code,proposalBasename,changeDf) {
       if(params$verbose) {print(paste0("RENAME: ",code," line ",linenum," '",destTaxonName, "' findTarget(",srcTaxonName,")=",sum(srcNewTarget)))}
     
       if(sum(srcNewTarget)==0) {
-         errorDf=addError(errorDf,code,linenum, "ERROR", "RENAME.NO_EXIST", "Change=RENAME, but taxon does not exist", 
-                         paste0("XLSX ROW ",linenum,", taxon=", srcTaxonName, ", lineage=",srcLineage,", proposedTaxon=", destTaxonName))
+         errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
+                          "ERROR", "RENAME.NO_EXIST", "Change=RENAME, but taxon does not exist", 
+                          paste0("taxon=", srcTaxonName, ", lineage=",srcLineage,", proposedTaxon=", destTaxonName))
          next;
       } else if(sum(srcNewTarget)>1) {
-         errorDf=addError(errorDf,code,linenum, "ERROR", "RENAME.MANY", "Change=RENAME, multiple taxa exist with parent name", 
-                         paste0("XLSX ROW ",linenum,", taxon=", srcTaxonName, ", lineage=",srcLineage,", proposedTaxon=", destTaxonName
+         errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
+                          "ERROR", "RENAME.MANY", "Change=RENAME, multiple taxa exist with parent name", 
+                          paste0("taxon=", srcTaxonName, ", lineage=",srcLineage,", proposedTaxon=", destTaxonName
                                 , " matches ", sum(srcNewTarget) ))
          next;
       } else {
@@ -1401,6 +1512,19 @@ apply_changes = function(code,proposalBasename,changeDf) {
         # change the name and update lineage
         .GlobalEnv$newMSL[srcNewTarget,"name"] = destTaxonName
         .GlobalEnv$newMSL[srcNewTarget,"lineage"] = paste(newMSL[srcNewParent,"lineage"],destTaxonName,sep=";") # should we do this? 
+        
+        # check if that is the expected lineage
+        # WARN if PARENT_LINEAGE is not expected, AND USE PARENT LINEAGE
+        if( change$.destParentName != .GlobalEnv$newMSL[srcNewParent,"name"] ) {
+           errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
+                           "WARNING", "RENAME.PARENT_NAME", 
+                           "parent name not as expected; was this meant to be a move? Is there a typo?", 
+                           paste0("proposedParentName=", destParentName,
+                                  ", observedParentNaem=",.GlobalEnv$newMSL[srcNewTarget,"name"],
+                                  ", otherProposals=",.GlobalEnv$newMSL[srcNewTarget,"prev_proposals"])
+          )
+         }
+ 
         # append proposal
         .GlobalEnv$newMSL[srcNewTarget,"prev_proposals"] = paste0(
           ifelse(is.na(.GlobalEnv$newMSL[srcNewTarget,"prev_proposals"]),"",paste0(.GlobalEnv$newMSL[srcNewTarget,"prev_proposals"],",")),
@@ -1423,8 +1547,9 @@ apply_changes = function(code,proposalBasename,changeDf) {
       #  -------------------------------------------------------------------------
       # check if srcTaxon was specified in xlsx (required)
       if(is.na(srcTaxonName)) {
-        errorDf=addError(errorDf,code,linenum, "ERROR", "ABOLISH.WO_SRC", "Change=ABOLISH, but 'current taxonomy' columns are empty", 
-                         paste0("XLSX ROW ",linenum,", currentTaxonomy=", srcLineage, ", destTaxonomy=", destLineage)
+        errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
+                         "ERROR", "ABOLISH.WO_SRC", "Change=ABOLISH, but 'current taxonomy' columns are empty", 
+                         paste0("currentTaxonomy=", srcLineage, ", destTaxonomy=", destLineage)
         )
         next;
       }
@@ -1438,13 +1563,15 @@ apply_changes = function(code,proposalBasename,changeDf) {
       if(params$verbose) {print(paste0("ABOLISH: ",code," line ",linenum," '",srcTaxonName, "' findTarget(",srcTaxonName,")=",sum(srcNewTarget),"/",sum(srcPrevTarget)))}
       
       if(sum(srcNewTarget,na.rm=TRUE)==0) {
-         errorDf=addError(errorDf,code,linenum, "ERROR", "ABOLISH.NO_EXIST", "Change=ABOLISH, but taxon does not exist", 
-                         paste0("XLSX ROW ",linenum,", taxon=", srcTaxonName, ", lineage=",srcLineage,", proposedTaxon=", destTaxonName))
+         errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
+                          "ERROR", "ABOLISH.NO_EXIST", "Change=ABOLISH, but taxon does not exist", 
+                          paste0("taxon=", srcTaxonName, ", lineage=",srcLineage,", proposedTaxon=", destTaxonName))
          next;
       } else if(sum(srcNewTarget,na.rm=TRUE)>1) {
          # this should never happen
-         errorDf=addError(errorDf,code,linenum, "ERROR", "ABOLISH.MANY", "Change=ABOLISH, multiple taxa exist with name", 
-                         paste0("XLSX ROW ",linenum,", taxon=", srcTaxonName, ", lineage=",srcLineage,", proposedTaxon=", destTaxonName
+         errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
+                          "ERROR", "ABOLISH.MANY", "Change=ABOLISH, multiple taxa exist with name", 
+                          paste0("taxon=", srcTaxonName, ", lineage=",srcLineage,", proposedTaxon=", destTaxonName
                                 , " matches ", sum(srcNewTarget) ))
          next;
       }
@@ -1453,8 +1580,9 @@ apply_changes = function(code,proposalBasename,changeDf) {
       #
       srcKids=(.GlobalEnv$newMSL$parent_id==.GlobalEnv$newMSL[srcNewTarget,"taxnode_id"])
       if(sum(srcKids,na.rm=TRUE)>0) {
-         errorDf=addError(errorDf,code,linenum, "ERROR", "ABOLISH.KIDS", "Change=ABOLISH, taxon still has un-abolished children", 
-                         paste0("XLSX ROW ",linenum,", taxon=", srcTaxonName, ", lineage=",srcLineage,", kids: N=",sum(srcKids,na.rm=TRUE),
+         errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
+                          "ERROR", "ABOLISH.KIDS", "Change=ABOLISH, taxon still has un-abolished children", 
+                         paste0("taxon=", srcTaxonName, ", lineage=",srcLineage,", kids: N=",sum(srcKids,na.rm=TRUE),
                                 ", NAMES=[", join(.GlobalEnv$newMSL[srcKids,"rank"],.GlobalEnv$newMSL[srcKids,"name"],sep=":") ) )
          next;
       }     
@@ -1484,8 +1612,9 @@ apply_changes = function(code,proposalBasename,changeDf) {
         guessSource = (.GlobalEnv$newMSL$name==as.character(destTaxonName))
         if( sum(guessSource,na.rm=TRUE) == 1) {
           # found it, so WARNING
-          errorDf=addError(errorDf,code,linenum, "WARNING", "MOVE.NO_SRC", "Change=MOVE, but 'current taxonomy' columns are empty", 
-                           paste0("XLSX ROW ",linenum," destTaxonomy=", destLineage,
+          errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
+                           "WARNING", "MOVE.NO_SRC", "Change=MOVE, but 'current taxonomy' columns are empty", 
+                           paste0("destTaxonomy=", destLineage,
                                   "; we guess you meant=", .GlobalEnv$newMSL$lineage[guessSource])
           )
           srcTaxonName=.GlobalEnv$newMSL$name[guessSource]
@@ -1493,8 +1622,9 @@ apply_changes = function(code,proposalBasename,changeDf) {
           srcLineage  =.GlobalEnv$newMSL$lineage[guessSource]
         } else {
             # didn't find it, or found multiple, so ERROR
-          errorDf=addError(errorDf,code,linenum, "WARNING", "MOVE.NO_SRC_GUESS", "Change=MOVE, but 'current taxonomy' columns are empty", 
-                           paste0("XLSX ROW ",linenum," destTaxonomy=", destLineage,
+          errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
+                           "WARNING", "MOVE.NO_SRC_GUESS", "Change=MOVE, but 'current taxonomy' columns are empty", 
+                           paste0("destTaxonomy=", destLineage,
                                   "; no existing taxon '",destTaxonName,"' found")
           )
           next
@@ -1507,19 +1637,19 @@ apply_changes = function(code,proposalBasename,changeDf) {
       if( srcTaxonRank != rankClean || destTaxonRank != rankClean ) {
         # src/dest ranks mis-match (promote/demote)
         if( srcTaxonRank != destTaxonRank ) {
-          errorDf=addError(errorDf,code,linenum, "ERROR", "MOVE.DIFF_RANK", 
+          errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
+                           "ERROR", "MOVE.DIFF_RANK", 
                            "Change=MOVE, but 'current taxonomy' and 'proposed taxonomy' ranks differ; use promote or demote, not move, to change rank", 
-                           paste0("XLSX ROW ",linenum,
-                                  ": srcTaxonomy=[", srcTaxonRank,"]",srcLineage,
+                           paste0("srcTaxonomy=[", srcTaxonRank,"]",srcLineage,
                                   ", destTaxonomy=[", destTaxonRank,"]", destLineage)
           )
           next;
         } else {
           # rank column doesn't match src & dest ranks (but they match each other)
-          errorDf=addError(errorDf,code,linenum, "WARNING", "MOVE.RANK_WRONG", 
+          errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
+                           "WARNING", "MOVE.RANK_WRONG", 
                            "Change=MOVE, but 'rank' column does not match 'current taxonomy' or 'proposed taxonomy'; use promote or demote, not move, to change rank", 
-                           paste0("XLSX ROW ",linenum,
-                                  ": rank=", rankClean, 
+                           paste0("rank=", rankClean, 
                                   ", srcTaxonomy=[", srcTaxonRank,"]", srcLineage,
                                   ", destTaxonomy=[", destTaxonRank,"]", destLineage)
           )
@@ -1535,12 +1665,14 @@ apply_changes = function(code,proposalBasename,changeDf) {
       if(params$verbose) {print(paste0("MOVE: ",code," line ",linenum," '",srcTaxonName, "' findTarget(",srcTaxonName,")=",sum(srcNewTarget),"/",sum(srcPrevTarget)))}
     
       if(sum(srcNewTarget,na.rm=TRUE)==0) {
-         errorDf=addError(errorDf,code,linenum, "ERROR", "MOVE.NO_EXIST", "Change=MOVE, but taxon does not exist", 
-                         paste0("XLSX ROW ",linenum,", taxon=", srcTaxonName, ", lineage=",srcLineage,", proposedTaxon=", destTaxonName))
+         errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
+                          "ERROR", "MOVE.NO_EXIST", "Change=MOVE, but taxon does not exist", 
+                         paste0("taxon=", srcTaxonName, ", lineage=",srcLineage,", proposedTaxon=", destTaxonName))
          next;
       } else if(sum(srcNewTarget,na.rm=TRUE)>1) {
-         errorDf=addError(errorDf,code,linenum, "ERROR", "MOVE.MANY", "Change=MOVE, multiple taxa exist with name", 
-                         paste0("XLSX ROW ",linenum,", taxon=", srcTaxonName, ", lineage=",srcLineage,", proposedTaxon=", destTaxonName
+         errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
+                          "ERROR", "MOVE.MANY", "Change=MOVE, multiple taxa exist with name", 
+                         paste0("taxon=", srcTaxonName, ", lineage=",srcLineage,", proposedTaxon=", destTaxonName
                                 , " matches ", sum(srcNewTarget) ))
          next;
       }
@@ -1549,8 +1681,9 @@ apply_changes = function(code,proposalBasename,changeDf) {
       #
       isDupAccession = (.GlobalEnv$newMSL$genbank_accession_csv == change$exemplarAccession & !srcNewTarget)
       if(sum(isDupAccession, na.rm=TRUE)>0) {
-        errorDf=addError(errorDf,code,linenum, "ERROR", "MOVE.DUP_ACC", "Change=CREATE, a species with this accession number already exists", 
-                         paste0("XLSX ROW ",linenum,", accession=", change$exemplarAccession, ", existingSpecies=",.GlobalEnv$newMSL[isDupAccession,]$lineage)
+        errorDf=addError(errorDf,code,linenum,change$change,change$rank,change$.changeTaxon,
+                         "ERROR", "MOVE.DUP_ACC", "Change=CREATE, a species with this accession number already exists", 
+                         paste0("accession=", change$exemplarAccession, ", existingSpecies=",.GlobalEnv$newMSL[isDupAccession,]$lineage)
         )
         ## QQQ what proposal created this? (from this round? historically? Need a function: last_modified())
         next;
@@ -1571,31 +1704,35 @@ apply_changes = function(code,proposalBasename,changeDf) {
       if(params$verbose) {print(paste0("MOVE: ",code," line ",linenum," '",destTaxonName, "' findParent(",destParentName,")=",sum(parentDestNewMatches)))}
     
       if(sum(parentDestNewMatches,na.rm=TRUE)==0) {
-         errorDf=addError(errorDf,code,linenum, "ERROR", "MOVE.PARENT_NO_EXIST", "Change=MOVE, but parent rank taxon does not exist", 
-                         paste0("XLSX ROW ",linenum,", parentTaxon=", destParentName, ", proposedTaxonomy=", destLineage)
+         errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
+                          "ERROR", "MOVE.PARENT_NO_EXIST", "Change=MOVE, but parent rank taxon does not exist", 
+                         paste0("parentTaxon=", destParentName, ", proposedTaxonomy=", destLineage)
          )
          next;
       } else if(sum(parentDestNewMatches,na.rm=TRUE)>1) {
          # this should never happen
-         errorDf=addError(errorDf,code,linenum, "ERROR", "MOVE.PARENT_MANY", "Change=MOVE, multiple taxa exist with parent name", 
-                         paste0("XLSX ROW ",linenum,", parentTaxon=", destParentName, ", proposedTaxonomy=", destLineage)
+         errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
+                          "ERROR", "MOVE.PARENT_MANY", "Change=MOVE, multiple taxa exist with parent name", 
+                         paste0("parentTaxon=", destParentName, ", proposedTaxonomy=", destLineage)
          )
          next;
       } else {
         # WARN: check if DEST rank matches change rank
         if ( tolower(destTaxonRank) != tolower(change$rank) ) {
-          errorDf=addError(errorDf,code,linenum, "WARNING", "MOVE.RANK_MISMATCH_DEST", 
+          errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
+                           "WARNING", "MOVE.RANK_MISMATCH_DEST", 
                            "Change=MOVE, but proposed taxon rank does not match [rank] column", 
-                           paste0("XLSX ROW ",linenum,", rankColumn=", change$rank,
+                           paste0("rankColumn=", change$rank,
                                   ", proposedTaxonRank=",destTaxonRank,
                                   ", proposedTaxonomy=", destLineage)
           )
         }
         # WARN: check if SRC rank matches change rank
         if ( tolower(srcTaxonRank) != tolower(change$rank) ) {
-          errorDf=addError(errorDf,code,linenum, "WARNING", "MOVE.RANK_MISMATCH_SRC", 
+          errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon, 
+                           "WARNING", "MOVE.RANK_MISMATCH_SRC", 
                            "Change=MOVE, but 'current taxonomy' taxon rank does not match [rank] column", 
-                           paste0("XLSX ROW ",linenum,", rankColumn=", change$rank,
+                           paste0("rankColumn=", change$rank,
                                   ", currentTaxonRank=",srcTaxonRank,
                                   ", currentTaxonomy=", srcLineage)
           )
@@ -1611,9 +1748,10 @@ apply_changes = function(code,proposalBasename,changeDf) {
         
         # WARN if PARENT_LINEAGE is not expected
         if( !is.na(destParentLineage) && (parentTaxon$lineage != destParentLineage) ) {
-          errorDf=addError(errorDf,code,linenum, "WARNING", "MOVE.PARENT_LINEAGE", 
+          errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
+                           "WARNING", "MOVE.PARENT_LINEAGE", 
                            "Change=MOVE, proposed parent taxon exists, but not with expected lineage", 
-                           paste0("XLSX ROW ",linenum,", proposedParentLineage=", destParentLineage,
+                           paste0("proposedParentLineage=", destParentLineage,
                                   ", observedParentLineage=",parentTaxon$lineage,
                                   ", otherProposals=",parentTaxon$prev_proposals)
           )
@@ -1690,15 +1828,41 @@ apply_changes = function(code,proposalBasename,changeDf) {
       # ACTION not implemented.
       #
       #  -------------------------------------------------------------------------
-      errorDf=addError(errorDf,code,linenum, "ERROR", "CHANGE.UNIMP", 
+      errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
+                       "ERROR", "CHANGE.UNIMP", 
                        paste0("Change=",toupper(action)," is NOT (yet) implemented"), 
-                         paste0("XLSX ROW ",linenum,", taxon=", srcTaxonName, ", lineage=",srcLineage,", proposedTaxon=", destTaxonName)
+                         paste0("taxon=", srcTaxonName, ", lineage=",srcLineage,", proposedTaxon=", destTaxonName)
                        )
       next;
   
     } # ACTION UN-IMP
  
   } # for each line in XLSX
+
+    #  -------------------------------------------------------------------------
+  #
+  #### POST-QC #### 
+  #
+  #  -------------------------------------------------------------------------
+  
+  #
+  # did proposal create empty (non-species) taxa?
+  #
+  kidCounts = apply(.GlobalEnv$newMSL[,"taxnode_id"],1,
+                    function(parent_id,MSL) { sum(MSL$parent_id==parent_id)},
+                    MSL=.GlobalEnv$newMSL)
+  # scan for taxa with no kids, not species, not yet reported.
+  emptyTaxa = .GlobalEnv$newMSL[kidCounts == 0,]%>% filter(level_id != 600) %>% filter(is.na(.emptyReported))
+  if( nrow(emptyTaxa) > 0 ) {
+    errorDf=addError(errorDf,code,NA, NA,NA,NA,
+                     "ERROR", "PROPOSAL.EMPTY_TAXA", 
+                     paste0("Proposal created empty (non-species) taxa"), 
+                     paste0("the ",emptyTaxa$rank," '",emptyTaxa$name,"' is empty - it does not contain ny lower taxons")
+    )
+    # mark empty taxa so we don't re-report them
+    .GlobalEnv$newMSL[.GlobalEnv$newMSL$name %in% emptyTaxa$name,".emptyReported"] = xlsxs[code,"xlsx"]
+    #browser()
+  }
 
   return(list(errorDf=errorDf))
 } # apply_changes()
@@ -1709,7 +1873,7 @@ apply_changes = function(code,proposalBasename,changeDf) {
 # RE-RUN FROM HERE!
 # 
 # ```{r process_changes}
-
+#### SECTION apply changes #####
 # ------------------------------------------------------------------------------
 #
 # GLOBAL VARS
@@ -1731,7 +1895,7 @@ apply_changes = function(code,proposalBasename,changeDf) {
 
 #
 # DEBUG ONLY - delete all load/QC errors in allErrorDf
-.GlobalEnv$allErrorDf = .GlobalEnv$allErrorDf[FALSE,] # debug - reset errors
+.GlobalEnv$allErrorDf = loadErrorDf %>% filter(TRUE)
 # debug 
 #cat("allErrorDf:",tracemem(allErrorDf),"\n");
 summary(as.factor(errorDf$code)); summary(as.factor(allErrorDf$code));
@@ -1766,7 +1930,7 @@ for( code in codes) {
     cat("# START PROC: ",code," with ", nrow(changeDf), " changes\n")
     
     # debug if code of interest
-    if( code %in% c("2022.043B.fixed") ) { cat("DEBUG ",code,"\n"); if(interactive()) {browser() }}
+    #if( code %in% c("2022.043B.fixed") ) { cat("DEBUG ",code,"\n"); if(interactive()) {browser() }}
     
     
     # Apply the Change
@@ -1786,6 +1950,7 @@ for( code in codes) {
 } # proposal code
 cat("# DONE. Found",length(rownames(proposals)),"proposals; Processed",processed,", skipped",skipped,"\n")
 
+#### SECTION write error list #####
 # write current error list
 write_xlsx( x=allErrorDf,path=file.path(params$out_dir,"QC.summary.xlsx"))
 write_delim(x=allErrorDf,file=file.path(params$out_dir,"QC.summary.tsv"), delim="\t")
@@ -1828,7 +1993,7 @@ newMSL[taxnode_id==202203151, c("taxnode_id","parent_id","lineage","name","clean
 # # Export SQL to update the db
 # 
 # ```{r sql_export}
-
+#### SECTION export to SQL #####
 #### open issues #####
 # 1. why is there a "molecule" column?
 # 2. notes vs comments columns? 
