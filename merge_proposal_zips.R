@@ -3,15 +3,18 @@ params = list(
   # inputs
   prev_msl=37
   ,next_msl=38
+  ,msl_name="2022"
+  ,msl_notes="EC 54, 2022 **PROVISIONAL** (MSL #38)"
   ,taxnode_delta=100000
   ,db_rank_fname="./current_msl/taxonomy_level.txt"
   ,db_molecule_fname="./current_msl/taxonomy_molecule.txt"
   ,prev_taxa_fname="./current_msl/taxonomy_node_export.txt"
   ,cv_xlsx="./TP_Template_Excel_module_2022_v2.xlsx"
   ,cv_sheet="Menu Items (Do not change)"
+  ,VMR_filename="./current_msl/VMR_21-221122_MSL37.xlsx"
   ,templateURL="https://ictv.global/taxonomy/templates"
-  ,proposals_dir="./proposals"
-  ,out_dir="./results"
+  ,proposals_dir="./proposals2"
+  ,out_dir="./results2"
   # output files
   ,dest_msl=38
   ,merged="load_next_msl.txt"
@@ -20,8 +23,6 @@ params = list(
   ,verbose=1
 )
 
-# rm("xlxsList","changeList") # to re-run xlsx file loading & QC, delete these caches
-# rm("changeList") # to re-run only QC, delete this cache
 
 # QC MSL38: https://uab-lefkowitz.atlassian.net/browse/IVK-123
 # Merge++:  https://uab-lefkowitz.atlassian.net/browse/IVK-22
@@ -79,10 +80,26 @@ library(tidyverse)
 library(readxl)
 library(writexl) # another option library(openxlsx)
 #library(gtools) # for mixedsort/mixedorder
+library(DescTools) # AscToChar
 
 library(knitr) #kable
 # debug - echo everything
 knitr::opts_chunk$set(echo = TRUE)
+
+#### load cache (xxx/.Rdata) ####
+
+# rm("xlxsList","changeList") # to re-run xlsx file loading & QC, delete these caches
+# rm("changeList") # to re-run only QC, delete this cache
+cacheFilename=paste0(params$proposals_dir,"/.RData")
+if(FALSE && file.exists(cacheFilename)) {
+  cat("Loading image ", cacheFilename, "...\n")
+  load(file=cacheFilename)
+  params$out_dir=str_replace(params$proposals_dir,"proposals","results")
+  rm("changeList") # to re-run only QC, delete this cache
+  cat("RM(changeList) # re-run Qn")
+}
+cat("PROPOSALS_DIR:",params$proposals_dir,"\n")
+cat("OUT_DIR      :",params$out_dir,"\n")
 
 #```
 
@@ -144,6 +161,10 @@ createNewMSL = function(curMSL,prev_msl,dest_msl,taxnode_delta) {
   
   # add admin columns
   newMSL[,".emptyReported"] = NA_character_
+  
+  # rename release
+  newMSL[newMSL$rank=="tree","name"]  = params$msl_name
+  newMSL[newMSL$rank=="tree","notes"] = params$msl_notes
   
   # add the new rows
   #return(rbind(taxonomy_node, newMSL))
@@ -303,7 +324,31 @@ dbCvMapList[[cv]] = c(
   # hack for "multiple" which was in xlsx, but doesn't map to the db
   "multiple"=NA
   )
-  
+
+#
+# load hostSource CV from VMR (most up-to-date)
+#
+vmrDf = data.frame(
+    # suppress errors about column names
+    # https://github.com/tidyverse/readxl/issues/580#issuecomment-519804058
+    suppressMessages(
+      read_excel(
+        path    = params$VMR_filename,
+        sheet   = "Terms",
+        trim_ws = TRUE,
+        na      = "Please select",
+        skip    = 0,
+        range   = cell_cols("A:AO"),
+        col_names = TRUE
+      )
+    )
+  )
+cvList[["hostSource"]] = union(
+    cvList[["hostSource"]],
+    vmrDf[,"Host.Source"]
+)
+cat("VMR(hostSource): ", length(vmrDf[,"Host.Source"]), " from ",params$VMR_filename," [Terms]\n")
+
 # ```
 # 
 # # scan for proposal .xlsx files
@@ -333,12 +378,15 @@ dir.create(params$out_dir,recursive=T,showWarnings = F)
 #
 # break filename into proposal code, filenaem and folder name
 #
-proposals = data.frame(docxpath=list.files(path="proposals",pattern="20[0-9][0-9].[0-9A-Z]+.*.v*.*.docx", recursive=T, full.names=TRUE) )
+proposals = data.frame(docxpath=list.files(path=params$proposals_dir,pattern="20[0-9][0-9].[0-9A-Z]+.*.v*.*.docx", recursive=T, full.names=TRUE) )
 proposals$path     = gsub(     "^(.*/)(20[0-9]+.[0-9A-Z]+).[^/]+.docx$","\\1",proposals$docxpath)
-proposals$folder   = gsub(".*/([^/]+)/(20[0-9]+.[0-9A-Z]+).[^/]+.docx$","\\1",proposals$docxpath)
+                    # look for folder names "Words.. (?) proposals" - there may be folders above and below that we don't care about
+proposals$folder   = gsub(".*/([^/]+\\([A-Z]\\)[^/]+).*/(20[0-9]+.[0-9A-Z]+).[^/]+.docx$","\\1",proposals$docxpath)
 proposals$code     = gsub(".*/([^/]+)/(20[0-9]+.[0-9A-Z]+).[^/]+.docx$","\\2",proposals$docxpath)
 proposals$basename = gsub(".*/([^/]+)/(20[0-9]+.[0-9A-Z]+.[^/]+).docx$","\\2",proposals$docxpath)
 proposals$docx     = paste0(proposals$basename,".docx")
+# remove all *.Ud.* files
+proposals = proposals[grep(proposals$docx, pattern=".*\\.Ud\\..*", invert=T),]
 
 # check for duplicate Proposal IDs
 dups = duplicated(proposals$code)
@@ -360,12 +408,15 @@ rownames(proposals)=proposals$code
 #
 #### SECTION: scan XLSX #### 
 #
-xlsxs = data.frame(xlsxpath=list.files(path="proposals",pattern="^20[0-9][0-9].[^.]+.*.v*.*.xlsx", recursive=T, full.names=TRUE) )
+xlsxs = data.frame(xlsxpath=list.files(path=params$proposals_dir,pattern="^20[0-9][0-9].[^.]+.*.v*.*.xlsx", recursive=T, full.names=TRUE) )
 xlsxs$path     = gsub(     "^(.*/)(20[0-9]+.[0-9A-Z]+).[^/]+.xlsx$","\\1",xlsxs$xlsxpath)
-xlsxs$folder   = gsub(".*/([^/]+)/(20[0-9]+.[0-9A-Z]+).[^/]+.xlsx$","\\1",xlsxs$xlsxpath)
+# look for folder names "Words.. (?) proposals" - there may be folders above and below that we don't care about
+xlsxs$folder   = gsub(".*/([^/]+\\([A-Z]\\)[^/]+).*/(20[0-9]+.[0-9A-Z]+).[^/]+.xlsx$","\\1",xlsxs$xlsxpath)
 xlsxs$basename = gsub(".*/([^/]+)/(20[0-9]+.[0-9A-Z]+.[^/]+).xlsx$","\\2",xlsxs$xlsxpath)
 xlsxs$code     = gsub(".*/([^/]+)/(20[0-9]+.[0-9A-Z]+).[^/]+.xlsx$","\\2",xlsxs$xlsxpath)
 xlsxs$xlsx     = paste0(xlsxs$basename,".xlsx")
+# remove all *.Ud.* files
+xlsxs = xlsxs[grep(xlsxs$xlsx, pattern=".*\\.Ud\\..*", invert=T),]
 
 # ignore "Suppl" files 
 sups = grep(xlsxs$xlsx,pattern="_Suppl." )
@@ -572,14 +623,27 @@ xlsx_col_info = data.frame(row.names=xlsx_change_colnames,
 xlsx_col_info[c(xlsx_change_colnames[c(xlsx_change_srcCols,xlsx_change_destCols)],"rank"),"pattern"] = "([^[:alnum:]-]+)"
 xlsx_col_info[c(xlsx_change_colnames[c(xlsx_change_srcCols,xlsx_change_destCols)],"rank"),"pat_warn"] = "non-(AlphaNumeric or hyphen)"
 xlsx_col_info[c(xlsx_change_colnames[c(xlsx_change_srcCols,xlsx_change_destCols)],"rank"),"pat_code"] = "XLSX.NON_ALPHA-NUMERIC"
+xlsx_col_info[c(xlsx_change_colnames[c(xlsx_change_srcCols,xlsx_change_destCols)],"rank"),"pat_replace"] = ""
 # allow internal spaces on species and columns with lists/isolate names
-xlsx_col_info[c("srcSpecies","species","change"),"pattern"] = "([^[:alnum:] -]+)"
-xlsx_col_info[c("srcSpecies","species","change"),"pat_warn"] = "non-(AlphaNumeric or hyphen or space)"
-xlsx_col_info[c("srcSpecies","species","change"),"pat_code"] = "XLSX.NON_ALPHA-NUMERIC-SPACE)"
-# lists
-xlsx_col_info[c( "exemplarAccession","exemplarName","Abbrev","exemplarIsolate"),"pattern"] = "([^[:alnum:],:;_/ -.]+)"
-xlsx_col_info[c( "exemplarAccession","exemplarName","Abbrev","exemplarIsolate"),"pat_warn"] = "non-(AlphaNumeric or punctuation)"
-xlsx_col_info[c( "exemplarAccession","exemplarName","Abbrev","exemplarIsolate"),"pat_code"] = "XLSX.NON-ALPHA-NUM-LIST"
+xlsx_col_info[c("srcSpecies","species"),"pattern"] = "([^[:alnum:] -]+)"
+xlsx_col_info[c("srcSpecies","species"),"pat_warn"] = "non-(AlphaNumeric,hyphen,space)"
+xlsx_col_info[c("srcSpecies","species"),"pat_code"] = "XLSX.NON_ALPHA-NUMERIC-SPACE"
+# allow internal spaces on species and columns with lists/isolate names
+xlsx_col_info[c("change"),"pattern"] = "([^[:alnum:] ;-]+)"
+xlsx_col_info[c("change"),"pat_warn"] = "non-(AlphaNumeric,hyphen,space,semicolon)"
+xlsx_col_info[c("change"),"pat_code"] = "XLSX.NON_ALPHA-NUMERIC-SPACE-SEMI"
+# semi-colon separated lists
+xlsx_col_info[c( "Abbrev"),"pattern"] = "([^[:alnum:];_/ . -]+)"
+xlsx_col_info[c( "Abbrev"),"pat_warn"] = "Should be semicolon-separated list"
+xlsx_col_info[c( "Abbrev"),"pat_code"] = "XLSX.SEMICOLON-SEP-LIST"
+xlsx_col_info[c( "exemplarAccession"),"pattern"] = "([^[:alnum:]:;_/ .-]+)"
+xlsx_col_info[c( "exemplarAccession"),"pat_warn"] = "Should be semicolon-separated list of [name:]accession"
+xlsx_col_info[c( "exemplarAccession"),"pat_code"] = "XLSX.SEMICOLON-SEP-LIST-NAMED"
+# exemplarIsolate and exemplarName are anything printable. 
+xlsx_col_info[c("exemplarName","exemplarIsolate"),"pattern"] = "([^[:print:]]+)"
+xlsx_col_info[c("exemplarName","exemplarIsolate"),"pat_warn"] = "unprintable/non-ASCII"
+xlsx_col_info[c("exemplarName","exemplarIsolate"),"pat_code"] = "XLSX.NON_PRINTABLE"
+
 # others just must be printable
 otherCols = is.na(xlsx_col_info$pattern)
 xlsx_col_info[otherCols,"pattern"] = "([^[:print:]]+)"
@@ -701,6 +765,7 @@ load_proposal = function(code) {
   return(df)
 }
 
+
 #
 # QC the .xlsx data at the sheet level
 #
@@ -732,38 +797,70 @@ qc_proposal = function(code, proposalDf) {
   # set up error tracking
   errorDf = allErrorDf[FALSE,]
   templateVersion = "error"
+  xlxs_colnames = toupper(c(letters,paste0("a",letters))) 
   
   # check row 2 to validate version of templates
-  row2v1match = sum(proposalDf[2, seq(from = 1, to = min(length(xlsx_v1_row2), ncol(proposalDf)))] == xlsx_v1_row2, na.rm = T)
-  row2v2match = sum(proposalDf[2, seq(from = 2, to = min(length(xlsx_v2_row2) +
-                                                           1, ncol(proposalDf)))] == xlsx_v2_row2, na.rm = T)
-  if (row2v1match == sum(!is.na(xlsx_v1_row2))) {
+  row2v1match = proposalDf[2, seq(from = 1, to = min(length(xlsx_v1_row2), ncol(proposalDf)))] == xlsx_v1_row2
+  row2v1matchCt = sum(row2v1match, na.rm = T)
+  row2v2match = proposalDf[2, seq(from = 2, to = min(length(xlsx_v2_row2) +
+                                                       1, ncol(proposalDf)))] == xlsx_v2_row2
+  row2v2matchCt = sum(row2v2match, na.rm = T)
+  
+  templateLine2Error = ""
+  if (row2v1matchCt == sum(!is.na(xlsx_v1_row2))) {
     templateLine2Version = "v1"
-  } else if (row2v2match == sum(!is.na(xlsx_v2_row2))) {
+  } else if (row2v2matchCt == sum(!is.na(xlsx_v2_row2))) {
     templateLine2Version = "v2"
   } else {
     templateLine2Version = "unrecognized"
+    # report the unexpected values
+    if( row2v1matchCt > row2v2matchCt ) { 
+      templateLine2Error= paste("similar to v1, but with ", 
+                                paste(paste0("column ",toupper(c(letters,paste0("a",letters)))[which(!row2v1match)],"='",proposalDf[2,which(!row2v1match)],"' instead of '",xlsx_row2_v1[which(!row2v1match)],"'"),collapse="; ")
+      )
+    } 
+    if( row2v1matchCt < row2v2matchCt ) { 
+      templateLine2Error= paste("similar to v2, but with ", 
+                                paste(paste0("column ",toupper(c(letters,paste0("a",letters)))[which(!row2v2match)],"='",proposalDf[2,which(!row2v2match)],"' instead of '",xlsx_row2_v2[which(!row2v2match)],"'"),collapse="; ")
+      )
+    } 
   }
-  if(params$verbose>1) { cat("     ", code, " XLSX.Row 2: ",templateLine2Version,"\n")}
+  if(params$verbose>1) { cat("     ", code, " XLSX.Row 2: ",templateLine2Version," ",templateLine2Error,"\n")}
   
   # check row 3 to validate version of templates
-  row3v1match = sum(proposalDf[3, seq(from = 1, to = min(length(xlsx_row3_v1), ncol(proposalDf)))] == xlsx_row3_v1, na.rm=T)
-  row3v2match = sum(proposalDf[3, seq(from = 1, to = min(length(xlsx_row3_v2), ncol(proposalDf)))] == xlsx_row3_v2, na.rm=T)
-  if (row3v1match == sum(!is.na(xlsx_row3_v1))) {
+  row3v1match = proposalDf[3, seq(from = 1, to = min(length(xlsx_row3_v1), ncol(proposalDf)))] == xlsx_row3_v1
+  row3v1matchCt = sum(row3v1match, na.rm=T)
+  row3v2match = proposalDf[3, seq(from = 1, to = min(length(xlsx_row3_v2), ncol(proposalDf)))] == xlsx_row3_v2
+  row3v2matchCt = sum(row3v2match, na.rm=T)
+  templateLine3Error = ""
+  if (sum(row3v1match,na.rm=T) == sum(!is.na(xlsx_row3_v1))) {
     templateLine3Version = "v1"
-  } else if (row3v2match == sum(!is.na(xlsx_row3_v2))) {
+  } else if (sum(row3v2match, na.rm=T) == sum(!is.na(xlsx_row3_v2))) {
     templateLine3Version = "v2"
   } else {
     templateLine3Version = "unrecognized"
+    # report the unexpected values
+    if( row3v1matchCt > row3v2matchCt ) { 
+      templateLine3Error= paste("similar to v1, but with ", 
+                                paste(paste0("column ",toupper(c(letters,paste0("a",letters)))[which(!row3v1match)],"='",proposalDf[3,which(!row3v1match)],"' instead of '",xlsx_row3_v1[which(!row3v1match)],"'"),collapse="; ")
+      )
+    } 
+    if( row3v1matchCt < row3v2matchCt ) { 
+      templateLine3Error= paste("similar to v2, but with ", 
+                                paste(paste0("column ",toupper(c(letters,paste0("a",letters)))[which(!row3v2match)],"='",proposalDf[3,which(!row3v2match)],"' instead of '",xlsx_row3_v2[which(!row3v2match)],"'"),collapse="; ")
+      )
+    } 
   }
-  if(params$verbose>1){cat("     ", code, " XLSX.Row 3: ",templateLine3Version,"\n")}
+  if(params$verbose>1){cat("     ", code, " XLSX.Row 3: ",templateLine3Version," ",templateLine3Error,"\n")}
   
   # check for row2/row3 mismatch or errors
   if (templateLine2Version != templateLine2Version || "unrecognized" %in% c(templateLine2Version,templateLine3Version)) {
     
     proposals[code,"templateVersion"]="error"   
-    errorDf=addError(errorDf,code,3,NA,NA,NA,"ERROR","XLSX.TEMPLATE_UNK","XLSX template version",paste0("ROW2 is ",templateLine2Version,
-                                                                      ", ROW3 is ", templateLine3Version))
+    errorDf=addError(errorDf,code,3,NA,NA,NA,"ERROR","XLSX.TEMPLATE_UNK","XLSX template version",
+                            paste0("ROW2 is ", templateLine2Version, " (",templateLine2Error,")",
+                              ", ROW3 is ", templateLine3Version," (",templateLine3Error,")")
+    )
     return(list(errorDf=errorDf))
   } else {
     templateVersion = templateLine2Version
@@ -772,7 +869,7 @@ qc_proposal = function(code, proposalDf) {
   proposals[code,"templateVersion"]=templateVersion
   if( templateVersion == "v1") {
     # WARNING for outdated templates
-    errorDf=addError(errorDf,code,3,NA,NA,NA,"WARNING","XLSX.OLD_TEMPLATE_V1", "XLSX template version",
+    errorDf=addError(errorDf,code,3,NA,NA,NA,"INFO","XLSX.OLD_TEMPLATE_V1", "XLSX template version",
                      paste0("You are using version ",templateVersion,". Please get the latest version from ",params$templateURL)
     )
   }
@@ -788,7 +885,7 @@ qc_proposal = function(code, proposalDf) {
   if( templateVersion == "v2" ) { codeValue= proposalDf[3,1]; codeCell="A3"; codeRow=3 }
   if( codeValue != code ) {
     if( str_starts(codeValue,"Code") ) {
-      errorDf=addError(errorDf,code,codeRow,NA,NA,NA,"WARNING","XLSX.CODE_MISS", "XLSX code missing", 
+      errorDf=addError(errorDf,code,codeRow,NA,NA,NA,"INFO","XLSX.CODE_MISS", "XLSX code missing", 
                        paste0("XLSX cell ",codeCell,
                               " is ", "'",codeValue, 
                               "'; replace with the actual code: '",code,"'")
@@ -850,55 +947,147 @@ qc_proposal = function(code, proposalDf) {
   for( col in rownames(xlsx_col_info) ) {
     # col = "srcSpecies" # debug
     #  col = "hostSource" # debug
+
+    #
+    # non-breaking space
+    # AscToChar(202)
+    pattern="([ ]+)"; pat_warn="non-breaking space character"; pat_replace=" "
+    qc.matches =grep(changeDf[,col],pattern=pattern)
+    if(length(qc.matches)>0) { 
+      if(params$verbose) { cat("WARNING:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
+       errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
+                       changeDf$change[qc.matches],changeDf$rank[qc.matches],changeDf$.changeTaxon[qc.matches],
+                       "WARNING","XLSX.NB_SPACE", paste("XLSX has",pat_warn),
+                       paste0(paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":")," (replacing with '",pat_replace,"')")
+      )
+      # backup original values
+      changeDf[qc.matches,paste0(col,"_orig")] == changeDf[qc.matches,col]
+      # remove non-ascii chars
+      changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
+    }     
+
+    #
+    # newline
+    #
+    pattern="([\r\n]+)"; pat_warn="newline character(s)";pat_replace=";"
+    qc.matches =grep(changeDf[,col],pattern=pattern)
+    if(length(qc.matches)>0) { 
+      if(params$verbose) { cat("WARNING:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
+      errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
+                       changeDf$change[qc.matches],changeDf$rank[qc.matches],changeDf$.changeTaxon[qc.matches],
+                       "WARNING","XLSX.NEWLINE", paste("XLSX has",pat_warn),
+                       paste0(paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":")," (replacing with '",pat_replace,"')")
+      )
+      # backup original values
+      changeDf[qc.matches,paste0(col,"_orig")] == changeDf[qc.matches,col]
+      # remove non-ascii chars
+      changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
+    }     
+    
+    #
+    # long-dashes
+    # "–" and "—"
+    pattern=paste0("([",AscToChar(207),AscToChar(208),"]+)"); pat_warn="long-dash[en/em dashes]";pat_replace="-"
+    qc.matches =grep(changeDf[,col],pattern=pattern)
+    if(length(qc.matches)>0) { 
+      if(params$verbose) { cat("WARNING:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
+      errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
+                       changeDf$change[qc.matches],changeDf$rank[qc.matches],changeDf$.changeTaxon[qc.matches],
+                       "WARNING","XLSX.NEWLINE", paste("XLSX has",pat_warn),
+                       paste0(paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":")," (replacing with '",pat_replace,"')")
+      )
+      # backup original values
+      changeDf[qc.matches,paste0(col,"_orig")] == changeDf[qc.matches,col]
+      # remove non-ascii chars
+      changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
+    }     
+ 
+    #
+    # curvy quotes
+    # AscToChar(210)AscToChar(211)
+    pattern=paste0("([“”]+)"); pat_warn="curvy quotes";pat_replace='"'
+    qc.matches =grep(changeDf[,col],pattern=pattern)
+    if(length(qc.matches)>0) { 
+      if(params$verbose) { cat("WARNING:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
+      errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
+                       changeDf$change[qc.matches],changeDf$rank[qc.matches],changeDf$.changeTaxon[qc.matches],
+                       "WARNING","XLSX.CURVY_DOUBLE_QUOTES", paste("XLSX has",pat_warn),
+                       paste0(paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":")," (replacing with '",pat_replace,"')")
+      )
+      # backup original values
+      changeDf[qc.matches,paste0(col,"_orig")] == changeDf[qc.matches,col]
+      # remove non-ascii chars
+      changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
+    }     
+    #
+    # curvy single-quotes
+    # AscToChar(212)AscToChar(213)
+    pattern=paste0("([‘’]+)"); pat_warn="curvy single quotes";pat_replace="'"
+    qc.matches =grep(changeDf[,col],pattern=pattern)
+    if(length(qc.matches)>0) { 
+      if(params$verbose) { cat("WARNING:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
+      errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
+                       changeDf$change[qc.matches],changeDf$rank[qc.matches],changeDf$.changeTaxon[qc.matches],
+                       "WARNING","XLSX.CURVY_SINGLE_QUOTES", paste("XLSX has",pat_warn),
+                       paste0(paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":")," (replacing with '",pat_replace,"')")
+      )
+      # backup original values
+      changeDf[qc.matches,paste0(col,"_orig")] == changeDf[qc.matches,col]
+      # remove non-ascii chars
+      changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
+    }     
     
     #
     # leading white space
     #
-    pattern="^([ \t]+)"; pat_warn="leading whitespace"
+    pattern="^([ \t]+)"; pat_warn="leading whitespace"; pat_replace=""
     qc.matches =grep(changeDf[,col],pattern=pattern)
     if(length(qc.matches)>0) { 
       if(params$verbose) { cat("WARNING:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
       errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
-                       changeDf$change[qc.matches],changeDf$rank,changeDf$.changeTaxon[qc.matches],
+                       changeDf$change[qc.matches],changeDf$rank[qc.matches],changeDf$.changeTaxon[qc.matches],
                        "WARNING","XLSX.LEAD_SPACE", paste("XLSX has",pat_warn),
-                       paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":"))
+                       paste0(paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":")," (replacing with '",pat_replace,"')")
+      )
       # backup original values
       changeDf[qc.matches,paste0(col,"_orig")] == changeDf[qc.matches,col]
       # remove non-ascii chars
-      changeDf[,col] = gsub(pattern,"",changeDf[,col])
+      changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
     } 
     #
     # trailing white space
     #
-    pattern="([ \t]+)$"; pat_warn="trailing whitespace"
+    pattern="([ \t]+)$"; pat_warn="trailing whitespace"; pat_replace=""
     qc.matches =grep(changeDf[,col],pattern=pattern)
     if(length(qc.matches)>0) { 
       if(params$verbose) { cat("WARNING:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
       errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
-                       changeDf$change[qc.matches],changeDf$rank, changeDf$.changeTaxon[qc.matches],
+                       changeDf$change[qc.matches],changeDf$rank[qc.matches], changeDf$.changeTaxon[qc.matches],
                        "WARNING","XLSX.TRAIL_SPACE", paste("XLSX has",pat_warn),
-                       paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":"))
+                       paste0(paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":")," (replacing with '",pat_replace,"')")
+      )
       # backup original values
       changeDf[qc.matches,paste0(col,"_orig")] == changeDf[qc.matches,col]
       # remove non-ascii chars
-      changeDf[,col] = gsub(pattern,"",changeDf[,col])
+      changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
     } 
     #
     # quotes
     #
     if( col != "comments" ) {
-      pattern='(["]+)'; pat_warn="quote"
+      pattern='(["]+)'; pat_warn="quote"; pat_replace=""
       qc.matches =grep(changeDf[,col],pattern=pattern)
       if(length(qc.matches)>0) { 
         if(params$verbose) { cat("WARNING:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
         errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
-                         changeDf$change[qc.matches],changeDf$rank,changeDf$.changeTaxon[qc.matches],
+                         changeDf$change[qc.matches],changeDf$rank[qc.matches],changeDf$.changeTaxon[qc.matches],
                          "WARNING","XLSX.QUOTES", paste("XLSX has",pat_warn),
-                         paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":"))
+                         paste0(paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":")," (replacing with '",pat_replace,"')")
+        )
         # backup original values
        changeDf[qc.matches,paste0(col,"_orig")] == changeDf[qc.matches,col]
         # remove non-ascii chars
-        changeDf[,col] = gsub(pattern,"",changeDf[,col])
+        changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
       } 
     }
     # 
@@ -1514,14 +1703,15 @@ apply_changes = function(code,proposalBasename,changeDf) {
         .GlobalEnv$newMSL[srcNewTarget,"lineage"] = paste(newMSL[srcNewParent,"lineage"],destTaxonName,sep=";") # should we do this? 
         
         # check if that is the expected lineage
-        # WARN if PARENT_LINEAGE is not expected, AND USE PARENT LINEAGE
+        # WARN that PARENT_LINEAGE is not expected, AND USE MSL/OBSERVED PARENT LINEAGE
         if( change$.destParentName != .GlobalEnv$newMSL[srcNewParent,"name"] ) {
-           errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
+          parentRank = .GlobalEnv$newMSL[srcNewParent,]$rank
+          errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
                            "WARNING", "RENAME.PARENT_NAME", 
                            "parent name not as expected; was this meant to be a move? Is there a typo?", 
-                           paste0("proposedParentName=", destParentName,
-                                  ", observedParentNaem=",.GlobalEnv$newMSL[srcNewTarget,"name"],
-                                  ", otherProposals=",.GlobalEnv$newMSL[srcNewTarget,"prev_proposals"])
+                           paste0("parent ", parentRank, " in this proposal: '", change$.destParentName,"', ",
+                                  "but MSL parent is ", parentRank, " '",.GlobalEnv$newMSL[srcNewParent,"name"],"'; ",
+                                  "other new proposals: ",.GlobalEnv$newMSL[srcNewTarget,"prev_proposals"])
           )
          }
  
@@ -1952,8 +2142,62 @@ cat("# DONE. Found",length(rownames(proposals)),"proposals; Processed",processed
 
 #### SECTION write error list #####
 # write current error list
-write_xlsx( x=allErrorDf,path=file.path(params$out_dir,"QC.summary.xlsx"))
-write_delim(x=allErrorDf,file=file.path(params$out_dir,"QC.summary.tsv"), delim="\t")
+# TODO: add line breaks, bold
+# openxlsx
+# r2excel: (install fails?) http://www.sthda.com/english/wiki/r2excel-read-write-and-format-easily-excel-files-using-r-software#install-and-load-r2excel-package
+# xlsx (requires java)
+# XLConnect (requires rJava)
+
+prettyErrorDf = data.frame(allErrorDf %>% filter(FALSE))
+prettyRow = 0
+prevCode = ""
+errorSortCols = allErrorDf[,c("code","row")]
+errorSortCols$rown = as.integer(errorSortCols$row)
+errorsSorted = do.call(order,errorSortCols[,c("code","rown")])
+
+for(i in seq(1,nrow(allErrorDf)) ) {
+  row=errorsSorted[i]
+  # add blank line and header when document changes
+  if(allErrorDf[row,"code"]!= prevCode) { 
+    prevCode = allErrorDf[row,"code"]
+
+    prettyErrorDf[prettyRow,c("folder")] = c(allErrorDf[row,"folder"])
+    prettyRow=prettyRow+1
+    
+    prettyErrorDf[prettyRow,c("folder","code","xlsx")] = c(
+      allErrorDf[row,"folder"],
+      allErrorDf[row,"code"],
+      ifelse(is.na(allErrorDf[row,"docx"]),
+             allErrorDf[row,"xlsx"],
+             allErrorDf[row,"docx"]
+      )
+    )
+    prettyRow=prettyRow+1
+    }
+  
+  # copy other lines as-is
+  prettyErrorDf[prettyRow,]=allErrorDf[row,]
+  prettyRow=prettyRow+1
+}
+# this should get chunked into files/worksheets by "folder"
+for(committee in levels(as.factor(prettyErrorDf$folder)) ) {
+  folderFilename = str_replace_all(str_replace(committee,pattern="(.*) \\(([A-Z])\\) .*","\\2 \\1")," ","_")
+  filename = file.path(params$out_dir,
+                       paste0("QC.pretty_summary.",folderFilename,".xlsx")
+  )
+  prettyCols = grep(names(prettyErrorDf),pattern="(code|docx|folder)",invert=T,value=T)
+  
+  select = (prettyErrorDf$folder == committee)
+  write_xlsx( x=prettyErrorDf[select,prettyCols],path=filename)
+  cat("Wrote: ", filename, " (",nrow(prettyErrorDf[select,]),"rows )\n")
+}
+filename = file.path(params$out_dir,"QC.pretty_summary.all.xlsx")
+prettyCols = grep(names(prettyErrorDf),pattern="(code|docx)",invert=T,value=T)
+write_xlsx( x=prettyErrorDf[,prettyCols],path=filename)
+cat("Wrote: ", filename, " (",nrow(prettyErrorDf),"rows)\n")
+
+write_xlsx( x=allErrorDf,                path=file.path(params$out_dir,"QC.summary.xlsx"))
+write_delim(x=allErrorDf,                file=file.path(params$out_dir,"QC.summary.tsv"), delim="\t")
 # ```
 # 
 # # known problems
@@ -2283,5 +2527,7 @@ data.frame(in_change=summary(as.factor(paste0(newMSL$in_change))))
 data.frame(out_change=summary(as.factor(paste0(curMSL$rank,".",curMSL$out_change))))
 data.frame(out_change=summary(as.factor(paste0(curMSL$out_change))))
 
-save.image()
-cat("WROTE ./.RData \n")
+rdataFilename = paste0(params$proposals_dir,"/.RData")
+save.image(file=rdataFilename)
+cat("WROTE",rdataFilename,"\n")
+
