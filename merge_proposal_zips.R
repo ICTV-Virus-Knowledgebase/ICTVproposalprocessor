@@ -2480,6 +2480,9 @@ for(  row in rownames(curMslStr) )  {
 cat("\n-- build deltas (~7min) \n
 exec rebuild_delta_nodes NULL
 
+-- rebuild merge/split (seconds) \n
+EXECUTE [dbo].[rebuild_node_merge_split] 
+
 ", file=sqlout)
 cat(paste("
 -- NOW check if all newMSL have delta in, and prevMSL have delta out
