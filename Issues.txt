@@ -1,5 +1,24 @@
-Issues 
+==========
+= STATUS =
+==========
 
+[X] Suppress XLSX.CODE_MISS INFO
+[X] Match docx and xlsx only on first 9 characters, filtering for Supp.; remove warning for xlsx!=docx
+[X] Convert fixable formatting WARNINGS to INFO
+[X] Sort by rank in each proposal.
+       added this to qc_proposal() - need to validate it fixes problems with (edited)
+[X] ERROR: species must be “genus[space]name” 
+[ ] QC/ERROR: species must  exist in genera of same name.
+[ ] Fix “message” for 2022.003F.A.v1.Botourmiaviridae_15nsp.xlsx:14 error – don’t show root node
+[ ] 2022.020M.A.v2.Phenuiviridae_2ngen_10nsp_1rensp.xlsx:16 renames “Melon tenuivirus”, and puts it in a new genus, but so does 2021.002M.A.v2.Phenuiviridae_sprenamed which only renames it.
+
+---- future
+[ ] db errors: https://uab-lefkowitz.atlassian.net/browse/IVK-162, https://uab-lefkowitz.atlassian.net/browse/IVK-161
+[ ] Src.lineage_wrong – check prev-MSL lineage to see if it matches
+
+================================================================================
+Issues 
+================================================================================
 Code           Status            Issue
 -------------------------------------------------------
 CODE=?        STATUS=research   ISSUE=promote/move create duplicate
