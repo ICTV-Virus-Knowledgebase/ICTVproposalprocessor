@@ -1,16 +1,21 @@
 ==========
 = STATUS =
 ==========
+[ ] fix Luteovirus move child lineage problems (2022.014P)  c(...)
+[ ] upload SQL
+[ ] summary to Elliot, with fixed files. 
 
 [X] Suppress XLSX.CODE_MISS INFO
 [X] Match docx and xlsx only on first 9 characters, filtering for Supp.; remove warning for xlsx!=docx
 [X] Convert fixable formatting WARNINGS to INFO
-[X] Sort by rank in each proposal.
+[X] Sort by rank in each proposal to fix 2022.001S.A.v2.Picornavirales_1nf.xlsx
        added this to qc_proposal() - need to validate it fixes problems with (edited)
 [X] ERROR: species must be “genus[space]name” 
-[ ] QC/ERROR: species must  exist in genera of same name.
-[ ] Fix “message” for 2022.003F.A.v1.Botourmiaviridae_15nsp.xlsx:14 error – don’t show root node
-[ ] 2022.020M.A.v2.Phenuiviridae_2ngen_10nsp_1rensp.xlsx:16 renames “Melon tenuivirus”, and puts it in a new genus, but so does 2021.002M.A.v2.Phenuiviridae_sprenamed which only renames it.
+[X] QC/ERROR: species must  exist in genera of same name.
+[X] Fix “message” for 2022.003F.A.v1.Botourmiaviridae_15nsp.xlsx:14 error – don’t show root node
+     DEST.IN_CUR; NOTES=", proposedTaxonomy=Gammascleroulivirus; existingTaxon=MSL37:2020"
+     data fix is to add missing "alphaoryzae" to species name (clearly in docx)
+[X] 2022.020M.A.v2.Phenuiviridae_2ngen_10nsp_1rensp.xlsx:16 renames “Melon tenuivirus”, and puts it in a new genus, but so does 2021.002M.A.v2.Phenuiviridae_sprenamed which only renames it.
 
 ---- future
 [ ] db errors: https://uab-lefkowitz.atlassian.net/browse/IVK-162, https://uab-lefkowitz.atlassian.net/browse/IVK-161
