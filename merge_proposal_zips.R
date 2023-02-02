@@ -101,6 +101,8 @@ if(FALSE && file.exists(cacheFilename)) {
   params$out_dir=str_replace(params$proposals_dir,"proposals","results")
   rm("changeList") # to re-run only QC, delete this cache
   cat("RM(changeList) # re-run QC")
+} else {
+  cat("SKIP: loading cache file ", cacheFilename, "\n")
 }
 cat("PROPOSALS_DIR:",params$proposals_dir,"\n")
 cat("OUT_DIR      :",params$out_dir,"\n")
