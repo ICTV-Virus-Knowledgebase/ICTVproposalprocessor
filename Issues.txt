@@ -1,9 +1,9 @@
 ==========
 = STATUS =
 ==========
-[ ] fix Luteovirus move child lineage problems (2022.014P)  c(...)
-[ ] upload SQL
-[ ] summary to Elliot, with fixed files. 
+[X] fix Luteovirus move child lineage problems (2022.014P)  c(...)
+[X] upload SQL
+[X] summary to Elliot, with fixed files. 
 
 [X] Suppress XLSX.CODE_MISS INFO
 [X] Match docx and xlsx only on first 9 characters, filtering for Supp.; remove warning for xlsx!=docx
@@ -20,6 +20,7 @@
 ---- future
 [ ] db errors: https://uab-lefkowitz.atlassian.net/browse/IVK-162, https://uab-lefkowitz.atlassian.net/browse/IVK-161
 [ ] Src.lineage_wrong – check prev-MSL lineage to see if it matches
+[ ] check binomial naming on MOVE|RENAME SPECIES?
 
 ================================================================================
 Issues 
