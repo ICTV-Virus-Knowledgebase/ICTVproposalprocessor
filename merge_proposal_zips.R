@@ -385,7 +385,7 @@ dir.create(params$out_dir,recursive=T,showWarnings = F)
 #
 # break filename into proposal code, filename and folder name
 #
-proposals = data.frame(docxpath=list.files(path=params$proposals_dir,pattern="^20[0-9][0-9].[0-9A-Z]+.*.v*.*.docx$", recursive=T, full.names=TRUE) )
+proposals = data.frame(docxpath=list.files(path=params$proposals_dir,pattern="^20[0-9][0-9]\\.[0-9A-Z]+\\..*\\.docx$", recursive=T, full.names=TRUE) )
 proposals$path     = gsub(     "^(.*/)(20[0-9]+.[0-9A-Z]+).[^/]+.docx$","\\1",proposals$docxpath)
                     # look for folder names "Words.. (?) proposals" - there may be folders above and below that we don't care about
 proposals$folder   = gsub(".*/([^/]+\\([A-Z]\\)[^/]+).*/(20[0-9]+.[0-9A-Z]+).[^/]+.docx$","\\1",proposals$docxpath)
@@ -395,7 +395,7 @@ proposals$docx     = paste0(proposals$basename,".docx")
 # remove all *.Ud.* files
 proposals = proposals[grep(proposals$docx, pattern=".*\\.Ud\\..*", invert=T),]
 # strip off version, workflow status and .fix, to get final, production filename
-proposals$cleanbase= gsub("^([0-9]+\\.[0-9]+[A-Z])\\.[A-Z]\\.v[0-9]+(\\.fix)*(\\..*)$","\\1\\3",proposals$basename)
+proposals$cleanbase= gsub("^([0-9]+\\.[0-9]+[A-Z])(\\.[A-Z]+)(\\.v[0-9]+)*(\\.fix)*(\\..*)$","\\1\\5",proposals$basename)
 
 # check for duplicate Proposal IDs
 dups = duplicated(proposals$code)
@@ -417,7 +417,7 @@ rownames(proposals)=proposals$code
 #
 #### SECTION: scan XLSX #### 
 #
-xlsxs = data.frame(xlsxpath=list.files(path=params$proposals_dir,pattern="^20[0-9][0-9].[^.]+.*.v*.*.xlsx$", recursive=T, full.names=TRUE) )
+xlsxs = data.frame(xlsxpath=list.files(path=params$proposals_dir,pattern="^20[0-9][0-9]\\.[^.]+.*\\.xlsx$", recursive=T, full.names=TRUE) )
 xlsxs$path     = gsub(     "^(.*/)(20[0-9]+.[0-9A-Z]+).[^/]+.xlsx$","\\1",xlsxs$xlsxpath)
 # look for folder names "Words.. (?) proposals" - there may be folders above and below that we don't care about
 xlsxs$folder   = gsub(".*/([^/]+\\([A-Z]\\)[^/]+).*/(20[0-9]+.[0-9A-Z]+).[^/]+.xlsx$","\\1",xlsxs$xlsxpath)
@@ -427,7 +427,7 @@ xlsxs$xlsx     = paste0(xlsxs$basename,".xlsx")
 # remove all *.Ud.* files
 xlsxs = xlsxs[grep(xlsxs$xlsx, pattern=".*\\.Ud\\..*", invert=T),]
 # strip off version, workflow status and .fix, to get final, production filename
-xlsxs$cleanbase= gsub("^([0-9]+\\.[0-9]+[A-Z])\\.[A-Z]\\.v[0-9]+(\\.fix)*(\\..*)$","\\1\\3",xlsxs$basename)
+xlsxs$cleanbase= gsub("^([0-9]+\\.[0-9]+[A-Z])(\\.[A-Z]+)(\\.v[0-9]+)*(\\.fix)*(\\..*)$","\\1\\5",xlsxs$basename)
 
 # ignore "Suppl" files 
 sups = grep(xlsxs$xlsx,pattern=params$xlsx_suppl_pat )
