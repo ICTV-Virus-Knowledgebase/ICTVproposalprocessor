@@ -13,9 +13,9 @@ params = list(
   ,cv_sheet="Menu Items (Do not change)"
   ,VMR_filename="./current_msl/VMR_21-221122_MSL37.xlsx"
   ,templateURL="https://ictv.global/taxonomy/templates"
-  ,proposals_dir="./proposals3"
   ,xlsx_suppl_pat = "_Suppl."
-  ,out_dir="./results3"
+#  ,proposals_dir="./proposals3"  ,out_dir="./results3"
+  ,proposals_dir="./proposalsFinal"  ,out_dir="./resultsFinal"
   # output files
   ,dest_msl=38
   ,merged="load_next_msl.txt"
@@ -25,6 +25,7 @@ params = list(
   # debug output: 0=none, 1=some, 2=details
   ,verbose=1
   ,debug_on_error=F # call browser() if ERROR detected
+  ,use_cache=T # load proposals_dir/.RData before processing
 )
 
 
@@ -95,7 +96,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # rm("xlxsList","changeList") # to re-run xlsx file loading & QC, delete these caches
 # rm("changeList") # to re-run only QC, delete this cache
 cacheFilename=paste0(params$proposals_dir,"/.RData")
-if(FALSE && file.exists(cacheFilename)) {
+if(params$use_cache && file.exists(cacheFilename)) {
   cat("Loading image ", cacheFilename, "...\n")
   load(file=cacheFilename)
   params$out_dir=str_replace(params$proposals_dir,"proposals","results")
@@ -382,9 +383,9 @@ dir.create(params$out_dir,recursive=T,showWarnings = F)
 #
 #### SECTION scan DOCX #### 
 #
-# break filename into proposal code, filenaem and folder name
+# break filename into proposal code, filename and folder name
 #
-proposals = data.frame(docxpath=list.files(path=params$proposals_dir,pattern="20[0-9][0-9].[0-9A-Z]+.*.v*.*.docx", recursive=T, full.names=TRUE) )
+proposals = data.frame(docxpath=list.files(path=params$proposals_dir,pattern="^20[0-9][0-9].[0-9A-Z]+.*.v*.*.docx$", recursive=T, full.names=TRUE) )
 proposals$path     = gsub(     "^(.*/)(20[0-9]+.[0-9A-Z]+).[^/]+.docx$","\\1",proposals$docxpath)
                     # look for folder names "Words.. (?) proposals" - there may be folders above and below that we don't care about
 proposals$folder   = gsub(".*/([^/]+\\([A-Z]\\)[^/]+).*/(20[0-9]+.[0-9A-Z]+).[^/]+.docx$","\\1",proposals$docxpath)
@@ -393,6 +394,8 @@ proposals$basename = gsub(".*/([^/]+)/(20[0-9]+.[0-9A-Z]+.[^/]+).docx$","\\2",pr
 proposals$docx     = paste0(proposals$basename,".docx")
 # remove all *.Ud.* files
 proposals = proposals[grep(proposals$docx, pattern=".*\\.Ud\\..*", invert=T),]
+# strip off version, workflow status and .fix, to get final, production filename
+proposals$cleanbase= gsub("^([0-9]+\\.[0-9]+[A-Z])\\.[A-Z]\\.v[0-9]+(\\.fix)*(\\..*)$","\\1\\3",proposals$basename)
 
 # check for duplicate Proposal IDs
 dups = duplicated(proposals$code)
@@ -414,7 +417,7 @@ rownames(proposals)=proposals$code
 #
 #### SECTION: scan XLSX #### 
 #
-xlsxs = data.frame(xlsxpath=list.files(path=params$proposals_dir,pattern="^20[0-9][0-9].[^.]+.*.v*.*.xlsx", recursive=T, full.names=TRUE) )
+xlsxs = data.frame(xlsxpath=list.files(path=params$proposals_dir,pattern="^20[0-9][0-9].[^.]+.*.v*.*.xlsx$", recursive=T, full.names=TRUE) )
 xlsxs$path     = gsub(     "^(.*/)(20[0-9]+.[0-9A-Z]+).[^/]+.xlsx$","\\1",xlsxs$xlsxpath)
 # look for folder names "Words.. (?) proposals" - there may be folders above and below that we don't care about
 xlsxs$folder   = gsub(".*/([^/]+\\([A-Z]\\)[^/]+).*/(20[0-9]+.[0-9A-Z]+).[^/]+.xlsx$","\\1",xlsxs$xlsxpath)
@@ -423,6 +426,8 @@ xlsxs$code     = gsub(".*/([^/]+)/(20[0-9]+.[0-9A-Z]+).[^/]+.xlsx$","\\2",xlsxs$
 xlsxs$xlsx     = paste0(xlsxs$basename,".xlsx")
 # remove all *.Ud.* files
 xlsxs = xlsxs[grep(xlsxs$xlsx, pattern=".*\\.Ud\\..*", invert=T),]
+# strip off version, workflow status and .fix, to get final, production filename
+xlsxs$cleanbase= gsub("^([0-9]+\\.[0-9]+[A-Z])\\.[A-Z]\\.v[0-9]+(\\.fix)*(\\..*)$","\\1\\3",xlsxs$basename)
 
 # ignore "Suppl" files 
 sups = grep(xlsxs$xlsx,pattern=params$xlsx_suppl_pat )
@@ -2433,7 +2438,7 @@ for( code in codes) {
     
     
     # Apply the Change
-    results=apply_changes(code,proposals[code,"basename"],changeDf)
+    results=apply_changes(code,proposals[code,"cleanbase"],changeDf)
     
     # Internal sanity check
     if(!(20070000 %in% .GlobalEnv$newMSL$ictv_id)) { 
@@ -2543,6 +2548,93 @@ newMSL[taxnode_id==202203151, c("taxnode_id","parent_id","lineage","name","clean
 
 # ------------------------------------------------------------------------------
 # 
+# # Export MSL to a TSV that can be easily diff'ed
+# - no taxnode_ids
+# - no dates
+# - no filenames
+#
+# 
+# ```{r tsv_export}
+#### SECTION export to TSV #####
+tsvColList = c(#"taxnode_id",
+               #"parent_id",
+               #"tree_id",
+               "msl_release_num",
+               "level_id",
+               "name",
+               #"ictv_id",
+               "molecule_id",
+               "abbrev_csv",
+               "genbank_accession_csv",
+               "genbank_refseq_accession_csv",
+               "refseq_accession_csv",
+               "isolate_csv",
+               "notes",
+               # historic columns we don't update
+               #"is_ref",
+               #"is_official",
+               #"is_hidden",
+               #"is_deleted",
+               #"is_deleted_next_year",
+               #"is_typo",
+               #"is_renamed_next_year",
+               #"is_obsolete",
+               "in_change",
+               "in_target",
+               "in_filename",  # will be stripped to just  code
+               "in_notes",
+               "out_change",
+               "out_target",
+               "out_filename", # will be stripped to just  code
+               "out_notes"
+               #"lineage", # computed by trigger in db
+               #"cleaned_name", # computed by trigger in db
+               #"rank", # should be in level_id
+               # "molecule", # should be in molecule_id
+               # program admin columns - not in db
+               #"out_updated",
+               #"prev_taxnode_id",
+               #"prev_proposals",
+               # NOTE: column does not (yet) exist in [taxonomy_node], only in [load_next_msl##]
+               #"host_source",
+               # NOTE: column does not (yet) exist in [taxonomy_node], only in [load_next_msl##]
+               #"exemplar_name",
+               # NOTE: column does not (yet) exist in [taxonomy_node], only in [load_next_msl##]
+               #"genome_coverage",
+               #"comments" # doesn't exist in db, should be notes???
+               #"lineage"  # computed by trigger in db
+)
+#prepare data for export
+tsvDf = data.frame(newMSL[,..tsvColList])
+tsvDf$in_filename = gsub("^([0-9]+\\.[0-9A-Z]+)\\..*", "\\1...",newMSL$in_filename)
+tsvDf$out_filename = gsub("^([0-9]+\\.[0-9A-Z]+)\\..*", "\\1...",newMSL$out_filename)
+
+newTsvFilename = file.path(params$out_dir,"msl.tsv")
+tsvout=file(newTsvFilename,"wt")
+cat("Writing ",newTsvFilename,"\n")
+# header
+cat(paste0(
+  tsvColList,
+  collapse="\t"
+),
+"\n",
+file=tsvout)
+# body
+for(i in seq(1,nrow(tsvDf))) {
+  cat(paste0(
+    tsvDf[i,tsvColList],
+    collapse="\t"
+  ),
+  "\n",
+  file=tsvout)
+}
+close(tsvout)
+cat("WROTE   ", newTsvFilename, "\n")
+
+# ```
+
+# ------------------------------------------------------------------------------
+# 
 # # Export SQL to update the db
 # 
 # ```{r sql_export}
@@ -2567,7 +2659,7 @@ newMSL[taxnode_id==202203151, c("taxnode_id","parent_id","lineage","name","clean
 #
 # ------------------------------------------------------------------------------
 # cat(paste0('"',paste(names(newMSL),collapse='",\n"'),'"'))
-colList = c("taxnode_id",
+sqlColList = c("taxnode_id",
             "parent_id",
             "tree_id",
             "msl_release_num",
@@ -2642,7 +2734,7 @@ cat("insert into [taxonomy_toc] ([tree_id],[msl_release_num],[comments]) ",
 # (was easier to do on a data.frame, because of data.table FAQ 1.1)
 #
 newMslStr = as.data.frame(newMSL)
-for( col in colList)  {
+for( col in sqlColList)  {
   if( class(newMslStr[,col]) == 'factor' ) {
     cat("factor: ",col, "\n")
   }
@@ -2665,7 +2757,7 @@ for(  row in order(newMSL$level_id) )  {
   if( rowCount %% batchSize == 1 ) {
     cat(paste0("insert into [taxonomy_node] ",
                "([",
-               paste0(colList,collapse="],["),
+               paste0(sqlColList,collapse="],["),
                "])",
                "\n",
                " values ",
@@ -2681,11 +2773,11 @@ for(  row in order(newMSL$level_id) )  {
   cat(paste0("(",
              paste0(
                # convert NA to NULL (not 'NA')
-               ifelse(is.na(newMslStr[row, colList]), "NULL",
+               ifelse(is.na(newMslStr[row, sqlColList]), "NULL",
                       paste0("'",
                              # escape apostrophies as double-appostrophies (MSSQL)
                              sub(
-                               "'", "''", newMslStr[row, colList]
+                               "'", "''", newMslStr[row, sqlColList]
                              )
                              , "'")),
                collapse = ","
@@ -2840,6 +2932,6 @@ data.frame(out_change=summary(as.factor(paste0(curMSL$rank,".",curMSL$out_change
 data.frame(out_change=summary(as.factor(paste0(curMSL$out_change))))
 
 rdataFilename = paste0(params$proposals_dir,"/.RData")
-#save.image(file=rdataFilename)
-#cat("WROTE",rdataFilename,"\n")
+save.image(file=rdataFilename)
+cat("WROTE",rdataFilename,"\n")
 
