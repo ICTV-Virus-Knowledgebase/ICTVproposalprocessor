@@ -29,7 +29,8 @@ params = list(
   tmp_dir      ="proposalsFinal/tmp"
   
 )
-
+ 
+# needs to be externalized to a file, so can be shared with merge_prosal_zips.R
 sc2destFolder = c(
   "S"="Animal +ssRNA (S) proposals",
   "D"="Animal DNA viruses and Retroviruses (D) proposals",
@@ -109,7 +110,7 @@ proposals$finalFilename = gsub("^([0-9]+\\.[0-9]+[A-Z])\\.[A-Z]+\\.v[0-9]+(\\.fi
 proposals$cleanPath = paste0(params$dest_dir,"/",sc2destFolder[proposals$sc],"/",proposals$cleanFilename)
 proposals$finalPath = paste0(params$tmp_dir, "/",proposals$finalFilename)
 for(curCode in allCodes$code) {
-  print(paste0("### code=[[",code,"]] ###"))
+  print(paste0("### code=[[",curCode,"]] ###"))
 
   # find fileset for proposal (could include Supp files)
   codeFiles = proposals %>% filter(code == curCode)
