@@ -14,10 +14,9 @@ params = list(
   ,VMR_filename="./current_msl/VMR_21-221122_MSL37.xlsx"
   ,templateURL="https://ictv.global/taxonomy/templates"
   ,xlsx_suppl_pat = "_Suppl."
-  ,proposals_dir="./proposals2"  ,out_dir="./results2", proposal_names = "draft" 
+#  ,proposals_dir="./proposals2"  ,out_dir="./results2", proposal_names = "draft" 
 #  ,proposals_dir="./proposals3"  ,out_dir="./results3", proposal_names = "draft" 
-#  ,proposals_dir="./proposalsFinal"  ,out_dir="./resultsFinal", proposal_names = "final" 
-  
+  ,proposals_dir="./proposalsFinal"  ,out_dir="./resultsFinal", proposal_names = "final" 
   # output files
   ,dest_msl=38
   ,merged="load_next_msl.txt"
@@ -29,7 +28,7 @@ params = list(
   # debug output: 0=none, 1=some, 2=details
   ,verbose=1
   ,debug_on_error=F # call browser() if ERROR detected
-  ,use_cache=F # load proposals_dir/.RData before processing
+  ,use_cache=T # load proposals_dir/.RData before processing
 )
 
 # 
@@ -513,7 +512,7 @@ rownames(xlsxs) = xlsxs$basename
 # production format (no version)
 xlsxBadFnameFormats = grep(xlsxs$xlsx, pattern=paste0(filenameFormatRegex,".xlsx$"), invert=T)
 if( length(xlsxBadFnameFormats) > 0 ) {
-  errorDf= proposals[xlsxBadFnameFormats,c("folder","code","xlsx")]
+  errorDf= xlsxs[xlsxBadFnameFormats,c("folder","code","xlsx")]
   errorDf$level= "WARNING"
   errorDf$error = "XLSX.BAD_FILENAME_FORMAT"
   errorDf$message = paste0("Should be '",filenameFormatMsg,".xlsx'")
@@ -593,9 +592,9 @@ proposals$scName = ifelse(badProposalAbbrevs,
                           sc2destFolder[proposals$scAbbrev])
 
 # spaces in XLSX filenames
-spacedOut = grep(pattern=" ",proposals$xlsx)
+spacedOut = grep(pattern=" ",xlsxs$xlsx)
 if(sum(spacedOut) > 0) {
-  errorDf = proposals[spacedOut, c("folder", "code", "xlsx")]
+  errorDf = xlsxs[spacedOut, c("folder", "code", "xlsx")]
   errorDf$level = "WARNING"
   errorDf$error = "XLSX_FILENAME_SPACES"
   errorDf$message = "filename contains a space: please replace with _ or -"
