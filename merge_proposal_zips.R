@@ -22,13 +22,15 @@ params = list(
   ,merged="load_next_msl.txt"
   ,status="merged_status.txt"
   ,msl_tsv="msl.tsv"
+  ,sql_load_filename="msl_load.sql"
+  ,sql_insert_batch_size=200 
   ,proposals_meta="proposal_metadata.tsv"
   # surpress various warnings
   ,show.xlsx.code_miss = F
   # debug output: 0=none, 1=some, 2=details
   ,verbose=1
   ,debug_on_error=F # call browser() if ERROR detected
-  ,use_cache=T # load proposals_dir/.RData before processing
+  ,use_cache=F # load proposals_dir/.RData before processing
 )
 
 # 
@@ -1609,13 +1611,13 @@ for( code in codes ) {
         # results=list(metaDf,errorDf)
         results= load_proposal_docx(code)
         docxList[[code]] = results[["metaDf"]] 
-        proposals[code,names(docxList[[code]])] = docxList[[code]]
         errorDf = results[["errorDf"]]
         cat("# LOADED: ",code," DOCX with ",nrow(errorDf)," errors/warnings\n")
         if(nrow(errorDf)>0){.GlobalEnv$loadErrorDf=rbindlist(list(.GlobalEnv$loadErrorDf,errorDf),fill=TRUE)}
       } else {
         cat("# FROM CACHE: ",code,"\n")
       }
+      proposals[code,names(docxList[[code]])] = docxList[[code]]
       #
       # try to load proposal from XLSX
       #
@@ -1704,12 +1706,12 @@ if( FALSE ) {
 
 # excel                                # R.changeDf                             # db.load_next_msl          # db.taxonomy_node          # R.newMSL
 #  "Exemplar GenBank Accession Number" = "exemplarAccession",                   "exemplarAccession"         "genbank_accession_csv"     "genbank_accession_csv"
-#  "Exemplar \r\nvirus name"           = "exemplarName",                        "exemplarName"              NA                          "exemplar_name"
+#  "Exemplar \r\nvirus name"           = "exemplarName",                        "exemplarName"              ["exemplar_name"]           "exemplar_name"
 # "Virus name abbreviation"            = "Abbrev",                              "Abbrev"                    "abbrev_csv"                "abbrev_csv"
 # "Exemplar\r\nisolate designation"    = "exemplarIsolate",                     "exemplarIsolate"           "isolate_csv"               "isolate_csv"
-# "Genome coverage"                    = "genomeCoverage",                      "isComplete"                NA                          "genome_coverage"
+# "Genome coverage"                    = "genomeCoverage",                      "isComplete"                ["genome_coverage"]         "genome_coverage"
 # "Genome composition"                 = "molecule",                            "molecule"                  "molecule_id"               "molecule_id"
-# "Host/Source"                        = "hostSource",                          "hostSource"                NA                          "host_source"
+# "Host/Source"                        = "hostSource",                          "hostSource"                ["host_source"]             "host_source"
 # "Change"                             = "change",                              "change","_action"          "in_change","out_change"    "in_change", "out_change"(prevMSL)
 # "Rank"                               = "rank",                                "rank","_dest_taxon_rank"   "level_id"                  "level_id"
 # "Comments"                           = "comments"                             "comments"                  NA                          "comments"
@@ -1729,7 +1731,7 @@ xlsx2dbMap = c(
       # NOTE: column does not (yet) exist in [taxonomy_node], only in [load_next_msl##]
       ,"hostSource" = "host_source"
       ,"rank" = "level_id"
-      ,"comments" = "comments"
+      ,"comments" = "notes"
   )
 
 # ```
@@ -2778,7 +2780,7 @@ tsvColList = c(#"taxnode_id",
   "out_change",
   "out_target",
   "out_filename", # will be stripped to just  code
-  "out_notes"
+  "out_notes",
   #"lineage", # computed by trigger in db
   #"cleaned_name", # computed by trigger in db
   #"rank", # should be in level_id
@@ -2787,13 +2789,10 @@ tsvColList = c(#"taxnode_id",
   #"out_updated",
   #"prev_taxnode_id",
   #"prev_proposals",
-  # NOTE: column does not (yet) exist in [taxonomy_node], only in [load_next_msl##]
-  #"host_source",
-  # NOTE: column does not (yet) exist in [taxonomy_node], only in [load_next_msl##]
-  #"exemplar_name",
-  # NOTE: column does not (yet) exist in [taxonomy_node], only in [load_next_msl##]
-  #"genome_coverage",
-  #"comments" # doesn't exist in db, should be notes???
+  "host_source",
+  "exemplar_name",
+  "genome_coverage",
+  "notes" 
   #"lineage"  # computed by trigger in db
 )
 #prepare data for export
@@ -2927,7 +2926,7 @@ sqlColList = c("taxnode_id",
             "out_change",
             "out_target",
             "out_filename",
-            "out_notes"
+            "out_notes",
             #"lineage", # computed by trigger in db
             #"cleaned_name", # computed by trigger in db
             #"rank", # should be in level_id
@@ -2936,23 +2935,20 @@ sqlColList = c("taxnode_id",
             #"out_updated",
             #"prev_taxnode_id",
             #"prev_proposals",
-            # NOTE: column does not (yet) exist in [taxonomy_node], only in [load_next_msl##]
-            #"host_source",
-            # NOTE: column does not (yet) exist in [taxonomy_node], only in [load_next_msl##]
-            #"exemplar_name",
-            # NOTE: column does not (yet) exist in [taxonomy_node], only in [load_next_msl##]
-            #"genome_coverage",
-            #"comments" # doesn't exist in db, should be notes???
+            "host_source",
+            "exemplar_name",
+            "genome_coverage"
+            #,"notes" 
             #"lineage"  # computed by trigger in db
             )
-newSqlFilename = file.path(params$out_dir,"msl_load.sql")
-sqlout=file(newSqlFilename,"wt")
+newSqlFilename = file.path(params$out_dir,params$sql_load_fname)
+sqlout=file(newSqlFilename,"wt",encoding="UTF-8")
 cat("Writing ",newSqlFilename,"\n")
 
 #
 # output start transaction
 # 
-cat("begin transaction\n", file=sqlout)
+cat("-- begin transaction\n", file=sqlout)
 cat("-- rollback transaction\n", file=sqlout)
 
 #
@@ -2985,14 +2981,13 @@ for( col in sqlColList)  {
 # output an insert statement for each row
 #
 rowCount = 1
-batchSize = 200 # rows
 for(  row in order(newMSL$level_id) )  {
   #row=head(order(newMSL$level_id),n=1) # debug
   
   # insert several rows per batch insert  statement
   # much faster - fewer trigger calls
   # but makes localizing errors harder
-  if( rowCount %% batchSize == 1 ) {
+  if( rowCount %% params$sql_insert_batch_size == 1 ) {
     cat(paste0("insert into [taxonomy_node] ",
                "([",
                paste0(sqlColList,collapse="],["),
@@ -3014,7 +3009,7 @@ for(  row in order(newMSL$level_id) )  {
                ifelse(is.na(newMslStr[row, sqlColList]), "NULL",
                       paste0("'",
                              # escape apostrophies as double-appostrophies (MSSQL)
-                             sub(
+                             gsub(
                                "'", "''", newMslStr[row, sqlColList]
                              )
                              , "'")),
@@ -3087,7 +3082,7 @@ for( col in curMslColList)  {
 #
 # output start transaction
 # 
-cat("begin transaction\n", file=sqlout)
+cat("-- begin transaction\n", file=sqlout)
 cat("-- rollback transaction\n", file=sqlout)
 
 #
@@ -3105,7 +3100,7 @@ for(  row in rownames(curMslStr) )  {
                  ifelse(is.na(curMslStr[row,curMslColList]),"NULL",
                         paste0("'",
                                # escape apostrophes as double-apostrophes (MSSQL)
-                               sub("'","''", curMslStr[row,curMslColList])
+                               gsub("'","''", curMslStr[row,curMslColList])
                                ,"'"))
                ,collapse=","),
              " where [taxnode_id]=",
