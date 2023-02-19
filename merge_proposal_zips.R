@@ -14,20 +14,33 @@ params = list(
   ,VMR_filename="./current_msl/VMR_21-221122_MSL37.xlsx"
   ,templateURL="https://ictv.global/taxonomy/templates"
   ,xlsx_suppl_pat = "_Suppl."
-#  ,proposals_dir="./proposals3"  ,out_dir="./results3"
-  ,proposals_dir="./proposalsFinal"  ,out_dir="./resultsFinal"
+  ,proposals_dir="./proposals2"  ,out_dir="./results2", proposal_names = "draft" 
+#  ,proposals_dir="./proposals3"  ,out_dir="./results3", proposal_names = "draft" 
+#  ,proposals_dir="./proposalsFinal"  ,out_dir="./resultsFinal", proposal_names = "final" 
+  
   # output files
   ,dest_msl=38
   ,merged="load_next_msl.txt"
   ,status="merged_status.txt"
+  ,msl_tsv="msl.tsv"
+  ,proposals_meta="proposal_metadata.tsv"
   # surpress various warnings
   ,show.xlsx.code_miss = F
   # debug output: 0=none, 1=some, 2=details
   ,verbose=1
   ,debug_on_error=F # call browser() if ERROR detected
-  ,use_cache=T # load proposals_dir/.RData before processing
+  ,use_cache=F # load proposals_dir/.RData before processing
 )
 
+# 
+# final vs draft proposal filename patterns.
+#
+filenameFormatRegex="^[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9][A-Z]\\.[A-Za-z]+\\.[^ ]*"
+filenameFormatMsg="####[A-Z].###[A-Z].[A-Z]+.____"
+if( params$proposal_names == "draft") {
+  filenameFormatRegex="^[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9][A-Z]\\.[A-Za-z]+\\.v[0-9]+\\.[^ ]*"
+  filenameFormatMsg="####[A-Z].###[A-Z].[A-Z]+.v#.____"
+}
 
 # QC MSL38: https://uab-lefkowitz.atlassian.net/browse/IVK-123
 # Merge++:  https://uab-lefkowitz.atlassian.net/browse/IVK-22
@@ -86,6 +99,8 @@ library(readxl)
 library(writexl) # another option library(openxlsx)
 #library(gtools) # for mixedsort/mixedorder
 library(DescTools) # AscToChar
+# read docx
+library(qdapTools)
 
 library(knitr) #kable
 # debug - echo everything
@@ -356,6 +371,20 @@ cvList[["hostSource"]] = union(
 )
 cat("VMR(hostSource): ", length(vmrDf[,"Host.Source"]), " from ",params$VMR_filename," [Terms]\n")
 
+#
+#### study section CV ####
+#
+# needs to be externalized to a file, so can be shared with finalize_proposals.R
+sc2destFolder = c(
+  "S"="Animal +ssRNA (S) proposals",
+  "D"="Animal DNA viruses and Retroviruses (D) proposals",
+  "M"="Animal dsRNA and -ssRNA (M) proposals",
+  "A"="Archaeal viruses (A) proposals",
+  "B"="Bacterial viruses (B) proposals",
+  "F"="Fungal and protist virus (F) proposals",
+  "G"="General (G) proposals",
+  "P"="Plant virus (P) proposals"
+)
 # ```
 # 
 # # scan for proposal .xlsx files
@@ -410,10 +439,29 @@ if(sum(dups) > 0) {
   kable(errorDf,caption = paste0("QC01: ERRORS: dupliate docx proposal IDs"))
   write_xlsx(x=errorDf,path=file.path(params$out_dir,"QC01.docx_duplicate_ids.xlsx"))
   write_xlsx(x=.GlobalEnv$loadErrorDf,path=file.path(params$out_dir,"QC.summary.xlsx"))
-
 }
 rownames(proposals)=proposals$code
 
+# spaces in filenames
+spacedOut = grep(pattern=" ",proposals$docx)
+if(sum(spacedOut) > 0) {
+  errorDf = proposals[spacedOut, c("folder", "code", "docx")]
+  errorDf$level = "WARNING"
+  errorDf$error = "DOCX_FILENAME_SPACES"
+  errorDf$message = "filename contains a space: please replace with _ or -"
+  errorDf$notes = gsub("( )","[\\1]",proposals[spacedOut,]$docx)
+  .GlobalEnv$loadErrorDf = rbindlist(list(.GlobalEnv$loadErrorDf, errorDf),fill=TRUE)
+}
+
+docxBadFnameFormats = grep(proposals$docx, pattern=paste0(filenameFormatRegex,".docx$"), invert=T)
+if( length(docxBadFnameFormats) > 0 ) {
+  errorDf= proposals[docxBadFnameFormats,c("folder","code","docx")]
+  errorDf$level= "WARNING"
+  errorDf$error = "DOCX.BAD_FILENAME_FORMAT"
+  errorDf$message = paste0("Should be '",filenameFormatMsg,".docx'")
+  errorDf$notes= "####[A-Z]=year/study_section, ###[A-Z]=index/type, [A-Z]+=status, v#=version"
+  .GlobalEnv$loadErrorDf = rbindlist(list(.GlobalEnv$loadErrorDf, errorDf),fill=TRUE)
+}
 #
 #### SECTION: scan XLSX #### 
 #
@@ -440,7 +488,7 @@ if( sum(dups) > 0 ) {
   # error details
   errorDf = xlsxs[allDups, c("folder", "code", "xlsx")]
   errorDf$level = "ERROR"
-  errorDf$error = "DUPCODE.XLSX"
+  errorDf$error = "XLSX_DUPCODE"
   for( code in xlsxs$code[dups] ) {
     # build list of all xlsxs using duplicate codes
     errorDf[errorDf$code==code,"message"] = 
@@ -459,9 +507,21 @@ if( sum(dups) > 0 ) {
         x=proposals[proposals$code %in% proposals$code[dups],])
 }
 rownames(xlsxs) = xlsxs$basename
-
 #
-# merge XLSX list into DOCX list, verify
+# check that xlsx names match format
+#
+# production format (no version)
+xlsxBadFnameFormats = grep(xlsxs$xlsx, pattern=paste0(filenameFormatRegex,".xlsx$"), invert=T)
+if( length(xlsxBadFnameFormats) > 0 ) {
+  errorDf= proposals[xlsxBadFnameFormats,c("folder","code","xlsx")]
+  errorDf$level= "WARNING"
+  errorDf$error = "XLSX.BAD_FILENAME_FORMAT"
+  errorDf$message = paste0("Should be '",filenameFormatMsg,".xlsx'")
+  errorDf$notes= "####[A-Z]=year/study_section, ###[A-Z]=index/type, [A-Z]+=status, v#=version"
+  .GlobalEnv$loadErrorDf = rbindlist(list(.GlobalEnv$loadErrorDf, errorDf),fill=TRUE)
+}
+#
+#### merge XLSX list into DOCX list, verify ####
 #
 proposals$xlsx = xlsxs[proposals$basename,"xlsx"]
 proposals$xlsxpath = xlsxs[proposals$basename,"xlsxpath"]
@@ -510,6 +570,36 @@ if( sum(missing) > 0 ) {
   write_xlsx(x=errorDf,path=file.path(params$out_dir,"QC02.docx_without_matching_xlsx.xlsx"))
   write_xlsx(x=errorDf,path=file.path(params$out_dir,"QC.summary.xlsx"))
 
+}
+
+#
+# get SC names from last lettter of code
+#
+proposals$scAbbrev = gsub("[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9]([A-Z])","\\1",proposals$code)
+# QC
+badProposalAbbrevs = !(proposals$scAbbrev %in% names(sc2destFolder))
+if(sum(badProposalAbbrevs)>0) {
+  errorDf = proposals[badProposalAbbrevs, c("folder", "code", "xlsx", "docx")]
+  errorDf$level = "WARNING"
+  errorDf$error = "CODE_BAD_SC_ABBREV"
+  errorDf$message = "Last letter of CODE not a valid Study Section letter"
+  errorDf$notes = paste0("'",proposals[badProposalAbbrevs,"scAbbrev"],"' not in [",
+                        paste0(names(sc2destFolder),collapse=","),"]")
+  .GlobalEnv$loadErrorDf = rbindlist(list(.GlobalEnv$loadErrorDf, errorDf),fill=TRUE)
+  
+}
+proposals$scName = ifelse(badProposalAbbrevs,
+                          paste0("unknown-",proposals$scAbbrev),
+                          sc2destFolder[proposals$scAbbrev])
+
+# spaces in XLSX filenames
+spacedOut = grep(pattern=" ",proposals$xlsx)
+if(sum(spacedOut) > 0) {
+  errorDf = proposals[spacedOut, c("folder", "code", "xlsx")]
+  errorDf$level = "WARNING"
+  errorDf$error = "XLSX_FILENAME_SPACES"
+  errorDf$message = "filename contains a space: please replace with _ or -"
+  .GlobalEnv$loadErrorDf = rbindlist(list(.GlobalEnv$loadErrorDf, errorDf),fill=TRUE)
 }
 # ```
 # 
@@ -894,8 +984,93 @@ load_proposal = function(code) {
   return(df)
 }
 
-
 #
+# Load  .docx into DF
+#
+load_proposal_docx = function(code) {
+  cat("# LOAD_PROPOSAL_DOCX(",code,")\n")
+
+  # return data
+  errorDf = allErrorDf[FALSE,]
+  metaDf = data.frame(code=c(code))
+  # read DOCX file, no column names
+  txt = read_docx(proposals[code,"docxpath"])
+  
+  # get title
+  titlePattern="^Short title:"
+  titleIdx = grep(titlePattern, txt, ignore.case = T)
+  if( length(titleIdx) > 0 ) {
+    metaDf$title=
+      gsub(pattern="\t+"," ",
+           gsub(pattern = "\n+","; ",
+                strsplit(txt[titleIdx],split="[sS]hort title *: *")[[1]][2]
+           )
+      )
+  } else {
+    errorDf = proposals[code, c("folder", "code", "xlsx", "docx")]
+    errorDf$level = "WARNING"
+    errorDf$error = "DOCX_TITLE_MISSING"
+    errorDf$message = "Title not found"
+    errorDf$notes = paste0("Line containing expression '",authorsPattern,"' not found")
+    .GlobalEnv$loadErrorDf = rbindlist(list(.GlobalEnv$loadErrorDf, errorDf),fill=TRUE)
+  }
+  
+  # authors
+  authorsPattern="^Author.* and email address.*"
+  authorsIdx=grep(pattern=authorsPattern, txt, ignore.case = T)
+  if(length(authorsIdx) > 0 ) {
+    metaDf$authorsEmails = gsub(pattern="\t+"," ",
+                                gsub(pattern = "\n+","; ",
+                                     txt[authorsIdx+1]
+                                )
+    )
+  } else {
+    errorDf = proposals[code, c("folder", "code", "xlsx", "docx")]
+    errorDf$level = "WARNING"
+    errorDf$error = "DOCX_AUTHORS_MISSING"
+    errorDf$message = "Authors list not found"
+    errorDf$notes = paste0("Line containing expression '",authorsPattern,"' not found")
+    .GlobalEnv$loadErrorDf = rbindlist(list(.GlobalEnv$loadErrorDf, errorDf),fill=TRUE)
+  }
+  
+  # corresponding author
+  corrAuthorPattern="^Corresponding author"
+  corrAuthIdx=grep(pattern=corrAuthorPattern, txt, ignore.case = T)
+  if(length(corrAuthIdx)>0) {
+    metaDf$correspondingAuthor = gsub(pattern="\t+"," ",
+                                      gsub(pattern = "\n+","; ",txt[corrAuthIdx+1]
+                                      )
+    )
+  } else {
+    errorDf = proposals[code, c("folder", "code", "xlsx", "docx")]
+    errorDf$level = "WARNING"
+    errorDf$error = "DOCX_CORR_AUTHOR_MISSING"
+    errorDf$message = "Corresponding Author not found"
+    errorDf$notes = paste0("Line containing expression '",corrAuthorPattern,"' not found")
+    .GlobalEnv$loadErrorDf = rbindlist(list(.GlobalEnv$loadErrorDf, errorDf),fill=TRUE)
+  }
+  
+  # abstract
+  abstractPattern="^Abstract"
+  abstractIdx=grep(pattern=abstractPattern, txt, ignore.case = T)
+  if(length(abstractIdx) >0) {
+    metaDf$abstract = gsub(pattern="\t+"," ",
+                           gsub(pattern = "\n+","; ",txt[abstractIdx+1]
+                           )
+    )
+  } else {
+    errorDf = proposals[code, c("folder", "code", "xlsx", "docx")]
+    errorDf$level = "WARNING"
+    errorDf$error = "DOCX_ABSTRACT_MISSING"
+    errorDf$message = "Abstract not found"
+    errorDf$notes = paste0("Line containing expression '",abstractPattern,"' not found")
+    .GlobalEnv$loadErrorDf = rbindlist(list(.GlobalEnv$loadErrorDf, errorDf),fill=TRUE)
+  }
+
+  # return value
+  return(list(metaDf=metaDf,errorDf=errorDf))
+}
+
 # QC the .xlsx data at the sheet level
 #
 # returns: errorDf
@@ -1403,6 +1578,7 @@ qc_proposal = function(code, proposalDf) {
 #
 
 # make this re-entrant - only create/delete lists if they don't exist
+if(!exists("docxList"))   { docxList   = list() }
 if(!exists("xlsxList"))   { xlsxList   = list() }
 if(!exists("changeList")) { changeList = list() }
 codes = rownames(proposals) # all proposals
@@ -1427,16 +1603,33 @@ for( code in codes ) {
       cat("# SKIPPED: ",code," (no .xlsx)\n")
     } else {
       #
-      # try to load proposal
+      # try to load proposal metdata from DOCX
+      #
+      if(is.null(docxList[[code]])){
+        # load raw docx file
+        # results=list(metaDf,errorDf)
+        results= load_proposal_docx(code)
+        docxList[[code]] = results[["metaDf"]] 
+        proposals[code,names(docxList[[code]])] = docxList[[code]]
+        errorDf = results[["errorDf"]]
+        cat("# LOADED: ",code," DOCX with ",nrow(errorDf)," errors/warnings\n")
+        if(nrow(errorDf)>0){.GlobalEnv$loadErrorDf=rbindlist(list(.GlobalEnv$loadErrorDf,errorDf),fill=TRUE)}
+      } else {
+        cat("# FROM CACHE: ",code,"\n")
+      }
+      #
+      # try to load proposal from XLSX
       #
       if(is.null(xlsxList[[code]])){
         # load raw xlsx file
         xlsxList[[code]] = load_proposal(code)
         cat("# LOADED: ",code,"\n")
+        
       } else {
         cat("# FROM CACHE: ",code,"\n")
       }
       proposalDf = xlsxList[[code]]
+      
       #
       # qc
       #
@@ -2557,52 +2750,52 @@ newMSL[taxnode_id==202203151, c("taxnode_id","parent_id","lineage","name","clean
 # ```{r tsv_export}
 #### SECTION export to TSV #####
 tsvColList = c(#"taxnode_id",
-               #"parent_id",
-               #"tree_id",
-               "msl_release_num",
-               "level_id",
-               "name",
-               #"ictv_id",
-               "molecule_id",
-               "abbrev_csv",
-               "genbank_accession_csv",
-               "genbank_refseq_accession_csv",
-               "refseq_accession_csv",
-               "isolate_csv",
-               "notes",
-               # historic columns we don't update
-               #"is_ref",
-               #"is_official",
-               #"is_hidden",
-               #"is_deleted",
-               #"is_deleted_next_year",
-               #"is_typo",
-               #"is_renamed_next_year",
-               #"is_obsolete",
-               "in_change",
-               "in_target",
-               "in_filename",  # will be stripped to just  code
-               "in_notes",
-               "out_change",
-               "out_target",
-               "out_filename", # will be stripped to just  code
-               "out_notes"
-               #"lineage", # computed by trigger in db
-               #"cleaned_name", # computed by trigger in db
-               #"rank", # should be in level_id
-               # "molecule", # should be in molecule_id
-               # program admin columns - not in db
-               #"out_updated",
-               #"prev_taxnode_id",
-               #"prev_proposals",
-               # NOTE: column does not (yet) exist in [taxonomy_node], only in [load_next_msl##]
-               #"host_source",
-               # NOTE: column does not (yet) exist in [taxonomy_node], only in [load_next_msl##]
-               #"exemplar_name",
-               # NOTE: column does not (yet) exist in [taxonomy_node], only in [load_next_msl##]
-               #"genome_coverage",
-               #"comments" # doesn't exist in db, should be notes???
-               #"lineage"  # computed by trigger in db
+  #"parent_id",
+  #"tree_id",
+  "msl_release_num",
+  "level_id",
+  "name",
+  #"ictv_id",
+  "molecule_id",
+  "abbrev_csv",
+  "genbank_accession_csv",
+  "genbank_refseq_accession_csv",
+  "refseq_accession_csv",
+  "isolate_csv",
+  "notes",
+  # historic columns we don't update
+  #"is_ref",
+  #"is_official",
+  #"is_hidden",
+  #"is_deleted",
+  #"is_deleted_next_year",
+  #"is_typo",
+  #"is_renamed_next_year",
+  #"is_obsolete",
+  "in_change",
+  "in_target",
+  "in_filename",  # will be stripped to just  code
+  "in_notes",
+  "out_change",
+  "out_target",
+  "out_filename", # will be stripped to just  code
+  "out_notes"
+  #"lineage", # computed by trigger in db
+  #"cleaned_name", # computed by trigger in db
+  #"rank", # should be in level_id
+  # "molecule", # should be in molecule_id
+  # program admin columns - not in db
+  #"out_updated",
+  #"prev_taxnode_id",
+  #"prev_proposals",
+  # NOTE: column does not (yet) exist in [taxonomy_node], only in [load_next_msl##]
+  #"host_source",
+  # NOTE: column does not (yet) exist in [taxonomy_node], only in [load_next_msl##]
+  #"exemplar_name",
+  # NOTE: column does not (yet) exist in [taxonomy_node], only in [load_next_msl##]
+  #"genome_coverage",
+  #"comments" # doesn't exist in db, should be notes???
+  #"lineage"  # computed by trigger in db
 )
 #prepare data for export
 tsvDf = data.frame(newMSL[,..tsvColList])
@@ -2630,6 +2823,52 @@ for(i in seq(1,nrow(tsvDf))) {
 }
 close(tsvout)
 cat("WROTE   ", newTsvFilename, "\n")
+
+# ------------------------------------------------------------------------------
+# 
+# # Export proposal summary to TSV
+#
+# metadata from DOCX
+#
+# ```{r tsv_export_docx_meta}
+#### SECTION export DOCX meta to TSV #####
+tsvDocxColList = c(
+  "scName",
+  "code",
+  "docx",
+  "xlsx",
+  "title",
+  "authorsEmails",
+  "correspondingAuthor",
+  "abstract"
+)
+#
+#prepare data for export
+#
+# subset columns
+tsvDocxDf = data.frame(proposals[,tsvDocxColList])
+
+docxTsvFilename = file.path(params$out_dir,params$proposals_meta)
+docxMetaOut=file(docxTsvFilename,"wt")
+cat("Writing ",docxTsvFilename,"\n")
+# header
+cat(paste0(
+  tsvDocxColList,
+  collapse="\t"
+),
+"\n",
+file=docxMetaOut)
+# body
+for(i in seq(1,nrow(tsvDocxDf))) {
+  cat(paste0(
+    tsvDocxDf[i,tsvDocxColList],
+    collapse="\t"
+  ),
+  "\n",
+  file=docxMetaOut)
+}
+close(docxMetaOut)
+cat("WROTE   ", docxTsvFilename, "\n")
 
 # ```
 
