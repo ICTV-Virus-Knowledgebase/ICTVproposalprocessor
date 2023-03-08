@@ -2941,8 +2941,8 @@ sqlColList = c("taxnode_id",
             #,"notes" 
             #"lineage"  # computed by trigger in db
             )
-newSqlFilename = file.path(params$out_dir,params$sql_load_fname)
-sqlout=file(newSqlFilename,"wt",encoding="UTF-8")
+newSqlFilename = file.path(params$out_dir,params$sql_load_filename)
+sqlout=file(newSqlFilename,"wt",encoding = "UTF-8")
 cat("Writing ",newSqlFilename,"\n")
 
 #
