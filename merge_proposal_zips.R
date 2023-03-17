@@ -1,437 +1,522 @@
-
-params = list(
-  # inputs
-  prev_msl=37
-  ,next_msl=38
-  ,msl_name="2022"
-  ,msl_notes="EC 54, Online meeting, July 2022; Email ratification March 2023 (MSL #38)"
-  ,taxnode_delta=100000
-  ,db_rank_fname="./current_msl/taxonomy_level.txt"
-  ,db_molecule_fname="./current_msl/taxonomy_molecule.txt"
-  ,prev_taxa_fname="./current_msl/taxonomy_node_export.txt"
-  ,cv_xlsx="./TP_Template_Excel_module_2022_v2.xlsx"
-  ,cv_sheet="Menu Items (Do not change)"
-  ,VMR_filename="./current_msl/VMR_21-221122_MSL37.xlsx"
-  ,templateURL="https://ictv.global/taxonomy/templates"
-  ,xlsx_suppl_pat = "_Suppl."
-#  ,proposals_dir="./proposals2"  ,out_dir="./results2", proposal_names = "draft" 
-#  ,proposals_dir="./proposals3"  ,out_dir="./results3", proposal_names = "draft" 
-  ,proposals_dir="./proposalsFinal"  ,out_dir="./resultsFinal", proposal_names = "final" 
-  # output files
-  ,dest_msl=38
-  ,merged="load_next_msl.txt"
-  ,status="merged_status.txt"
-  ,msl_tsv="msl.tsv"
-  ,sql_load_filename="msl_load.sql"
-  ,sql_insert_batch_size=200 
-  ,proposals_meta="proposal_metadata.tsv"
-  # surpress various warnings
-  ,show.xlsx.code_miss = F
-  # debug output: 0=none, 1=some, 2=details
-  ,verbose=1
-  ,debug_on_error=F # call browser() if ERROR detected
-  ,use_cache=F # load proposals_dir/.RData before processing
-)
-
-# 
-# final vs draft proposal filename patterns.
+#!/usr/bin/env Rscript
 #
-filenameFormatRegex="^[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9][A-Z]\\.[A-Za-z]+\\.[^ ]*"
-filenameFormatMsg="####[A-Z].###[A-Z].[A-Z]+.____"
-if( params$proposal_names == "draft") {
-  filenameFormatRegex="^[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9][A-Z]\\.[A-Za-z]+\\.v[0-9]+\\.[^ ]*"
-  filenameFormatMsg="####[A-Z].###[A-Z].[A-Z]+.v#.____"
-}
-
-# QC MSL38: https://uab-lefkowitz.atlassian.net/browse/IVK-123
-# Merge++:  https://uab-lefkowitz.atlassian.net/browse/IVK-22
-
-# --------------------------------------------------------
-# << NEXT >>
-# --------------------------------------------------------
-# * implement MOVE / re_lineage_tree()
-#      * test: 2022.001B lines 5:6
-#   * RE_ORG to separate scan/load from process
-#      * make it easy to re-process - move globals to process section
-#   * check for UN-IMP actions
-#     * split
-#     * promote
-#     * demote
-#     * merge
-#   * SQL export
-#   * error/warning report by directory
-# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-# CURRENT STATUS:
-# summary(as.factor(paste(allErrorDf$level, allErrorDf$error)))
-#              ERROR ACTION.UNK          ERROR CREATE.DUP_ACC  ERROR CREATE.PARENT_NO_EXIST 
-#                            21                            21                            29 
-#            ERROR CREATE.W_SRC             ERROR DEST.IN_CUR             ERROR DEST.IN_NEW 
-#                            52                            14                             6 
-#         ERROR RENAME.NO_EXIST           ERROR RENAME.WO_SRC WARNING CREATE.PARENT_LINEAGE 
-#                            25                             1                           214 
-# This script 
-#   * load previous MSL data into a data frame
-#   * scans params$ ./proposals for *.(xlsx|docx) (proposals)
-#   * iterates over each proposal .xlsx
-#     * reads the proposal.xlsx file into a data table 
-#     * merge each row (change)
-#       * match up to existing taxon
-#       * QC data, etc.
-#       * implement change in new MSL data frame
-#       * record errors, warnings, etc
-#       * create merged change set in one merged dataframe
-#   * write merged proposal data frame to a Unicode(UTF-16LE) TSV file (params$merged) that can be loaded into MSSQL on Windows using "Import Data...." 
-#   * write a status sheet listing parsing and QC success/fail status for each proposal (params$status)
-#   * write new MSL load & updates to prev_msl.out_*
+# TODO: 
+#  1. add arg parsing
+#  2. move from params to opt? or keep params for Rmd compatibility?
+#  3. make all filenames into dir+filename
+#  4. update VMR - to table dump? Factor our accessions? 
+#  5. add 2023v1 template support
+# 
+# Validate ICTV proposal(s).xlsx
+#
+#### Parse Args ####
+suppressPackageStartupMessages(library("optparse"))
+option_list <- list( 
+  # verbose/quiet/debug
+  make_option(c("-v", "--verbose"), action="store_true", default=TRUE,
+              help="Print extra output"),
+  make_option(c("-q", "--quiet"), action="store_false", dest="verbose", 
+              help="Print no output"),
+  make_option(c("-d", "--debug"), action="store_true", default=FALSE, dest="debug_on_error", 
+              help="Call browser() on data error [default \"%default\"]"),
+  make_option(c("--noInfo"), action="store_false", default=TRUE, dest="show.xlsx.code_miss", 
+              help="Supress INFO level warnings from output [default \"%default\"]"),
+  make_option(c("-c", "--useCache"), action="store_true", default=FALSE, dest="use_cache", 
+              help="Load .RData cache in refDir [default \"%default\"]"),
+  make_option(c("-u", "--updateCache"), action="store_true", default=FALSE, dest="update_cache", 
+              help="Write .RData cache in refDir after processings all proposals in proposalDir [default \"%default\"]"),
+  make_option(c("--msl"), action="store_true", default=FALSE, dest="export_msl", 
+              help="Write resulting MSL to load_msl.sql and msl.tsv [default \"%default\"]"),
   
-#```{r setup, include=FALSE}
+  # in/out/ref directories
+  make_option(c("-i","--proposalsDir"), default="proposalsTest", dest="proposals_dir",
+              help = "Directory to scan for YYYY.###SC.*.xlsx proposal files [default \"%default\"]"),
+  make_option(c("-o","--outDir"), default="results", dest="out_dir",
+              help = "Directory to write outputs to [default \"%default\"]"),
+  make_option(c("-r","--refDir"), default="current_msl", dest="ref_dir", 
+              help="Directory from which read current MSL and CV data from [default \"%default\"]"),
+  # out filenames
+  make_option(c("--mslTsv"), default="msl.tsv", dest="msl_tsv",
+              help="Output file, in outDir, for resulting MSL w/o IDs (for diff) [default \"%default\"]"),
+  make_option(c("--mslLoadSql"), default="msl_load.sql", dest="sql_load_filename",
+              help="Output file, in outDir, for SQL to load new MSL into db [default \"%default\"]"),
+  make_option(c("--sqlInsertBatch"), default="200", dest="sql_insert_batch_size",
+              help="Number of rows of data per SQL INSERT line in outDir/mslLoadSql file [default \"%default\"]"),
+  make_option(c("--taxnodeIdDelta"), default="100000", dest="taxnode_delta", 
+              help="Amount to increment taxnode_ids by to create a new MSL [default \"%default\"]"),
+  # ref filenames
+  make_option(c("--dbRanks"), default="taxonomy_level.txt", dest="db_rank_fname",
+              help="Reference file listing allowable ranks [default \"%default\"]"),
+  make_option(c("--dbMolecules"), default="taxonomy_molecule.txt", dest="db_molecule_fname",
+              help="Reference filelisting allowable genomic molecules [default \"%default\"]"),
+  make_option(c("--dbTaxa"), default="taxonomy_node_export.txt", dest="db_taxonomy_node_fname",
+              help="Reference file listing all historic taxa [default \"%default\"]"),
+  make_option(c("--cvTemplate"), default="TP_Template_Excel_module_2023_v2.xlsx", dest="template_xlsx_fname",
+              help="Template proposal xlsx, used to load CVs [default \"%default\"]"),
+  make_option(c("--cvTemplateSheet"), default="Menu Items (Do not change)", dest="template_xlsx_sheet",
+              help="Template proposal xlsx, used to load CVs [default \"%default\"]"),
+  make_option(c("--vmr"), default="VMR_21-221122_MSL37.xlsx", dest="vmr_fname",
+              help="VMR to check for accession re-use [default \"%default\"]"),
+  make_option(c("--templateURL"), default="https://ictv.global/taxonomy/templates", dest="template_url",
+              help="URL for out-of-date template message [default \"%default\"]"),
+  make_option(c("--cacheFile"), default=".RData", dest="cache_fname",
+              help="Filename for refDir/cache [default \"%default\"]"),
+  
+  # input filenames
+  make_option(c("--xlsxSupplPat"), default="_Suppl.", dest="xlsx_suppl_pat",
+              help="Input files (in proposalDir/) containing this pattern in filename are ignored [default \"%default\"]"),
+  make_option(c("--xlsxFnameMode"), default="draft", dest="xlsx_filename_mode",
+              help="Filename format for prposal xlsx files: 'final' (no '.v#') or 'draft' (YYYY.###A.v#.')[default \"%default\"]"),
 
+  # metadata for new MSL
+  make_option(c("--newMslName"), default="YYYY", dest="msl_name",
+              help="Root node name for new MSL [default \"%default\"]"),
+  make_option(c("--newMslNotes"), default="Provisional EC ##, Online meeting, July YYYY; Email ratification March YYYY (MSL ###)", dest="msl_notes",
+              help="Description for the new MSL for database loading [default \"%default\"]")
+  
+)
+# get command line options, if help option encountered print help and exit,
+# otherwise if options not found on command line then set defaults, 
+params <- parse_args(OptionParser(option_list=option_list))
 
 #
 # WARNING: we use data.TABLE instead of data.FRAME
 #
 # this allows modification in place of a (data) passed
 # to a subroutine (pass-by-reference feature)
-library(data.table)
+suppressPackageStartupMessages(library(data.table))
 
-library(yaml)
-library(tidyverse)
-library(readxl)
-library(writexl) # another option library(openxlsx)
-#library(gtools) # for mixedsort/mixedorder
-library(DescTools) # AscToChar
+suppressPackageStartupMessages(library(yaml))
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(readxl))
+suppressPackageStartupMessages(library(writexl) )# another option library(openxlsx)
+suppressPackageStartupMessages(library(DescTools)) # AscToChar
 # read docx
-library(qdapTools)
+suppressPackageStartupMessages(library(qdapTools))
 
-library(knitr) #kable
-# debug - echo everything
-knitr::opts_chunk$set(echo = TRUE)
 
 #### load cache (xxx/.Rdata) ####
-
-# rm("xlxsList","changeList") # to re-run xlsx file loading & QC, delete these caches
-# rm("changeList") # to re-run only QC, delete this cache
-cacheFilename=paste0(params$proposals_dir,"/.RData")
-if(params$use_cache && file.exists(cacheFilename)) {
-  cat("Loading image ", cacheFilename, "...\n")
+if(params$verbose){ cat(paste0("REF_DIR:        ",params$ref_dir,"/\n"))}
+cacheFilename=paste0(params$ref_dir,"/",params$cache_fname)
+if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
+  if(params$verbose){ cat("Loading image ", cacheFilename, "...\n")}
   load(file=cacheFilename)
-  params$out_dir=str_replace(params$proposals_dir,"proposals","results")
-  rm("changeList") # to re-run only QC, delete this cache
-  cat("RM(changeList) # re-run QC")
+  #rm("changeList") # to re-run only QC, delete this cache
+  #cat("RM(changeList) # re-run QC")
 } else {
-  cat("SKIP: loading cache file ", cacheFilename, "\n")
-}
-cat("PROPOSALS_DIR:",params$proposals_dir,"\n")
-cat("OUT_DIR      :",params$out_dir,"\n")
+  if(params$verbose){ cat("SKIP: loading cache file ", cacheFilename, "\n")}
 
-#```
-
-
-# function to copy prev MSL to new MSL
-
-#```{r function_copy_prev_msl_to_new_msl, echo=FALSE}
-
-#
-# this uses the DATABASE schema for the taxonomy_node table (ie, naming convention)
-#
-# extra admin fields added, which wont be saved
-#   prev_taxnode_id
-#   prev_proposals
-#
-createNewMSL = function(curMSL,prev_msl,dest_msl,taxnode_delta) {
-  # curMSL = curMSL; prev_msl=params$prev_msl; dest_msl=params$next_msl; taxnode_delta=params$taxnode_delta
-
+  
+  # 
+  # final vs draft proposal filename patterns.
   #
-  # copy previous years MSL rows to create a basis for this years
-  #
-  # copies the rows having msl_release_num=prev_msl and offsets all their taxnode_id (and FK(taxnode_id) columns by (taxnode_delta)
-  #
-  # copy the rows
-  newMSL=copy(subset(curMSL, msl_release_num==prev_msl))
+  filenameFormatRegex="^[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9][A-Z]\\.[A-Za-z]+\\.[^ ]*"
+  filenameFormatMsg="####[A-Z].###[A-Z].[A-Z]+.____"
+  if( params$xlsx_filename_mode == "draft") {
+    filenameFormatRegex="^[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9][A-Z]\\.[A-Za-z]+\\.v[0-9]+\\.[^ ]*"
+    filenameFormatMsg="####[A-Z].###[A-Z].[A-Z]+.v#.____"
+  }
+  if(params$verbose){ cat("XLSX_FNAME_MODE      :",params$xlsx_filename_mode,"\n") }
+  
+  # --------------------------------------------------------
+  # << NEXT >>
+  # --------------------------------------------------------
+  # * implement MOVE / re_lineage_tree()
+  #      * test: 2022.001B lines 5:6
+  #   * RE_ORG to separate scan/load from process
+  #      * make it easy to re-process - move globals to process section
+  #   * check for UN-IMP actions
+  #     * split
+  #     * promote
+  #     * demote
+  #     * merge
+  #   * SQL export
+  #   * error/warning report by directory
+  # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+  # CURRENT STATUS:
+  # summary(as.factor(paste(allErrorDf$level, allErrorDf$error)))
+  #              ERROR ACTION.UNK          ERROR CREATE.DUP_ACC  ERROR CREATE.PARENT_NO_EXIST 
+  #                            21                            21                            29 
+  #            ERROR CREATE.W_SRC             ERROR DEST.IN_CUR             ERROR DEST.IN_NEW 
+  #                            52                            14                             6 
+  #         ERROR RENAME.NO_EXIST           ERROR RENAME.WO_SRC WARNING CREATE.PARENT_LINEAGE 
+  #                            25                             1                           214 
+  # This script 
+  #   * load previous MSL data into a data frame
+  #   * scans params$ ./proposals for *.(xlsx|docx) (proposals)
+  #   * iterates over each proposal .xlsx
+  #     * reads the proposal.xlsx file into a data table 
+  #     * merge each row (change)
+  #       * match up to existing taxon
+  #       * QC data, etc.
+  #       * implement change in new MSL data frame
+  #       * record errors, warnings, etc
+  #       * create merged change set in one merged dataframe
+  #   * write merged proposal data frame to a Unicode(UTF-16LE) TSV file (params$merged) that can be loaded into MSSQL on Windows using "Import Data...." 
+  #   * write a status sheet listing parsing and QC success/fail status for each proposal (params$status)
+  #   * write new MSL load & updates to prev_msl.out_*
+    
+  #```{r setup, include=FALSE}
+  
+  
+  # rm("xlxsList","changeList") # to re-run xlsx file loading & QC, delete these caches
+  # rm("changeList") # to re-run only QC, delete this cache
+  
+  #```
+  
+  
+  # function to copy prev MSL to new MSL
+  
+  #```{r function_copy_prev_msl_to_new_msl, echo=FALSE}
   
   #
-  # add some admin rows
+  # this uses the DATABASE schema for the taxonomy_node table (ie, naming convention)
+  #
+  # extra admin fields added, which wont be saved
+  #   prev_taxnode_id
+  #   prev_proposals
+  #
+  createNewMSL = function(curMSL,prev_msl,dest_msl,taxnode_delta) {
+    # curMSL = curMSL; prev_msl=max(curMSL$msl_release_num); dest_msl=max(curMSL$msl_release_num)+1; taxnode_delta=as.integer(params$taxnode_delta)
+  
+    #
+    # copy previous years MSL rows to create a basis for this years
+    #
+    # copies the rows having msl_release_num=prev_msl and offsets all their taxnode_id (and FK(taxnode_id) columns by (taxnode_delta)
+    #
+    # copy the rows
+    newMSL=copy(subset(curMSL, msl_release_num==prev_msl))
+    
+    #
+    # add some admin rows
+    #
+    
+    # copy original taxnode_id's into a new column
+    newMSL[,"prev_taxnode_id"] = newMSL[,"taxnode_id"]
+    
+    # CSV of proposals that have already modified this taxon in this MSL
+    newMSL[,"prev_proposals"] = NA_character_
+    
+    #
+    # update all ids (taxnode_id and all FK's to taxnnode_id) for new MSL
+    #
+    
+    # update the node ids
+    fkTaxnodeIdCols = c("taxnode_id","parent_id","tree_id"
+                   # ,paste0(tolower(
+                   #   c("Realm", "Subrealm", "Kingdom", "Subkingdom", 
+                   #     "Phylum", "Subphylum", "Class", "Subclass", "Order", "Suborder", 
+                   #     "Family", "Subfamily", "Genus", "Subgenus", "Species")),"_id")
+    )
+    newMSL[,(fkTaxnodeIdCols) := lapply(.SD, function(id) id+as.integer(taxnode_delta)),.SDcols=fkTaxnodeIdCols]
+    
+    # update the MSL number
+    newMSL[,msl_release_num:=dest_msl]
+    
+    # make row ids match
+    #rownames(newMSL) = newMSL$taxnode_id
+    
+    # clear in/out changes
+    clearCols = c(grep(names(newMSL),pattern="^(in|out)_",value=T))
+    newMSL[,(clearCols) := NA]
+    
+    # add admin columns
+    newMSL[,".emptyReported"] = NA_character_
+    
+    # rename release
+    newMSL[newMSL$rank=="tree","name"]  = params$msl_name
+    newMSL[newMSL$rank=="tree","notes"] = params$msl_notes
+    
+    # add the new rows
+    #return(rbind(taxonomy_node, newMSL))
+    return(newMSL)
+  }
+  
+  #
+  # get next available taxnode_id in a given MSL
+  #
+  assignNextTaxnodeId = function(taxonomy_node,msl) {
+    return(max(subset(taxonomy_node,msl_release_num==msl)$taxnode_id)+1)
+    
+  }
+  # ```
+  # # load previous MSLs
+  # ```{r load prev MSL, echo=F}
+  
+  #
+  # this uses the DATABASE schema for the taxonomy_node table (ie, naming convention)
   #
   
-  # copy original taxnode_id's into a new column
-  newMSL[,"prev_taxnode_id"] = newMSL[,"taxnode_id"]
+  #taxonomy_node_seq = "select  * from taxonomy_node_export"
+  taxonomy_node_names = c(
+    taxnode_id="integer",parent_id="integer",tree_id="integer",msl_release_num="integer",level_id="integer",
+    name="character",
+    ictv_id="integer",
+    molecule_id="integer",
+    abbrev_csv="character",
+    genbank_accession_csv="character",
+    genbank_refseq_accession_csv="character",
+    refseq_accession_csv="character",
+    isolate_csv="character",
+    notes="character",
+    is_ref="factor",is_official="factor",is_hidden="factor",is_deleted="factor",
+    is_deleted_next_year="factor",is_typo="factor",is_renamed_next_year="factor",
+    is_obsolete="factor",
+    in_change="factor",in_target="character",in_filename="character",in_notes="character",
+    out_change="factor",out_target="character",out_filename="character",out_notes="character",
+    # start_num_sort="integer",
+    # row_num="integer",filename="character",xref="character",
+    # realm_id="integer",realm_kid_ct="integer",realm_desc_ct="integer",
+    # subrealm_id="integer",subrealm_kid_ct="integer",subrealm_desc_ct="integer",
+    # kingdom_id="integer",kingdom_kid_ct="integer",kingdom_desc_ct="integer",
+    # subkingdom_id="integer",subkingdom_kid_ct="integer",subkingdom_desc_ct="integer",
+    # phylum_id="integer",phylum_kid_ct="integer",phylum_desc_ct="integer",
+    # subphylum_id="integer",subphylum_kid_ct="integer",subphylum_desc_ct="integer",
+    # class_id="integer",class_kid_ct="integer",class_desc_ct="integer",
+    # subclass_id="integer",subclass_kid_ct="integer",subclass_desc_ct="integer",
+    # order_id="integer",order_kid_ct="integer",order_desc_ct="integer",
+    # suborder_id="integer",suborder_kid_ct="integer",suborder_desc_ct="integer",
+    # family_id="integer",family_kid_ct="integer",family_desc_ct="integer",
+    # subfamily_id="integer",subfamily_kid_ct="integer",subfamily_desc_ct="integer",
+    # genus_id="integer",genus_kid_ct="integer",genus_desc_ct="integer",
+    # subgenus_id="integer",subgenus_kid_ct="integer",subgenus_desc_ct="integer",
+    # species_id="integer",species_kid_ct="integer",species_desc_ct="integer",
+    # taxa_kid_cts="character",taxa_desc_cts="character",
+    # inher_molecule_id="integer",left_idx="integer",right_idx="integer",node_depth="integer",
+    lineage="character",
+    cleaned_name="character",
+    # cleaned_problem="character",flags="character",
+    # "_numKids"="integer","_out_target_parent"="factor","_out_target_name"="factor",
+    rank="factor",
+    #tree="factor",
+  #  realm="factor",subrealm="factor",kingdom="factor",subkingdom="factor",phylum="factor",subphylum="factor",class="factor",subclass="factor",order="factor",suborder="factor",family="factor",subfamily="factor",genus="factor",subgenus="factor",species="factor",
+    molecule="factor"
+    #inher_molecule="factor"
+    )
+  #taxonomyDf=read.delim(file=params$prev_taxa_fname,header=FALSE,col.names=names(taxonomy_node_names),stringsAsFactors=FALSE,na.strings="NULL")
+  dbTaxonomyNodeFilename=file.path(params$ref_dir, params$db_taxonomy_node_fname)
+  taxonomyDt=fread(file=dbTaxonomyNodeFilename,
+                   header=FALSE,col.names=names(taxonomy_node_names),colClasses=as.character(taxonomy_node_names),
+                   stringsAsFactors=FALSE,na.strings=c("","NULL"))
+  cat("Previous taxa:",dim(taxonomyDt), " from ",dbTaxonomyNodeFilename,"\n")
   
-  # CSV of proposals that have already modified this taxon in this MSL
-  newMSL[,"prev_proposals"] = NA_character_
+  
+  # ```
+  # 
+  # # load db CV tables 
+  # ```{r load db cv tables, echo=F}
+  
+  #### SECTION load CVs and preMSLs #### 
   
   #
-  # update all ids (taxnode_id and all FK's to taxnnode_id) for new MSL
+  # this uses the DATABASE schema for the taxonomy_node table (ie, naming convention)
   #
   
-  # update the node ids
-  fkTaxnodeIdCols = c("taxnode_id","parent_id","tree_id"
-                 # ,paste0(tolower(
-                 #   c("Realm", "Subrealm", "Kingdom", "Subkingdom", 
-                 #     "Phylum", "Subphylum", "Class", "Subclass", "Order", "Suborder", 
-                 #     "Family", "Subfamily", "Genus", "Subgenus", "Species")),"_id")
+  # DB CV loads
+  dbCvList = list()
+  dbCvMapList = list()
+  
+  dbRankFilename=file.path(params$ref_dir, params$db_rank_fname)
+  rankCV = read.delim(file=dbRankFilename,header=TRUE, stringsAsFactors=TRUE,na.strings=c("NULL"))
+  rownames(rankCV) = rankCV$id
+  dbCvList[["rank"]] = rankCV
+  dbCvMapList[["rank"]] = rankCV$id
+  names(dbCvMapList[["rank"]]) = rankCV$name
+  if(params$verbose) {cat("RankCV: ", dim(rankCV), " from ",dbRankFilename,"\n")}
+  
+  
+  dbMoleculeFilename=file.path(params$ref_dir, params$db_molecule_fname)
+  moleculeCV = read.delim(file=dbMoleculeFilename,header=TRUE, stringsAsFactors=TRUE,na.strings=c("NULL"))
+  rownames(moleculeCV) = moleculeCV$id
+  dbCvList[["molecule"]] = moleculeCV
+  dbCvMapList[["molecule"]] = moleculeCV$id
+  names(dbCvMapList[["molecule"]]) = moleculeCV$abbrev
+  if( params$verbose) {cat("MoleculeCV: ", dim(moleculeCV), " from ",dbMoleculeFilename,"\n")}
+  
+  # ```
+  # # Load CVs for Proposal QC
+  # ```{r load cvs}
+  
+  #
+  # this uses the PROPOSAL.XLSX schema (naming convention)
+  #
+  # we should probably load CVs from a series of DB dumps, rather than using
+  # the excel file as the reference, in order to make them easier to update. 
+  #
+  
+  refProposalTemplateFilename=file.path(params$ref_dir, params$template_xlsx_fname)
+  templateProposalCV = suppressMessages(data.frame(read_excel(refProposalTemplateFilename,sheet = params$template_xlsx_sheet,col_names = FALSE)))
+  templateProposalDf = suppressMessages(data.frame(read_excel(refProposalTemplateFilename,sheet = 1,col_names = FALSE)))
+  
+  #cvDf = data.f rame(trib[,])  # remove "select one" line
+  if( params$verbose) {cat("ProposalTemplate[",params$template_xlsx_sheet,"]: ", dim(templateProposalCV), " from ",refProposalTemplateFilename,"\n")}
+  
+  # patch up studysection, which is a map, not just a CV list
+  templateProposalCV[1,6]="Subcommittee Abbrev"
+  templateProposalCV[1,7]="Subcommittee Name"
+  # fix any \r, \n, \r, etc in column headers, and convert punctuation to spaces, too
+  templateProposalCV[1,]=gsub("[^[:alpha:]]+"," ",templateProposalCV[1,])
+  cvList=list()
+  for(cv_col in 1:ncol(templateProposalCV)) {
+    cv_name = templateProposalCV[1,cv_col]
+    cv = templateProposalCV[,cv_col][-1]
+    cvList[[cv_name]]=c(cv[!is.na(cv)],NA)
+  }
+  
+  
+  # map to actual input xlsx column names
+  cvNameMap = c(
+    "Genome coverage"=    "genomeCoverage",
+    "Genome composition"= "molecule",
+    "Host Source"=        "hostSource",
+    "Change"=             "change",
+    "Proposed Rank"=      "rank",
+    "Subcommittee Abbrev"="scAbbrev",
+    "Subcommittee Name"=  "scName"
   )
-  newMSL[,(fkTaxnodeIdCols) := lapply(.SD, function(id) id+params$taxnode_delta),.SDcols=fkTaxnodeIdCols]
+  names(cvList)=cvNameMap[names(cvList)]
   
-  # update the MSL number
-  newMSL[,msl_release_num:=dest_msl]
+  # remove ("Please select",NA) from "change" & "rank" CVs - that is a required field
+  for( cv in c("change","rank","scAbbrev","scName") ) {
+    isRemoveTerm = tolower(gsub("[^[:alnum:]]","",cvList[[cv]])) %in% c(
+      "pleaseselect", # 2023
+      "[Please select]", # 2023
+      "Please select",   # 2022
+        NA
+    ) 
+    cvList[[cv]] = cvList[[cv]][!isRemoveTerm]
+  }
   
-  # make row ids match
-  #rownames(newMSL) = newMSL$taxnode_id
+  #
+  # build Subcommittee Map
+  #
+  scAbbrevNameMap = cvList[["scName"]]
+  names(scAbbrevNameMap) = cvList[["scAbbrev"]]
+  # remove them from "official" cvList, as that list 
+  # also servers as a list of require columns for the proposal xlsx
+  cvList = cvList[!names(cvList) %in% c("scName","scAbbrev")]
+  #
+  # add XLS terms be aliases to DB ID maps
+  #
+  cv = "molecule"
+  isOk = 
+    # things that match after removing spaces
+    gsub(pattern=" ",replacement="",x=cvList[[cv]]) %in% names(dbCvMapList[[cv]]) &
+    # things that DON'T match exactly
+    !cvList[[cv]] %in% names(dbCvMapList[[cv]])
   
-  # clear in/out changes
-  clearCols = c(grep(names(newMSL),pattern="^(in|out)_",value=T))
-  newMSL[,(clearCols) := NA]
+  aliases = dbCvMapList[["molecule"]][gsub(pattern=" ",replacement="",x=cvList[["molecule"]])[isOk]]
+  names(aliases) = cvList[[cv]][isOk]
+  # add aliases
+  dbCvMapList[[cv]] = c(
+    # original map
+    dbCvMapList[[cv]],
+    # additional aliases
+    aliases,
+    # hack for "multiple" which was in xlsx, but doesn't map to the db
+    "multiple"=NA
+    )
   
-  # add admin columns
-  newMSL[,".emptyReported"] = NA_character_
-  
-  # rename release
-  newMSL[newMSL$rank=="tree","name"]  = params$msl_name
-  newMSL[newMSL$rank=="tree","notes"] = params$msl_notes
-  
-  # add the new rows
-  #return(rbind(taxonomy_node, newMSL))
-  return(newMSL)
-}
-
-#
-# get next available taxnode_id in a given MSL
-#
-assignNextTaxnodeId = function(taxonomy_node,msl) {
-  return(max(subset(taxonomy_node,msl_release_num==msl)$taxnode_id)+1)
-  
-}
-# ```
-# # load previous MSLs
-# ```{r load prev MSL, echo=F}
-
-#
-# this uses the DATABASE schema for the taxonomy_node table (ie, naming convention)
-#
-
-taxonomy_node_seq = "select  * from taxonomy_node_export"
-taxonomy_node_names = c(
-  taxnode_id="integer",parent_id="integer",tree_id="integer",msl_release_num="integer",level_id="integer",
-  name="character",
-  ictv_id="integer",
-  molecule_id="integer",
-  abbrev_csv="character",
-  genbank_accession_csv="character",
-  genbank_refseq_accession_csv="character",
-  refseq_accession_csv="character",
-  isolate_csv="character",
-  notes="character",
-  is_ref="factor",is_official="factor",is_hidden="factor",is_deleted="factor",
-  is_deleted_next_year="factor",is_typo="factor",is_renamed_next_year="factor",
-  is_obsolete="factor",
-  in_change="factor",in_target="character",in_filename="character",in_notes="character",
-  out_change="factor",out_target="character",out_filename="character",out_notes="character",
-  # start_num_sort="integer",
-  # row_num="integer",filename="character",xref="character",
-  # realm_id="integer",realm_kid_ct="integer",realm_desc_ct="integer",
-  # subrealm_id="integer",subrealm_kid_ct="integer",subrealm_desc_ct="integer",
-  # kingdom_id="integer",kingdom_kid_ct="integer",kingdom_desc_ct="integer",
-  # subkingdom_id="integer",subkingdom_kid_ct="integer",subkingdom_desc_ct="integer",
-  # phylum_id="integer",phylum_kid_ct="integer",phylum_desc_ct="integer",
-  # subphylum_id="integer",subphylum_kid_ct="integer",subphylum_desc_ct="integer",
-  # class_id="integer",class_kid_ct="integer",class_desc_ct="integer",
-  # subclass_id="integer",subclass_kid_ct="integer",subclass_desc_ct="integer",
-  # order_id="integer",order_kid_ct="integer",order_desc_ct="integer",
-  # suborder_id="integer",suborder_kid_ct="integer",suborder_desc_ct="integer",
-  # family_id="integer",family_kid_ct="integer",family_desc_ct="integer",
-  # subfamily_id="integer",subfamily_kid_ct="integer",subfamily_desc_ct="integer",
-  # genus_id="integer",genus_kid_ct="integer",genus_desc_ct="integer",
-  # subgenus_id="integer",subgenus_kid_ct="integer",subgenus_desc_ct="integer",
-  # species_id="integer",species_kid_ct="integer",species_desc_ct="integer",
-  # taxa_kid_cts="character",taxa_desc_cts="character",
-  # inher_molecule_id="integer",left_idx="integer",right_idx="integer",node_depth="integer",
-  lineage="character",
-  cleaned_name="character",
-  # cleaned_problem="character",flags="character",
-  # "_numKids"="integer","_out_target_parent"="factor","_out_target_name"="factor",
-  rank="factor",
-  #tree="factor",
-#  realm="factor",subrealm="factor",kingdom="factor",subkingdom="factor",phylum="factor",subphylum="factor",class="factor",subclass="factor",order="factor",suborder="factor",family="factor",subfamily="factor",genus="factor",subgenus="factor",species="factor",
-  molecule="factor"
-  #inher_molecule="factor"
-  )
-#taxonomyDf=read.delim(file=params$prev_taxa_fname,header=FALSE,col.names=names(taxonomy_node_names),stringsAsFactors=FALSE,na.strings="NULL")
-taxonomyDt=fread(file=params$prev_taxa_fname,
-                 header=FALSE,col.names=names(taxonomy_node_names),colClasses=as.character(taxonomy_node_names),
-                 stringsAsFactors=FALSE,na.strings=c("","NULL"))
-cat("Previous taxa:",dim(taxonomyDt), " from ",params$prev_taxa_fname,"\n")
-
-
-# ```
-# 
-# # load db CV tables 
-# ```{r load db cv tables, echo=F}
-
-#### SECTION load CVs and preMSLs #### 
-
-#
-# this uses the DATABASE schema for the taxonomy_node table (ie, naming convention)
-#
-
-# DB CV loads
-dbCvList = list()
-dbCvMapList = list()
-
-rankCV = read.delim(file=params$db_rank_fname,header=TRUE, stringsAsFactors=TRUE,na.strings=c("NULL"))
-rownames(rankCV) = rankCV$id
-cat("RankCV: ", dim(rankCV), " from ",params$db_rank_fname,"\n")
-dbCvList[["rank"]] = rankCV
-dbCvMapList[["rank"]] = rankCV$id
-names(dbCvMapList[["rank"]]) = rankCV$name
-
-
-moleculeCV = read.delim(file=params$db_molecule_fname,header=TRUE, stringsAsFactors=TRUE,na.strings=c("NULL"))
-rownames(moleculeCV) = moleculeCV$id
-cat("MoleculeCV: ", dim(moleculeCV), " from ",params$db_molecule_fname,"\n")
-dbCvList[["molecule"]] = moleculeCV
-dbCvMapList[["molecule"]] = moleculeCV$id
-names(dbCvMapList[["molecule"]]) = moleculeCV$abbrev
-
-# ```
-# # Load CVs for Proposal QC
-# ```{r load cvs}
-
-#
-# this uses the PROPOSAL.XLSX schema (naming convention)
-#
-
-proposalCV = suppressMessages(data.frame(read_excel(params$cv_xlsx,sheet = params$cv_sheet,col_names = FALSE)))
-#cvDf = data.f rame(trib[,])  # remove "select one" line
-
-cvList=list()
-for(cv_col in 1:ncol(proposalCV)) {
-  cv_name = proposalCV[1,cv_col]
-  cv = proposalCV[,cv_col][-1]
-  cvList[[cv_name]]=c(cv[!is.na(cv)],NA)
-}
-
-# map to actual input xlsx column names
-cvNameMap = c(
-  "Genome coverage"=    "genomeCoverage",
-  "Genome composition"= "molecule",
-  "Host/Source"=        "hostSource",
-  "Change"=             "change",
-  "Rank"=               "rank"  
-)
-names(cvList)=cvNameMap[names(cvList)]
-
-# remove ("Please select",NA) from "change" & "rank" CVs - that is a required field
-for( cv in c("change","rank") ) {
-  isRemoveTerm = cvList[[cv]] %in% c("Please select",NA) 
-  cvList[[cv]] = cvList[[cv]][!isRemoveTerm]
-}
-
-#
-# add XLS terms be aliases to DB ID maps
-#
-cv = "molecule"
-isOk = 
-  # things that match after removing spaces
-  gsub(pattern=" ",replacement="",x=cvList[[cv]]) %in% names(dbCvMapList[[cv]]) &
-  # things that DON'T match exactly
-  !cvList[[cv]] %in% names(dbCvMapList[[cv]])
-
-aliases = dbCvMapList[["molecule"]][gsub(pattern=" ",replacement="",x=cvList[["molecule"]])[isOk]]
-names(aliases) = cvList[[cv]][isOk]
-# add aliases
-dbCvMapList[[cv]] = c(
-  # original map
-  dbCvMapList[[cv]],
-  # additional aliases
-  aliases,
-  # hack for "multiple" which was in xlsx, but doesn't map to the db
-  "multiple"=NA
-  )
-
-#
-# load hostSource CV from VMR (most up-to-date)
-#
-vmrDf = data.frame(
-    # suppress errors about column names
-    # https://github.com/tidyverse/readxl/issues/580#issuecomment-519804058
-    suppressMessages(
-      read_excel(
-        path    = params$VMR_filename,
-        sheet   = "Terms",
-        trim_ws = TRUE,
-        na      = "Please select",
-        skip    = 0,
-        range   = cell_cols("A:AO"),
-        col_names = TRUE
+  #
+  # load hostSource CV from VMR (most up-to-date)
+  #
+  vmrFilename = file.path(params$ref_dir, params$vmr_fname)
+  vmrDf = data.frame(
+      # suppress errors about column names
+      # https://github.com/tidyverse/readxl/issues/580#issuecomment-519804058
+      suppressMessages(
+        read_excel(
+          path    = vmrFilename,
+          sheet   = "Terms",
+          trim_ws = TRUE,
+          na      = "Please select",
+          skip    = 0,
+          range   = cell_cols("A:AO"),
+          col_names = TRUE
+        )
       )
     )
+  cvList[["hostSource"]] = union(
+      cvList[["hostSource"]],
+      vmrDf[,"Host.Source"]
   )
-cvList[["hostSource"]] = union(
-    cvList[["hostSource"]],
-    vmrDf[,"Host.Source"]
-)
-cat("VMR(hostSource): ", length(vmrDf[,"Host.Source"]), " from ",params$VMR_filename," [Terms]\n")
+  
+  cat("VMR(hostSource): ", length(vmrDf[,"Host.Source"]), " from ",params$VMR_filename," [Terms]\n")
+  
+  #
+  
+  # ```
+  # 
+  # # scan for proposal .xlsx files
+  # ```{r scan for proposal matching xlsx and docx}
+  # 
+  # error reporting data frame
+  # 
+  allErrorDf = data.table(
+    "subcommittee" = character(),
+    "code" = character(),
+    "docx" = character(),
+    "xlsx" = character(),
+    "row"  = integer(),
+    "change" = character(),
+    "rank" = character(),
+    "taxon" = character(),
+    "level" = factor(levels=c("ERROR","WARNING","INFO")),
+    "error" = character(),
+    "message" = character(),
+    "notes" = character()
+  )
+  .GlobalEnv$loadErrorDf = allErrorDf %>% filter(FALSE)
 
-#
-#### study section CV ####
-#
-# needs to be externalized to a file, so can be shared with finalize_proposals.R
-sc2destFolder = c(
-  "S"="Animal +ssRNA (S) proposals",
-  "D"="Animal DNA viruses and Retroviruses (D) proposals",
-  "M"="Animal dsRNA and -ssRNA (M) proposals",
-  "A"="Archaeal viruses (A) proposals",
-  "B"="Bacterial viruses (B) proposals",
-  "F"="Fungal and protist virus (F) proposals",
-  "G"="General (G) proposals",
-  "P"="Plant virus (P) proposals"
-)
-# ```
-# 
-# # scan for proposal .xlsx files
-# ```{r scan for proposal matching xlsx and docx}
-# 
-# error reporting data frame
-# 
-allErrorDf = data.table(
-  "folder" = character(),
-  "code" = character(),
-  "docx" = character(),
-  "xlsx" = character(),
-  "row"  = integer(),
-  "change" = character(),
-  "rank" = character(),
-  "taxon" = character(),
-  "level" = factor(levels=c("ERROR","WARNING","INFO")),
-  "error" = character(),
-  "message" = character(),
-  "notes" = character()
-)
-.GlobalEnv$loadErrorDf = allErrorDf %>% filter(FALSE)
+  
+  #
+  # extract current taxonomy
+  #
+  lastMSL = max(as.integer(taxonomyDt$msl_release_num))
+  .GlobalEnv$oldMSLs = subset(taxonomyDt, msl_release_num < lastMSL)
+  .GlobalEnv$curMSL = subset(taxonomyDt, msl_release_num==lastMSL)
+  # add accounting columns
+  .GlobalEnv$curMSL[,"out_updated"] = FALSE
+  
+  #
+  # copy prev MSL to make new MSL,
+  # to which we will try and apply these edits
+  #
+  .GlobalEnv$newMSL=createNewMSL(.GlobalEnv$curMSL,lastMSL, lastMSL+1, params$taxnode_delta)
+  
+  }
+
+#### SAVE REF CACHE ####
+if( params$update_cache ) {
+  if(params$verbose){ cat("WRITE: cache file ", cacheFilename, "\n")}
+  params$update_cache=FALSE
+  save.image(file=cacheFilename)
+}
+if(params$verbose){ cat(paste0("PROPOSALS_DIR:  ",params$proposals_dir,"/\n")) }
+if(params$verbose){ cat(paste0("OUT_DIR:        ",params$out_dir,"/\n")) }
 dir.create(params$out_dir,recursive=T,showWarnings = F)
-
 #
 #### SECTION scan DOCX #### 
 #
-# break filename into proposal code, filename and folder name
+# break filename into proposal code, filename and basename
 #
-proposals = data.frame(docxpath=list.files(path=params$proposals_dir,pattern="^20[0-9][0-9]\\.[0-9A-Z]+\\..*\\.docx$", recursive=T, full.names=TRUE) )
-proposals$path     = gsub(     "^(.*/)(20[0-9]+.[0-9A-Z]+).[^/]+.docx$","\\1",proposals$docxpath)
-                    # look for folder names "Words.. (?) proposals" - there may be folders above and below that we don't care about
-proposals$folder   = gsub(".*/([^/]+\\([A-Z]\\)[^/]+).*/(20[0-9]+.[0-9A-Z]+).[^/]+.docx$","\\1",proposals$docxpath)
-proposals$code     = gsub(".*/([^/]+)/(20[0-9]+.[0-9A-Z]+).[^/]+.docx$","\\2",proposals$docxpath)
-proposals$basename = gsub(".*/([^/]+)/(20[0-9]+.[0-9A-Z]+.[^/]+).docx$","\\2",proposals$docxpath)
-proposals$docx     = paste0(proposals$basename,".docx")
+docxs = data.frame(docxpath=list.files(path=params$proposals_dir,pattern="^20[0-9][0-9]\\.[0-9A-Z]+\\..*\\.docx$", recursive=T, full.names=TRUE) )
+docxs$path     = gsub(     "^(.*/)(20[0-9]+.[0-9A-Z]+).[^/]+.docx$","\\1",docxs$docxpath)
+docxs$code     = gsub(".*/(20[0-9]+.[0-9A-Z]+).[^/]+.docx$","\\1",docxs$docxpath)
+docxs$basename = gsub(".*/(20[0-9]+.[0-9A-Z]+.[^/]+).docx$","\\1",docxs$docxpath)
+if( nrow(docxs)==0){
+  docxs$docx     = character(0)
+} else {
+  docxs$docx    = paste0(docxs$basename,".docx")
+}
 # remove all *.Ud.* files
-proposals = proposals[grep(proposals$docx, pattern=".*\\.Ud\\..*", invert=T),]
-# strip off version, workflow status and .fix, to get final, production filename
-proposals$cleanbase= gsub("^([0-9]+\\.[0-9]+[A-Z])(\\.[A-Z]+)(\\.v[0-9]+)*(\\.fix)*(\\..*)$","\\1\\5",proposals$basename)
+docxs = docxs[grep(docxs$docx, pattern=".*\\.Ud\\..*", invert=T),]
 
 # check for duplicate Proposal IDs
-dups = duplicated(proposals$code)
-allDups =proposals$code %in% proposals$code[dups]
+dups = duplicated(docxs$code)
+allDups =docxs$code %in% docxs$code[dups]
 if(sum(dups) > 0) {
-  errorDf = proposals[allDups, c("folder", "code", "docx")]
+  errorDf = docxs[allDups, c("subcommittee", "code", "docx")]
   errorDf$level = "ERROR"
   errorDf$error = "DUPCODE.DOCX"
   errorDf$message = "duplicate proposal ID"
@@ -441,22 +526,22 @@ if(sum(dups) > 0) {
   write_xlsx(x=errorDf,path=file.path(params$out_dir,"QC01.docx_duplicate_ids.xlsx"))
   write_xlsx(x=.GlobalEnv$loadErrorDf,path=file.path(params$out_dir,"QC.summary.xlsx"))
 }
-rownames(proposals)=proposals$code
+rownames(docxs)=docxs$code
 
 # spaces in filenames
-spacedOut = grep(pattern=" ",proposals$docx)
+spacedOut = grep(pattern=" ",docxs$docx)
 if(sum(spacedOut) > 0) {
-  errorDf = proposals[spacedOut, c("folder", "code", "docx")]
+  errorDf = docxs[spacedOut, c("subcommittee", "code", "docx")]
   errorDf$level = "WARNING"
   errorDf$error = "DOCX_FILENAME_SPACES"
   errorDf$message = "filename contains a space: please replace with _ or -"
-  errorDf$notes = gsub("( )","[\\1]",proposals[spacedOut,]$docx)
+  errorDf$notes = gsub("( )","[\\1]",docxs[spacedOut,]$docx)
   .GlobalEnv$loadErrorDf = rbindlist(list(.GlobalEnv$loadErrorDf, errorDf),fill=TRUE)
 }
 
-docxBadFnameFormats = grep(proposals$docx, pattern=paste0(filenameFormatRegex,".docx$"), invert=T)
+docxBadFnameFormats = grep(docxs$docx, pattern=paste0(filenameFormatRegex,".docx$"), invert=T)
 if( length(docxBadFnameFormats) > 0 ) {
-  errorDf= proposals[docxBadFnameFormats,c("folder","code","docx")]
+  errorDf= docxs[docxBadFnameFormats,c("subcommittee","code","docx")]
   errorDf$level= "WARNING"
   errorDf$error = "DOCX.BAD_FILENAME_FORMAT"
   errorDf$message = paste0("Should be '",filenameFormatMsg,".docx'")
@@ -468,26 +553,25 @@ if( length(docxBadFnameFormats) > 0 ) {
 #
 xlsxs = data.frame(xlsxpath=list.files(path=params$proposals_dir,pattern="^20[0-9][0-9]\\.[^.]+.*\\.xlsx$", recursive=T, full.names=TRUE) )
 xlsxs$path     = gsub(     "^(.*/)(20[0-9]+.[0-9A-Z]+).[^/]+.xlsx$","\\1",xlsxs$xlsxpath)
-# look for folder names "Words.. (?) proposals" - there may be folders above and below that we don't care about
-xlsxs$folder   = gsub(".*/([^/]+\\([A-Z]\\)[^/]+).*/(20[0-9]+.[0-9A-Z]+).[^/]+.xlsx$","\\1",xlsxs$xlsxpath)
-xlsxs$basename = gsub(".*/([^/]+)/(20[0-9]+.[0-9A-Z]+.[^/]+).xlsx$","\\2",xlsxs$xlsxpath)
-xlsxs$code     = gsub(".*/([^/]+)/(20[0-9]+.[0-9A-Z]+).[^/]+.xlsx$","\\2",xlsxs$xlsxpath)
+xlsxs$basename = gsub(".*/(20[0-9]+.[0-9A-Z]+.[^/]+).xlsx$","\\1",xlsxs$xlsxpath)
+xlsxs$code     = gsub(".*/(20[0-9]+.[0-9A-Z]+).[^/]+.xlsx$","\\1",xlsxs$xlsxpath)
 xlsxs$xlsx     = paste0(xlsxs$basename,".xlsx")
 # remove all *.Ud.* files
 xlsxs = xlsxs[grep(xlsxs$xlsx, pattern=".*\\.Ud\\..*", invert=T),]
-# strip off version, workflow status and .fix, to get final, production filename
-xlsxs$cleanbase= gsub("^([0-9]+\\.[0-9]+[A-Z])(\\.[A-Z]+)(\\.v[0-9]+)*(\\.fix)*(\\..*)$","\\1\\5",xlsxs$basename)
 
 # ignore "Suppl" files 
 sups = grep(xlsxs$xlsx,pattern=params$xlsx_suppl_pat )
-xlsxs=xlsxs[-(sups),]
+if(length(sups)>0) {
+    # remove supps
+  xlsxs=xlsxs[-(sups),]
+}
 
 # QC for duplicate codes
 dups = duplicated(xlsxs$code)
 allDups =xlsxs$code %in% xlsxs$code[dups]
 if( sum(dups) > 0 ) {
   # error details
-  errorDf = xlsxs[allDups, c("folder", "code", "xlsx")]
+  errorDf = xlsxs[allDups, c("subcommittee", "code", "xlsx")]
   errorDf$level = "ERROR"
   errorDf$error = "XLSX_DUPCODE"
   for( code in xlsxs$code[dups] ) {
@@ -507,28 +591,53 @@ if( sum(dups) > 0 ) {
   kable(caption=paste0("ERROR: XLSX dupliate proposal IDs"),
         x=proposals[proposals$code %in% proposals$code[dups],])
 }
-rownames(xlsxs) = xlsxs$basename
+rownames(xlsxs) = xlsxs$code
 #
 # check that xlsx names match format
 #
 # production format (no version)
 xlsxBadFnameFormats = grep(xlsxs$xlsx, pattern=paste0(filenameFormatRegex,".xlsx$"), invert=T)
 if( length(xlsxBadFnameFormats) > 0 ) {
-  errorDf= xlsxs[xlsxBadFnameFormats,c("folder","code","xlsx")]
+  errorDf= xlsxs[xlsxBadFnameFormats,c("subcommittee","code","xlsx")]
   errorDf$level= "WARNING"
   errorDf$error = "XLSX.BAD_FILENAME_FORMAT"
   errorDf$message = paste0("Should be '",filenameFormatMsg,".xlsx'")
   errorDf$notes= "####[A-Z]=year/study_section, ###[A-Z]=index/type, [A-Z]+=status, v#=version"
   .GlobalEnv$loadErrorDf = rbindlist(list(.GlobalEnv$loadErrorDf, errorDf),fill=TRUE)
 }
+# spaces in XLSX filenames
+spacedOut = grep(pattern=" ",xlsxs$xlsx)
+if(sum(spacedOut) > 0) {
+  errorDf = xlsxs[spacedOut, c("subcommittee", "code", "xlsx")]
+  errorDf$level = "WARNING"
+  errorDf$error = "XLSX_FILENAME_SPACES"
+  errorDf$message = "filename contains a space: please replace with _ or -"
+  .GlobalEnv$loadErrorDf = rbindlist(list(.GlobalEnv$loadErrorDf, errorDf),fill=TRUE)
+}
 #
 #### merge XLSX list into DOCX list, verify ####
-#
-proposals$xlsx = xlsxs[proposals$basename,"xlsx"]
-proposals$xlsxpath = xlsxs[proposals$basename,"xlsxpath"]
+
+proposals = data.frame(
+  row.names=c(union(xlsxs$code,docxs$code)),
+  code=c(union(xlsxs$code,docxs$code))
+  )
+# XLSX only fields
+proposals$xlsx = xlsxs[proposals$code,"xlsx"]
+proposals$xlsxpath = xlsxs[proposals$code,"xlsxpath"]
+# DOCS only fields
+proposals$docx = docxs[proposals$code,"docx"]
+proposals$docxpath = docxs[proposals$code,"docxpath"]
+# MERGE 
+proposals$basename = ifelse(!is.na(xlsxs[proposals$code,"basename"]),
+                            xlsxs[proposals$code,"basename"],
+                            docxs[proposals$code,"basename"])
+# strip off version, workflow status and .fix, to get final, production filename
+proposals$cleanbase= gsub("^([0-9]+\\.[0-9]+[A-Z])(\\.[A-Z]+)(\\.v[0-9]+)*(\\.fix)*(\\..*)$","\\1\\5",proposals$basename)
+
+# QC  - missing xlsx file
 missing= is.na(proposals$xlsx)
 if( sum(missing) > 0 ) {
-  errorDf= proposals[missing,c("folder","code","docx")]
+  errorDf= proposals[missing,c("code","docx")]
   # suggest possible matches based on ID
   errorDf$xlsx= NA 
   errorDf$row = NA
@@ -572,43 +681,37 @@ if( sum(missing) > 0 ) {
   write_xlsx(x=errorDf,path=file.path(params$out_dir,"QC.summary.xlsx"))
 
 }
+# QQQ don't check for missing docx files? 
 
 #
-# get SC names from last lettter of code
+# get SC names from last letter of code
 #
+
 proposals$scAbbrev = gsub("[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9]([A-Z])","\\1",proposals$code)
 # QC
-badProposalAbbrevs = !(proposals$scAbbrev %in% names(sc2destFolder))
+badProposalAbbrevs = !(proposals$scAbbrev %in% names(scAbbrevNameMap))
 if(sum(badProposalAbbrevs)>0) {
-  errorDf = proposals[badProposalAbbrevs, c("folder", "code", "xlsx", "docx")]
+  errorDf = proposals[badProposalAbbrevs, c("subcommittee", "code", "xlsx", "docx")]
   errorDf$level = "WARNING"
   errorDf$error = "CODE_BAD_SC_ABBREV"
-  errorDf$message = "Last letter of CODE not a valid Study Section letter"
+  errorDf$message = "Last letter of CODE not a valid ICTV Subcommittee letter"
   errorDf$notes = paste0("'",proposals[badProposalAbbrevs,"scAbbrev"],"' not in [",
-                        paste0(names(sc2destFolder),collapse=","),"]")
+                        paste0(names(scAbbrevNameMap),collapse=","),"]")
   .GlobalEnv$loadErrorDf = rbindlist(list(.GlobalEnv$loadErrorDf, errorDf),fill=TRUE)
   
 }
-proposals$scName = ifelse(badProposalAbbrevs,
+proposals$subcommittee = ifelse(badProposalAbbrevs,
                           paste0("unknown-",proposals$scAbbrev),
-                          sc2destFolder[proposals$scAbbrev])
+                          scAbbrevNameMap[proposals$scAbbrev])
 
-# spaces in XLSX filenames
-spacedOut = grep(pattern=" ",xlsxs$xlsx)
-if(sum(spacedOut) > 0) {
-  errorDf = xlsxs[spacedOut, c("folder", "code", "xlsx")]
-  errorDf$level = "WARNING"
-  errorDf$error = "XLSX_FILENAME_SPACES"
-  errorDf$message = "filename contains a space: please replace with _ or -"
-  .GlobalEnv$loadErrorDf = rbindlist(list(.GlobalEnv$loadErrorDf, errorDf),fill=TRUE)
-}
+
 # ```
 # 
 # # Load summary
 # 
 # ```{r load_summary,echo=FALSE}
 # kable(caption=paste0("SUMMARY: Proposal .xlsx file found in ",params$proposals_dir,"/"),
-#       x=data.frame(nProposals=summary(as.factor(proposals$folder))),)
+#       x=data.frame(nProposals=summary(as.factor(proposals$subcommittee))),)
 # ```
 # 
 # ## QC setup
@@ -645,8 +748,17 @@ xlsx_v2_row2=c(
     "COMMENTS"
     )
 
+xlsx_2023_row4 = c("CURRENT TAXONOMY" , NA_character_, NA_character_ , NA_character_, NA_character_,
+                   NA_character_, NA_character_, NA_character_, NA_character_, NA_character_,
+                   NA_character_, NA_character_, NA_character_, NA_character_, NA_character_,
+                   "PROPOSED TAXONOMY", NA_character_, NA_character_, NA_character_, NA_character_,
+                   NA_character_, NA_character_, NA_character_, NA_character_, NA_character_,
+                   NA_character_, NA_character_, NA_character_, NA_character_, NA_character_, 
+                   "DESCRIPTIVES", NA_character_, NA_character_, NA_character_, NA_character_,
+                   NA_character_, NA_character_, "ACTION", NA_character_, "COMMENTS"
+)
 # dput(unname(as.vector(df[2,])))
-xlsx_row3_v1=c(
+xlsx_v1_row3=c(
   "Realm", "Subrealm", "Kingdom", "Subkingdom", 
   "Phylum", "Subphylum", "Class", "Subclass", "Order", "Suborder", 
   "Family", "Subfamily", "Genus", "Subgenus", "Species",
@@ -665,7 +777,7 @@ xlsx_row3_v1=c(
   "Change", 
   "Rank"
 )
-xlsx_row3_v2=c(
+xlsx_v2_row3=c(
   # V2 added column
   Code=NA_character_, 
   "Realm", "Subrealm", "Kingdom", "Subkingdom",
@@ -687,6 +799,24 @@ xlsx_row3_v2=c(
   "Comments"
 )
 
+xlsx_2023_row5=c(
+    "Realm", "Subrealm", "Kingdom", "Subkingdom", 
+    "Phylum", "Subphylum", "Class", "Subclass", "Order", "Suborder", 
+    "Family", "Subfamily", "Genus", "Subgenus", "Species",
+    "Realm", "Subrealm", "Kingdom", "Subkingdom", "Phylum", "Subphylum", 
+    "Class", "Subclass", "Order", "Suborder", "Family", "Subfamily", 
+    "Genus", "Subgenus", "Species",
+    "Exemplar GenBank Accession Number", 
+    "Exemplar virus name",
+    "Virus name abbreviation", 
+    "Exemplar isolate designation", 
+    "Genome coverage", 
+    "Genome composition", 
+    "Host/Source", 
+    "Change", 
+    "Proposed Rank",
+    "Comments"
+)
 #
 # changeDf column names
 #
@@ -755,7 +885,7 @@ value_validation = rbind(value_validation, data.frame(
 value_validation = rbind(value_validation, data.frame(
   pat_name = "species 2 words with a space",
   col = c("species"),
-  regex = "^([[:alnum:]-]+ [[:alnum:]-]+)$",
+  regex = "^([[:alnum:]-]+ [[:alnum:] -]+)$",
   type = "required",
   class = "ERROR",
   code = "XLSX.SPECIES_BAD_NAME",
@@ -883,6 +1013,12 @@ xlsx_v2_change_cols = c(
   17:31, # dest Ranks
   32:41  # other
 )
+xlsx_2023_change_cols =  c(
+  1:15,  # srcRanks
+  16:30, # dest Ranks
+  31:40  # other
+)
+
 # ```
 # # process changes function
 # 
@@ -994,6 +1130,16 @@ load_proposal_docx = function(code) {
   # return data
   errorDf = allErrorDf[FALSE,]
   metaDf = data.frame(code=c(code))
+
+  # check if we even HAVE a docx file!
+  if( is.na(proposals[code,"docxpath"]) ) {
+    errorDf = proposals[code, c("code", "xlsx")]
+    errorDf$level = "WARNING"
+    errorDf$error = "DOCX_MISSING"
+    errorDf$message = ".docx file not available"
+    .GlobalEnv$loadErrorDf = rbindlist(list(.GlobalEnv$loadErrorDf, errorDf),fill=TRUE)
+    return(list(metaDf=metaDf,errorDf=errorDf))
+  }
   # read DOCX file, no column names
   txt = read_docx(proposals[code,"docxpath"])
   
@@ -1008,7 +1154,7 @@ load_proposal_docx = function(code) {
            )
       )
   } else {
-    errorDf = proposals[code, c("folder", "code", "xlsx", "docx")]
+    errorDf = proposals[code, c("subcommittee", "code", "xlsx", "docx")]
     errorDf$level = "WARNING"
     errorDf$error = "DOCX_TITLE_MISSING"
     errorDf$message = "Title not found"
@@ -1026,7 +1172,7 @@ load_proposal_docx = function(code) {
                                 )
     )
   } else {
-    errorDf = proposals[code, c("folder", "code", "xlsx", "docx")]
+    errorDf = proposals[code, c("subcommittee", "code", "xlsx", "docx")]
     errorDf$level = "WARNING"
     errorDf$error = "DOCX_AUTHORS_MISSING"
     errorDf$message = "Authors list not found"
@@ -1043,7 +1189,7 @@ load_proposal_docx = function(code) {
                                       )
     )
   } else {
-    errorDf = proposals[code, c("folder", "code", "xlsx", "docx")]
+    errorDf = proposals[code, c("subcommittee", "code", "xlsx", "docx")]
     errorDf$level = "WARNING"
     errorDf$error = "DOCX_CORR_AUTHOR_MISSING"
     errorDf$message = "Corresponding Author not found"
@@ -1060,7 +1206,7 @@ load_proposal_docx = function(code) {
                            )
     )
   } else {
-    errorDf = proposals[code, c("folder", "code", "xlsx", "docx")]
+    errorDf = proposals[code, c("subcommittee", "code", "xlsx", "docx")]
     errorDf$level = "WARNING"
     errorDf$error = "DOCX_ABSTRACT_MISSING"
     errorDf$message = "Abstract not found"
@@ -1077,14 +1223,14 @@ load_proposal_docx = function(code) {
 # returns: errorDf
 addError=function(errorDf,code,row,change,rank,taxon,levelStr,errorCode,errorStr,notes) {
   nextErrorDf = data.frame(
-    folder = proposals[code,]$folder,
+    subcommittee = proposals[code,]$subcommittee,
     code = code,
     row = row,
     change = change, 
     rank=rank,
     taxon = taxon,
-    docx = proposals[code,]$docx,
-    xlsx = proposals[code,]$xlsx,
+    docx = ifelse(is.na(proposals[code,]$docx),"MISSING",proposals[code,]$docx),
+    xlsx = ifelse(is.na(proposals[code,]$xlsx),"MISSING",proposals[code,]$xlsx),
     level = levelStr,
     error = errorCode,
     message = errorStr, 
@@ -1107,107 +1253,156 @@ qc_proposal = function(code, proposalDf) {
   templateVersion = "error"
   xlxs_colnames = toupper(c(letters,paste0("a",letters))) 
   
-  # check row 2 to validate version of templates
-  row2v1match = proposalDf[2, seq(from = 1, to = min(length(xlsx_v1_row2), ncol(proposalDf)))] == xlsx_v1_row2
-  row2v1matchCt = sum(row2v1match, na.rm = T)
-  row2v2match = proposalDf[2, seq(from = 2, to = min(length(xlsx_v2_row2) +
-                                                       1, ncol(proposalDf)))] == xlsx_v2_row2
-  row2v2matchCt = sum(row2v2match, na.rm = T)
-  
-  templateLine2Error = ""
-  if (row2v1matchCt == sum(!is.na(xlsx_v1_row2))) {
-    templateLine2Version = "v1"
-  } else if (row2v2matchCt == sum(!is.na(xlsx_v2_row2))) {
-    templateLine2Version = "v2"
-  } else {
-    templateLine2Version = "unrecognized"
-    # report the unexpected values
-    if( row2v1matchCt > row2v2matchCt ) { 
-      templateLine2Error= paste("similar to v1, but with ", 
-                                paste(paste0("column ",toupper(c(letters,paste0("a",letters)))[which(!row2v1match)],"='",proposalDf[2,which(!row2v1match)],"' instead of '",xlsx_row2_v1[which(!row2v1match)],"'"),collapse="; ")
-      )
-    } 
-    if( row2v1matchCt < row2v2matchCt ) { 
-      templateLine2Error= paste("similar to v2, but with ", 
-                                paste(paste0("column ",toupper(c(letters,paste0("a",letters)))[which(!row2v2match)],"='",proposalDf[2,which(!row2v2match)],"' instead of '",xlsx_row2_v2[which(!row2v2match)],"'"),collapse="; ")
-      )
-    } 
-  }
-  if(params$verbose>1) { cat("     ", code, " XLSX.Row 2: ",templateLine2Version," ",templateLine2Error,"\n")}
-  
-  # check row 3 to validate version of templates
-  row3v1match = proposalDf[3, seq(from = 1, to = min(length(xlsx_row3_v1), ncol(proposalDf)))] == xlsx_row3_v1
-  row3v1matchCt = sum(row3v1match, na.rm=T)
-  row3v2match = proposalDf[3, seq(from = 1, to = min(length(xlsx_row3_v2), ncol(proposalDf)))] == xlsx_row3_v2
-  row3v2matchCt = sum(row3v2match, na.rm=T)
-  templateLine3Error = ""
-  if (sum(row3v1match,na.rm=T) == sum(!is.na(xlsx_row3_v1))) {
-    templateLine3Version = "v1"
-  } else if (sum(row3v2match, na.rm=T) == sum(!is.na(xlsx_row3_v2))) {
-    templateLine3Version = "v2"
-  } else {
-    templateLine3Version = "unrecognized"
-    # report the unexpected values
-    if( row3v1matchCt > row3v2matchCt ) { 
-      templateLine3Error= paste("similar to v1, but with ", 
-                                paste(paste0("column ",toupper(c(letters,paste0("a",letters)))[which(!row3v1match)],"='",proposalDf[3,which(!row3v1match)],"' instead of '",xlsx_row3_v1[which(!row3v1match)],"'"),collapse="; ")
-      )
-    } 
-    if( row3v1matchCt < row3v2matchCt ) { 
-      templateLine3Error= paste("similar to v2, but with ", 
-                                paste(paste0("column ",toupper(c(letters,paste0("a",letters)))[which(!row3v2match)],"='",proposalDf[3,which(!row3v2match)],"' instead of '",xlsx_row3_v2[which(!row3v2match)],"'"),collapse="; ")
-      )
-    } 
-  }
-  if(params$verbose>1){cat("     ", code, " XLSX.Row 3: ",templateLine3Version," ",templateLine3Error,"\n")}
-  
-  # check for row2/row3 mismatch or errors
-  if (templateLine2Version != templateLine2Version || "unrecognized" %in% c(templateLine2Version,templateLine3Version)) {
+  # check row 3, cell 1 for 2023 and later version numbers
+  if( substring(proposalDf[3,1],1,6) == "2023.v" ) {
+    templateVersion = substring(proposalDf[3,1],1,6)
+    # 
+    # process 2023 template layout
+    #
     
-    proposals[code,"templateVersion"]="error"   
-    errorDf=addError(errorDf,code,3,NA,NA,NA,"ERROR","XLSX.TEMPLATE_UNK","XLSX template version",
-                            paste0("ROW2 is ", templateLine2Version, " (",templateLine2Error,")",
-                              ", ROW3 is ", templateLine3Version," (",templateLine3Error,")")
+    # complain about any formatting changes
+    row4match = (
+      tolower(gsub("[^[:alnum:]]","",proposalDf[4, seq(from = 1, to = min(length(xlsx_2023_row4), ncol(proposalDf)))]))
+      == 
+      tolower(gsub("[^[:alnum:]]","",xlsx_2023_row4))
     )
-    return(list(errorDf=errorDf))
+    row4match[is.na(row4match)]=FALSE
+    row4mismatchCt = sum(!row4match, na.rm = T)
+    row4Error= paste("row4 mismatches template at: ", 
+                              paste(paste0("column ",
+                                           toupper(c(letters,paste0("a",letters)))[which(!row4match)],
+                                           "='",
+                                           proposalDf[2,which(!row4match)],
+                                           "' instead of '",
+                                           xlsx_2023_row4[which(!row4match)],"'"),
+                                    collapse="; ")
+    )
+                              
+    row5match = (
+      tolower(gsub("[^[:alnum:]]","",proposalDf[5, seq(from = 1, to = min(length(xlsx_2023_row5), ncol(proposalDf)))]))
+      == 
+      tolower(gsub("[^[:alnum:]]","",xlsx_2023_row5))
+    )
+    row5match[is.na(row5match)]=FALSE
+    row5mismatchCt = sum(!row5match, na.rm = T)
+    row5Error= paste("row5 mismatches template at: ", 
+                     paste(paste0("column ",
+                                  toupper(c(letters,paste0("a",letters)))[which(!row5match)],
+                                  "='",
+                                  proposalDf[2,which(!row5match)],
+                                  "' instead of '",
+                                  xlsx_2023_row5[which(!row5match)],"'"),
+                           collapse="; ")
+    )
+    
   } else {
-    templateVersion = templateLine2Version
-  }
-  # finish up templateVersion
-  proposals[code,"templateVersion"]=templateVersion
-  if( templateVersion == "v1") {
-    # WARNING for outdated templates
-    errorDf=addError(errorDf,code,3,NA,NA,NA,"INFO","XLSX.OLD_TEMPLATE_V1", "XLSX template version",
-                     paste0("You are using version ",templateVersion,". Please get the latest version from ",params$templateURL)
-    )
-  }
-  if(params$verbose){cat("     ", code, " XLSX template ",templateVersion,"\n")}
-  
-  #
-  # QC Proposal ID
-  #
-  codeValue="missing" 
-  codeCell="undefined"
-  codeRow = NA
-  if( templateVersion == "v1" ) { codeValue= proposalDf[1,1]; codeCell="A1"; codeRow=1 }
-  if( templateVersion == "v2" ) { codeValue= proposalDf[3,1]; codeCell="A3"; codeRow=3 }
-  if( codeValue != code ) {
-    if( str_starts(codeValue,"Code") ) {
-      if(params$show.xlsx.code_miss) {
-        errorDf=addError(errorDf,code,codeRow,NA,NA,NA,"INFO","XLSX.CODE_MISS", "XLSX code missing", 
-                       paste0("XLSX cell ",codeCell,
-                              " is ", "'",codeValue, 
-                              "'; replace with the actual code: '",code,"'")
-        )
-      }
+    #
+    # figure out v1 or v2 templates from contents of rows 2 & 3
+    # 
+    
+    # check row 2 to validate version of templates
+    row2v1match = proposalDf[2, seq(from = 1, to = min(length(xlsx_v1_row2), ncol(proposalDf)))] == xlsx_v1_row2
+    row2v1matchCt = sum(row2v1match, na.rm = T)
+    row2v2match = proposalDf[2, seq(from = 2, to = min(length(xlsx_v2_row2) +
+                                                         1, ncol(proposalDf)))] == xlsx_v2_row2
+    row2v2matchCt = sum(row2v2match, na.rm = T)
+    
+    templateLine2Error = ""
+    if (row2v1matchCt == sum(!is.na(xlsx_v1_row2))) {
+      templateLine2Version = "v1"
+    } else if (row2v2matchCt == sum(!is.na(xlsx_v2_row2))) {
+      templateLine2Version = "v2"
     } else {
-      errorDf=addError(errorDf,code,codeRow,NA,NA,NA,"WARNING", "XLSX.CODE_BAD","XLSX code wrong", 
-                       paste0("XLSX cell ",codeCell,
-                              " does not match proposal code from filename: ", 
-                              "'",codeValue, "' should be '", code,"' ")
+      templateLine2Version = "unrecognized"
+      # report the unexpected values
+      if( row2v1matchCt > row2v2matchCt ) { 
+        templateLine2Error= paste("similar to v1, but with ", 
+                                  paste(paste0("column ",toupper(c(letters,paste0("a",letters)))[which(!row2v1match)],"='",proposalDf[2,which(!row2v1match)],"' instead of '",xlsx_row2_v1[which(!row2v1match)],"'"),collapse="; ")
+        )
+      } 
+      if( row2v1matchCt < row2v2matchCt ) { 
+        templateLine2Error= paste("similar to v2, but with ", 
+                                  paste(paste0("column ",toupper(c(letters,paste0("a",letters)))[which(!row2v2match)],"='",proposalDf[2,which(!row2v2match)],"' instead of '",xlsx_row2_v2[which(!row2v2match)],"'"),collapse="; ")
+        )
+      } 
+    }
+    if(params$verbose>1) { cat("     ", code, " XLSX.Row 2: ",templateLine2Version," ",templateLine2Error,"\n")}
+    
+    # check row 3 to validate version of templates
+    row3v1match = proposalDf[3, seq(from = 1, to = min(length(xlsx_v1_row3), ncol(proposalDf)))] == xlsx_v1_row3
+    row3v1matchCt = sum(row3v1match, na.rm=T)
+    row3v2match = proposalDf[3, seq(from = 1, to = min(length(xlsx_v2_row3), ncol(proposalDf)))] == xlsx_v2_row3
+    row3v2matchCt = sum(row3v2match, na.rm=T)
+    templateLine3Error = ""
+    if (sum(row3v1match,na.rm=T) == sum(!is.na(xlsx_v1_row3))) {
+      templateLine3Version = "v1"
+    } else if (sum(row3v2match, na.rm=T) == sum(!is.na(xlsx_v2_row3))) {
+      templateLine3Version = "v2"
+    } else {
+      templateLine3Version = "unrecognized"
+      # report the unexpected values
+      if( row3v1matchCt > row3v2matchCt ) { 
+        templateLine3Error= paste("similar to v1, but with ", 
+                                  paste(paste0("column ",toupper(c(letters,paste0("a",letters)))[which(!row3v1match)],"='",proposalDf[3,which(!row3v1match)],"' instead of '",xlsx_v1_row3[which(!row3v1match)],"'"),collapse="; ")
+        )
+      } 
+      if( row3v1matchCt < row3v2matchCt ) { 
+        templateLine3Error= paste("similar to v2, but with ", 
+                                  paste(paste0("column ",toupper(c(letters,paste0("a",letters)))[which(!row3v2match)],"='",proposalDf[3,which(!row3v2match)],"' instead of '",xlsx_v2_row3[which(!row3v2match)],"'"),collapse="; ")
+        )
+      } 
+    }
+    if(params$verbose>1){cat("     ", code, " XLSX.Row 3: ",templateLine3Version," ",templateLine3Error,"\n")}
+    
+    # check for row2/row3 mismatch or errors
+    if (templateLine2Version != templateLine2Version || "unrecognized" %in% c(templateLine2Version,templateLine3Version)) {
+      
+      proposals[code,"templateVersion"]="error"   
+      errorDf=addError(errorDf,code,3,NA,NA,NA,"ERROR","XLSX.TEMPLATE_UNK","XLSX template version",
+                              paste0("ROW2 is ", templateLine2Version, " (",templateLine2Error,")",
+                                ", ROW3 is ", templateLine3Version," (",templateLine3Error,")")
+      )
+      return(list(errorDf=errorDf))
+    } else {
+      templateVersion = templateLine2Version
+    }
+    # finish up templateVersion
+    proposals[code,"templateVersion"]=templateVersion
+    if( templateVersion == "v1") {
+      # WARNING for outdated templates
+      errorDf=addError(errorDf,code,3,NA,NA,NA,"INFO","XLSX.OLD_TEMPLATE_V1", "XLSX template version",
+                       paste0("You are using version ",templateVersion,". Please get the latest version from ",params$templateURL)
       )
     }
+    #
+    # QC Proposal ID
+    #
+    codeValue="missing" 
+    codeCell="undefined"
+    codeRow = NA
+    if( templateVersion == "v1" ) { codeValue= proposalDf[1,1]; codeCell="A1"; codeRow=1 }
+    if( templateVersion == "v2" ) { codeValue= proposalDf[3,1]; codeCell="A3"; codeRow=3 }
+    if( codeValue != code ) {
+      if( str_starts(codeValue,"Code") ) {
+        if(params$show.xlsx.code_miss) {
+          errorDf=addError(errorDf,code,codeRow,NA,NA,NA,"INFO","XLSX.CODE_MISS", "XLSX code missing", 
+                           paste0("XLSX cell ",codeCell,
+                                  " is ", "'",codeValue, 
+                                  "'; replace with the actual code: '",code,"'")
+          )
+        }
+      } else {
+        errorDf=addError(errorDf,code,codeRow,NA,NA,NA,"WARNING", "XLSX.CODE_BAD","XLSX code wrong", 
+                         paste0("XLSX cell ",codeCell,
+                                " does not match proposal code from filename: ", 
+                                "'",codeValue, "' should be '", code,"' ")
+        )
+      }
+    }
   }
+  
+  if(params$verbose){cat("     ", code, " XLSX template ",templateVersion,"\n")}
+    
   
   #
   # extract & standardize
@@ -1217,8 +1412,9 @@ qc_proposal = function(code, proposalDf) {
 
   # map columns
   firstDataRow=4
-  if(templateVersion=="v1") { changeDf = proposalDf[firstDataRow:nrow(proposalDf),xlsx_v1_change_cols] }
-  if(templateVersion=="v2") { changeDf = proposalDf[firstDataRow:nrow(proposalDf),xlsx_v2_change_cols] }
+  if(templateVersion=="v1") { firstDataRow=4; changeDf = proposalDf[firstDataRow:nrow(proposalDf),xlsx_v1_change_cols] }
+  if(templateVersion=="v2") { firstDataRow=4; changeDf = proposalDf[firstDataRow:nrow(proposalDf),xlsx_v2_change_cols] }
+  if(templateVersion=="2023.v" ) {firstDataRow=6; changeDf = proposalDf[firstDataRow:nrow(proposalDf),xlsx_2023_change_cols]}
   colnames(changeDf) = xlsx_change_colnames
   # a flag to exclude rows with irrecoverable errors
   changeDf[,".noErrors"] = TRUE
@@ -1265,7 +1461,7 @@ qc_proposal = function(code, proposalDf) {
     qc.matches =grep(changeDf[,col],pattern=pattern)
     if(length(qc.matches)>0) { 
       if(params$verbose) { cat("INFO:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
-       errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
+      errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
                        changeDf$change[qc.matches],changeDf$rank[qc.matches],changeDf$.changeTaxon[qc.matches],
                        "INFO","XLSX.NB_SPACE_REPLACED", paste("XLSX has",pat_warn),
                        paste0(paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":")," (replacing with '",pat_replace,"')")
@@ -1471,7 +1667,6 @@ qc_proposal = function(code, proposalDf) {
   #
 
   # check that all columns are present
-  
   missingCvNames = names(cvList)[!names(cvList) %in% names(changeDf)]
   if(length(missingCvNames)>0) {
     if(params$verbose) { cat("ERROR:",code,"missing CV columns [",paste(missingCvNames, collapse=","),"] on row 3\n") }
@@ -1595,6 +1790,7 @@ for( code in codes ) {
   #
   # load
   #
+  
   if(!is.null(changeList[[code]])) {
     # already loaded
   } else {
@@ -1615,7 +1811,7 @@ for( code in codes ) {
         cat("# LOADED: ",code," DOCX with ",nrow(errorDf)," errors/warnings\n")
         if(nrow(errorDf)>0){.GlobalEnv$loadErrorDf=rbindlist(list(.GlobalEnv$loadErrorDf,errorDf),fill=TRUE)}
       } else {
-        cat("# FROM CACHE: ",code,"\n")
+        cat("#  DOCX FROM CACHE: ",code,"\n")
       }
       proposals[code,names(docxList[[code]])] = docxList[[code]]
       #
@@ -1627,7 +1823,7 @@ for( code in codes ) {
         cat("# LOADED: ",code,"\n")
         
       } else {
-        cat("# FROM CACHE: ",code,"\n")
+        cat("# XLSX FROM CACHE: ",code,"\n")
       }
       proposalDf = xlsxList[[code]]
       
@@ -2578,23 +2774,11 @@ apply_changes = function(code,proposalBasename,changeDf) {
 # GLOBAL VARS
 # 
 # ------------------------------------------------------------------------------
-#
-# extract current taxonomy
-#
-.GlobalEnv$oldMSLs = subset(taxonomyDt, msl_release_num < params$prev_msl)
-.GlobalEnv$curMSL = subset(taxonomyDt, msl_release_num==params$prev_msl)
-# add accounting columns
-.GlobalEnv$curMSL[,"out_updated"] = FALSE
-
-#
-# copy prev MSL to make new MSL,
-# to which we will try and apply these edits
-#
-.GlobalEnv$newMSL=createNewMSL(.GlobalEnv$curMSL,params$prev_msl, params$next_msl, params$taxnode_delta)
 
 #
 # DEBUG ONLY - delete all load/QC errors in allErrorDf
-.GlobalEnv$allErrorDf = .GlobalEnv$loadErrorDf %>% filter(TRUE)
+#.GlobalEnv$allErrorDf = .GlobalEnv$loadErrorDf %>% filter(TRUE)
+.GlobalEnv$allErrorDf = .GlobalEnv$loadErrorDf
 # debug 
 #cat("allErrorDf:",tracemem(allErrorDf),"\n");
 summary(as.factor(errorDf$code)); summary(as.factor(allErrorDf$code));
@@ -2669,11 +2853,11 @@ for(i in seq(1,nrow(.GlobalEnv$allErrorDf)) ) {
   if(.GlobalEnv$allErrorDf[row,"code"]!= prevCode) { 
     prevCode = .GlobalEnv$allErrorDf[row,"code"]
 
-    prettyErrorDf[prettyRow,c("folder")] = c(.GlobalEnv$allErrorDf[row,"folder"])
+    prettyErrorDf[prettyRow,c("subcommittee")] = c(.GlobalEnv$allErrorDf[row,"subcommittee"])
     prettyRow=prettyRow+1
     
-    prettyErrorDf[prettyRow,c("folder","code","xlsx")] = c(
-      .GlobalEnv$allErrorDf[row,"folder"],
+    prettyErrorDf[prettyRow,c("subcommittee","code","xlsx")] = c(
+      .GlobalEnv$allErrorDf[row,"subcommittee"],
       .GlobalEnv$allErrorDf[row,"code"],
       ifelse(is.na(allErrorDf[row,"docx"]),
              .GlobalEnv$allErrorDf[row,"xlsx"],
@@ -2687,15 +2871,15 @@ for(i in seq(1,nrow(.GlobalEnv$allErrorDf)) ) {
   prettyErrorDf[prettyRow,]=.GlobalEnv$allErrorDf[row,]
   prettyRow=prettyRow+1
 }
-# this should get chunked into files/worksheets by "folder"
-for(committee in levels(as.factor(prettyErrorDf$folder)) ) {
-  folderFilename = str_replace_all(str_replace(committee,pattern="(.*) \\(([A-Z])\\) .*","\\2 \\1")," ","_")
+# this should get chunked into files/worksheets by "subcommittee"
+for(committee in levels(as.factor(prettyErrorDf$subcommittee)) ) {
+  subcommitteeFilename = str_replace_all(str_replace(committee,pattern="(.*) \\(([A-Z])\\) .*","\\2 \\1")," ","_")
   filename = file.path(params$out_dir,
-                       paste0("QC.pretty_summary.",folderFilename,".xlsx")
+                       paste0("QC.pretty_summary.",subcommitteeFilename,".xlsx")
   )
-  prettyCols = grep(names(prettyErrorDf),pattern="(code|docx|folder)",invert=T,value=T)
+  prettyCols = grep(names(prettyErrorDf),pattern="(code|docx|subcommittee)",invert=T,value=T)
   
-  select = (prettyErrorDf$folder == committee)
+  select = (prettyErrorDf$subcommittee == committee)
   write_xlsx( x=prettyErrorDf[select,prettyCols],path=filename)
   cat("Wrote: ", filename, " (",nrow(prettyErrorDf[select,]),"rows )\n")
 }
@@ -2704,467 +2888,445 @@ prettyCols = grep(names(prettyErrorDf),pattern="(code|docx)",invert=T,value=T)
 write_xlsx( x=prettyErrorDf[,prettyCols],path=filename)
 cat("Wrote: ", filename, " (",nrow(prettyErrorDf),"rows)\n")
 
-write_xlsx( x=.GlobalEnv$allErrorDf,path=file.path(params$out_dir,"QC.summary.xlsx"))
-write_delim(x=.GlobalEnv$allErrorDf,file=file.path(params$out_dir,"QC.summary.tsv"), delim="\t")
-# ```
-# 
-# # known problems
-# 
-# ```{r final_stats}
+qcSummaryXlsxFilename=file.path(params$out_dir,"QC.summary.xlsx")
+write_xlsx( x=.GlobalEnv$allErrorDf,path=qcSummaryXlsxFilename)
+cat("Wrote: ", qcSummaryXlsxFilename, " (",nrow(.GlobalEnv$allErrorDf),"rows)\n")
 
-dim(curMSL)
-dim(newMSL)
-dim(allErrorDf)
+qcSummaryTxtFilename=file.path(params$out_dir,"QC.summary.tsv")
+write_delim(x=.GlobalEnv$allErrorDf,file=qcSummaryTxtFilename, delim="\t")
+cat("Wrote: ", qcSummaryTxtFilename, " (",nrow(.GlobalEnv$allErrorDf),"rows)\n")
 
-print("What is that ?space?: it's not a space, nor a tab:")
-newMSL[grep(newMSL$lineage, pattern="Orthornavirae;"),c("taxnode_id","parent_id","lineage","name","cleaned_name","in_filename","in_notes")]
-#                                                                                                         lineage         name cleaned_name
-# 1: Riboviria;Orthornavirae ;Kitrinoviricota;Flasuviricetes;Amarillovirales;Flaviviridae;Pestivirus;Pestivirus L Pestivirus L   Pestivirus
-# 2: Riboviria;Orthornavirae ;Kitrinoviricota;Flasuviricetes;Amarillovirales;Flaviviridae;Pestivirus;Pestivirus M Pestivirus M   Pestivirus
-# 3: Riboviria;Orthornavirae ;Kitrinoviricota;Flasuviricetes;Amarillovirales;Flaviviridae;Pestivirus;Pestivirus N Pestivirus N   Pestivirus
-# 4: Riboviria;Orthornavirae ;Kitrinoviricota;Flasuviricetes;Amarillovirales;Flaviviridae;Pestivirus;Pestivirus O Pestivirus O   Pestivirus
-# 5: Riboviria;Orthornavirae ;Kitrinoviricota;Flasuviricetes;Amarillovirales;Flaviviridae;Pestivirus;Pestivirus P Pestivirus P   Pestivirus
-# 6: Riboviria;Orthornavirae ;Kitrinoviricota;Flasuviricetes;Amarillovirales;Flaviviridae;Pestivirus;Pestivirus Q Pestivirus Q   Pestivirus
-# 7: Riboviria;Orthornavirae ;Kitrinoviricota;Flasuviricetes;Amarillovirales;Flaviviridae;Pestivirus;Pestivirus R Pestivirus R   Pestivirus
-# 8: Riboviria;Orthornavirae ;Kitrinoviricota;Flasuviricetes;Amarillovirales;Flaviviridae;Pestivirus;Pestivirus S Pestivirus S   Pestivirus
-
-newMSL[taxnode_id==202203151, c("taxnode_id","parent_id","lineage","name","cleaned_name","in_filename","in_notes")]
-#   taxnode_id parent_id                                                                                        lineage       name cleaned_name
-#1:  202203151 202203068 Riboviria;Orthornavirae;Kitrinoviricota;Flasuviricetes;Amarillovirales;Flaviviridae;Pestivirus Pestivirus   Pestivirus
+#### EXPORT MSL ####
+if(params$export_msl) {
+  # ------------------------------------------------------------------------------
+  # 
+  # # Export MSL to a TSV that can be easily diff'ed
+  # - no taxnode_ids
+  # - no dates
+  # - no filenames
+  #
+  # 
+  # ```{r tsv_export}
+  #### SECTION export to TSV #####
+  tsvColList = c(#"taxnode_id",
+    #"parent_id",
+    #"tree_id",
+    "msl_release_num",
+    "level_id",
+    "name",
+    #"ictv_id",
+    "molecule_id",
+    "abbrev_csv",
+    "genbank_accession_csv",
+    "genbank_refseq_accession_csv",
+    "refseq_accession_csv",
+    "isolate_csv",
+    "notes",
+    # historic columns we don't update
+    #"is_ref",
+    #"is_official",
+    #"is_hidden",
+    #"is_deleted",
+    #"is_deleted_next_year",
+    #"is_typo",
+    #"is_renamed_next_year",
+    #"is_obsolete",
+    "in_change",
+    "in_target",
+    "in_filename",  # will be stripped to just  code
+    "in_notes",
+    "out_change",
+    "out_target",
+    "out_filename", # will be stripped to just  code
+    "out_notes",
+    #"lineage", # computed by trigger in db
+    #"cleaned_name", # computed by trigger in db
+    #"rank", # should be in level_id
+    # "molecule", # should be in molecule_id
+    # program admin columns - not in db
+    #"out_updated",
+    #"prev_taxnode_id",
+    #"prev_proposals",
+    "host_source",
+    "exemplar_name",
+    "genome_coverage",
+    "notes" 
+    #"lineage"  # computed by trigger in db
+  )
+  #prepare data for export
+  tsvDf = data.frame(newMSL[,..tsvColList])
+  tsvDf$in_filename = gsub("^([0-9]+\\.[0-9A-Z]+)\\..*", "\\1...",newMSL$in_filename)
+  tsvDf$out_filename = gsub("^([0-9]+\\.[0-9A-Z]+)\\..*", "\\1...",newMSL$out_filename)
   
-# fix it
-#(gsub(pattern="[^a-zA-Z]",replacement="",x$kingdom))
-
-#
-# but need to scan and report the problems before fixing them!!!!
-
-# ```
-
-# ------------------------------------------------------------------------------
-# 
-# # Export MSL to a TSV that can be easily diff'ed
-# - no taxnode_ids
-# - no dates
-# - no filenames
-#
-# 
-# ```{r tsv_export}
-#### SECTION export to TSV #####
-tsvColList = c(#"taxnode_id",
-  #"parent_id",
-  #"tree_id",
-  "msl_release_num",
-  "level_id",
-  "name",
-  #"ictv_id",
-  "molecule_id",
-  "abbrev_csv",
-  "genbank_accession_csv",
-  "genbank_refseq_accession_csv",
-  "refseq_accession_csv",
-  "isolate_csv",
-  "notes",
-  # historic columns we don't update
-  #"is_ref",
-  #"is_official",
-  #"is_hidden",
-  #"is_deleted",
-  #"is_deleted_next_year",
-  #"is_typo",
-  #"is_renamed_next_year",
-  #"is_obsolete",
-  "in_change",
-  "in_target",
-  "in_filename",  # will be stripped to just  code
-  "in_notes",
-  "out_change",
-  "out_target",
-  "out_filename", # will be stripped to just  code
-  "out_notes",
-  #"lineage", # computed by trigger in db
-  #"cleaned_name", # computed by trigger in db
-  #"rank", # should be in level_id
-  # "molecule", # should be in molecule_id
-  # program admin columns - not in db
-  #"out_updated",
-  #"prev_taxnode_id",
-  #"prev_proposals",
-  "host_source",
-  "exemplar_name",
-  "genome_coverage",
-  "notes" 
-  #"lineage"  # computed by trigger in db
-)
-#prepare data for export
-tsvDf = data.frame(newMSL[,..tsvColList])
-tsvDf$in_filename = gsub("^([0-9]+\\.[0-9A-Z]+)\\..*", "\\1...",newMSL$in_filename)
-tsvDf$out_filename = gsub("^([0-9]+\\.[0-9A-Z]+)\\..*", "\\1...",newMSL$out_filename)
-
-newTsvFilename = file.path(params$out_dir,"msl.tsv")
-tsvout=file(newTsvFilename,"wt")
-cat("Writing ",newTsvFilename,"\n")
-# header
-cat(paste0(
-  tsvColList,
-  collapse="\t"
-),
-"\n",
-file=tsvout)
-# body
-for(i in seq(1,nrow(tsvDf))) {
+  newTsvFilename = file.path(params$out_dir,"msl.tsv")
+  tsvout=file(newTsvFilename,"wt")
+  cat("Writing ",newTsvFilename,"\n")
+  # header
   cat(paste0(
-    tsvDf[i,tsvColList],
+    tsvColList,
     collapse="\t"
   ),
   "\n",
   file=tsvout)
-}
-close(tsvout)
-cat("WROTE   ", newTsvFilename, "\n")
-
-# ------------------------------------------------------------------------------
-# 
-# # Export proposal summary to TSV
-#
-# metadata from DOCX
-#
-# ```{r tsv_export_docx_meta}
-#### SECTION export DOCX meta to TSV #####
-tsvDocxColList = c(
-  "scName",
-  "code",
-  "docx",
-  "xlsx",
-  "title",
-  "authorsEmails",
-  "correspondingAuthor",
-  "abstract"
-)
-#
-#prepare data for export
-#
-# subset columns
-tsvDocxDf = data.frame(proposals[,tsvDocxColList])
-
-docxTsvFilename = file.path(params$out_dir,params$proposals_meta)
-docxMetaOut=file(docxTsvFilename,"wt")
-cat("Writing ",docxTsvFilename,"\n")
-# header
-cat(paste0(
-  tsvDocxColList,
-  collapse="\t"
-),
-"\n",
-file=docxMetaOut)
-# body
-for(i in seq(1,nrow(tsvDocxDf))) {
+  # body
+  for(i in seq(1,nrow(tsvDf))) {
+    cat(paste0(
+      tsvDf[i,tsvColList],
+      collapse="\t"
+    ),
+    "\n",
+    file=tsvout)
+  }
+  close(tsvout)
+  cat("WROTE   ", newTsvFilename, "\n")
+  
+  # ------------------------------------------------------------------------------
+  # 
+  # # Export proposal summary to TSV
+  #
+  # metadata from DOCX
+  #
+  # ```{r tsv_export_docx_meta}
+  #### SECTION export DOCX meta to TSV #####
+  tsvDocxColList = c(
+    "subcommittee",
+    "code",
+    "docx",
+    "xlsx",
+    "title",
+    "authorsEmails",
+    "correspondingAuthor",
+    "abstract"
+  )
+  #
+  #prepare data for export
+  #
+  # subset columns
+  tsvDocxDf = data.frame(proposals[,tsvDocxColList])
+  
+  docxTsvFilename = file.path(params$out_dir,params$proposals_meta)
+  docxMetaOut=file(docxTsvFilename,"wt")
+  cat("Writing ",docxTsvFilename,"\n")
+  # header
   cat(paste0(
-    tsvDocxDf[i,tsvDocxColList],
+    tsvDocxColList,
     collapse="\t"
   ),
   "\n",
   file=docxMetaOut)
-}
-close(docxMetaOut)
-cat("WROTE   ", docxTsvFilename, "\n")
-
-# ```
-
-# ------------------------------------------------------------------------------
-# 
-# # Export SQL to update the db
-# 
-# ```{r sql_export}
-#### SECTION export to SQL #####
-#### open issues #####
-# 1. why is there a "molecule" column?
-# 2. notes vs comments columns? 
-#
-# ------------------------------------------------------------------------------
-#
-# SQL to insert new MSL
-#
-# column names and data codings in newMSL should match the taxonomy_node table. 
-#
-# convert newMSL to a data.frame, so we can convert factor columns to character, 
-# then generate SQL
-#
-# remember to 
-#   1. don't quote NULLs (is.na)
-#   2. escape apostrophies
-#   3. single-quote values
-#
-# ------------------------------------------------------------------------------
-# cat(paste0('"',paste(names(newMSL),collapse='",\n"'),'"'))
-sqlColList = c("taxnode_id",
-            "parent_id",
-            "tree_id",
-            "msl_release_num",
-            "level_id",
-            "name",
-            "ictv_id",
-            "molecule_id",
-            "abbrev_csv",
-            "genbank_accession_csv",
-            "genbank_refseq_accession_csv",
-            "refseq_accession_csv",
-            "isolate_csv",
-            "notes",
-            # historic columns we don't update
-            #"is_ref",
-            #"is_official",
-            "is_hidden",
-            #"is_deleted",
-            #"is_deleted_next_year",
-            #"is_typo",
-            #"is_renamed_next_year",
-            #"is_obsolete",
-            "in_change",
-            "in_target",
-            "in_filename",
-            "in_notes",
-            "out_change",
-            "out_target",
-            "out_filename",
-            "out_notes",
-            #"lineage", # computed by trigger in db
-            #"cleaned_name", # computed by trigger in db
-            #"rank", # should be in level_id
-            # "molecule", # should be in molecule_id
-            # program admin columns - not in db
-            #"out_updated",
-            #"prev_taxnode_id",
-            #"prev_proposals",
-            "host_source",
-            "exemplar_name",
-            "genome_coverage"
-            #,"notes" 
-            #"lineage"  # computed by trigger in db
-            )
-newSqlFilename = file.path(params$out_dir,params$sql_load_filename)
-sqlout=file(newSqlFilename,"wt",encoding = "UTF-8")
-cat("Writing ",newSqlFilename,"\n")
-
-#
-# output start transaction
-# 
-cat("-- begin transaction\n", file=sqlout)
-cat("-- rollback transaction\n", file=sqlout)
-
-#
-# add new MSL to [taxonomy_toc]
-#
-cat("insert into [taxonomy_toc] ([tree_id],[msl_release_num],[comments]) ",
-    "values (", paste(
-     sort(levels(as.factor(newMSL$tree_id)),decreasing = T)[1],
-      params$next_msl,
-      "NULL",
-    sep=","),
-    ")\n",
-    file=sqlout
-)
-#
-# convert factors to character
-# (was easier to do on a data.frame, because of data.table FAQ 1.1)
-#
-newMslStr = as.data.frame(newMSL)
-for( col in sqlColList)  {
-  if( class(newMslStr[,col]) == 'factor' ) {
-    cat("factor: ",col, "\n")
+  # body
+  for(i in seq(1,nrow(tsvDocxDf))) {
+    cat(paste0(
+      tsvDocxDf[i,tsvDocxColList],
+      collapse="\t"
+    ),
+    "\n",
+    file=docxMetaOut)
   }
-  newMslStr[,col] = as.character(newMslStr[,col])
-}
-
-#
-# add taxa to [taxonomy_node]
-#
-# output an insert statement for each row
-#
-rowCount = 1
-for(  row in order(newMSL$level_id) )  {
-  #row=head(order(newMSL$level_id),n=1) # debug
+  close(docxMetaOut)
+  cat("WROTE   ", docxTsvFilename, "\n")
   
-  # insert several rows per batch insert  statement
-  # much faster - fewer trigger calls
-  # but makes localizing errors harder
-  if( rowCount %% params$sql_insert_batch_size == 1 ) {
-    cat(paste0("insert into [taxonomy_node] ",
-               "([",
-               paste0(sqlColList,collapse="],["),
-               "])",
-               "\n",
-               " values ",
-               "\n"
-    ),file=sqlout)
-  } else {
-    # separate each value "(x,y,..)" in the batch by a comma
-    cat(",",file=sqlout)
-  }
-  #
-  # actual row values
-  #
-  cat(paste0("(",
-             paste0(
-               # convert NA to NULL (not 'NA')
-               ifelse(is.na(newMslStr[row, sqlColList]), "NULL",
-                      paste0("'",
-                             # escape apostrophies as double-appostrophies (MSSQL)
-                             gsub(
-                               "'", "''", newMslStr[row, sqlColList]
-                             )
-                             , "'")),
-               collapse = ","
-             )
-             , ")"),
-      " -- lineage=",
-      as.character(newMslStr[row, "lineage"]) ,
-      "\n",
-      file = sqlout
-    )
-  #
-  # count rows
+  # ```
+  
+  # ------------------------------------------------------------------------------
   # 
-  rowCount=rowCount+1
-}
-
-# QC queries
-cat("-- QC queries \n", file=sqlout)
-cat(paste("
-select level_id,
-    new_ct=count(case when in_change like 'new' then 1 end), 
-  	other_ct=count(case when in_change<>'new' then 1 end),
-  	null_ct=count(case when in_change is null then 1 end),
-  	total_ct=count(*)
-from taxonomy_node
-where msl_release_num = ",params$next_msl,"
-group by level_id
-order by level_id
-"), file=sqlout)
-
-# QC query
-cat(paste("-- QC Query
-select 
-     level_id,in_change, ct=count(*)
-from taxonomy_node
-where msl_release_num = ",params$next_msl,"
-group by level_id,in_change
-order by level_id,in_change
-
-"), file=sqlout)
-# ------------------------------------------------------------------------------
-#
-# SQL to update out_ in prevMSL
-#
-# column names and data codings in newMSL should match the taxonomy_node table. 
-#
-# convert newMSL to a data.frame, so we can convert factor columns to character, 
-# then generate SQL
-#
-# ------------------------------------------------------------------------------
-
-cat("Writing out_* updates for prevMSL\n")
-#
-# only update these columns
-#
-curMslColList = c("out_change","out_target","out_filename","out_notes")
-#
-# convert factors to character
-# (was easier to do on a data.frame, because of data.table FAQ 1.1)
-#
-curMslStr = as.data.frame(curMSL %>% filter(!is.na(out_change)) )
-for( col in curMslColList)  {
-  if( class(curMslStr[,col]) == 'factor' ) {
-    cat("factor: ",col, "\n")
+  # # Export SQL to update the db
+  # 
+  # ```{r sql_export}
+  #### SECTION export to SQL #####
+  #### open issues #####
+  # 1. why is there a "molecule" column?
+  # 2. notes vs comments columns? 
+  #
+  # ------------------------------------------------------------------------------
+  #
+  # SQL to insert new MSL
+  #
+  # column names and data codings in newMSL should match the taxonomy_node table. 
+  #
+  # convert newMSL to a data.frame, so we can convert factor columns to character, 
+  # then generate SQL
+  #
+  # remember to 
+  #   1. don't quote NULLs (is.na)
+  #   2. escape apostrophies
+  #   3. single-quote values
+  #
+  # ------------------------------------------------------------------------------
+  # cat(paste0('"',paste(names(newMSL),collapse='",\n"'),'"'))
+  sqlColList = c("taxnode_id",
+              "parent_id",
+              "tree_id",
+              "msl_release_num",
+              "level_id",
+              "name",
+              "ictv_id",
+              "molecule_id",
+              "abbrev_csv",
+              "genbank_accession_csv",
+              "genbank_refseq_accession_csv",
+              "refseq_accession_csv",
+              "isolate_csv",
+              "notes",
+              # historic columns we don't update
+              #"is_ref",
+              #"is_official",
+              "is_hidden",
+              #"is_deleted",
+              #"is_deleted_next_year",
+              #"is_typo",
+              #"is_renamed_next_year",
+              #"is_obsolete",
+              "in_change",
+              "in_target",
+              "in_filename",
+              "in_notes",
+              "out_change",
+              "out_target",
+              "out_filename",
+              "out_notes",
+              #"lineage", # computed by trigger in db
+              #"cleaned_name", # computed by trigger in db
+              #"rank", # should be in level_id
+              # "molecule", # should be in molecule_id
+              # program admin columns - not in db
+              #"out_updated",
+              #"prev_taxnode_id",
+              #"prev_proposals",
+              "host_source",
+              "exemplar_name",
+              "genome_coverage"
+              #,"notes" 
+              #"lineage"  # computed by trigger in db
+              )
+  newSqlFilename = file.path(params$out_dir,params$sql_load_filename)
+  sqlout=file(newSqlFilename,"wt",encoding = "UTF-8")
+  cat("Writing ",newSqlFilename,"\n")
+  
+  #
+  # output start transaction
+  # 
+  cat("-- begin transaction\n", file=sqlout)
+  cat("-- rollback transaction\n", file=sqlout)
+  
+  #
+  # add new MSL to [taxonomy_toc]
+  #
+  cat("insert into [taxonomy_toc] ([tree_id],[msl_release_num],[comments]) ",
+      "values (", paste(
+       sort(levels(as.factor(newMSL$tree_id)),decreasing = T)[1],
+        params$next_msl,
+        "NULL",
+      sep=","),
+      ")\n",
+      file=sqlout
+  )
+  #
+  # convert factors to character
+  # (was easier to do on a data.frame, because of data.table FAQ 1.1)
+  #
+  newMslStr = as.data.frame(newMSL)
+  for( col in sqlColList)  {
+    if( class(newMslStr[,col]) == 'factor' ) {
+      cat("factor: ",col, "\n")
+    }
+    newMslStr[,col] = as.character(newMslStr[,col])
   }
-  curMslStr[,col] = as.character(curMslStr[,col])
-}
-
-#
-# output start transaction
-# 
-cat("-- begin transaction\n", file=sqlout)
-cat("-- rollback transaction\n", file=sqlout)
-
-#
-# output an insert statement for each row
-#
-for(  row in rownames(curMslStr) )  {
-  #row=head(rownames(curMslStr),n=1) # debug
-  cat(paste0("update [taxonomy_node] set ",
-             
-             paste0(
+  
+  #
+  # add taxa to [taxonomy_node]
+  #
+  # output an insert statement for each row
+  #
+  rowCount = 1
+  for(  row in order(newMSL$level_id) )  {
+    #row=head(order(newMSL$level_id),n=1) # debug
+    
+    # insert several rows per batch insert  statement
+    # much faster - fewer trigger calls
+    # but makes localizing errors harder
+    if( rowCount %% params$sql_insert_batch_size == 1 ) {
+      cat(paste0("insert into [taxonomy_node] ",
+                 "([",
+                 paste0(sqlColList,collapse="],["),
+                 "])",
+                 "\n",
+                 " values ",
+                 "\n"
+      ),file=sqlout)
+    } else {
+      # separate each value "(x,y,..)" in the batch by a comma
+      cat(",",file=sqlout)
+    }
+    #
+    # actual row values
+    #
+    cat(paste0("(",
                paste0(
-                 # column names
-                 "[",curMslColList,"]=",
                  # convert NA to NULL (not 'NA')
-                 ifelse(is.na(curMslStr[row,curMslColList]),"NULL",
+                 ifelse(is.na(newMslStr[row, sqlColList]), "NULL",
                         paste0("'",
-                               # escape apostrophes as double-apostrophes (MSSQL)
-                               gsub("'","''", curMslStr[row,curMslColList])
-                               ,"'"))
-               ,collapse=","),
-             " where [taxnode_id]=",
-             curMslStr[row,"taxnode_id"]
-             ) 
-  ),
-  "\n",
+                               # escape apostrophies as double-appostrophies (MSSQL)
+                               gsub(
+                                 "'", "''", newMslStr[row, sqlColList]
+                               )
+                               , "'")),
+                 collapse = ","
+               )
+               , ")"),
+        " -- lineage=",
+        as.character(newMslStr[row, "lineage"]) ,
+        "\n",
+        file = sqlout
+      )
+    #
+    # count rows
+    # 
+    rowCount=rowCount+1
+  }
+  
+  # QC queries
+  cat("-- QC queries \n", file=sqlout)
+  cat(paste("
+  select level_id,
+      new_ct=count(case when in_change like 'new' then 1 end), 
+    	other_ct=count(case when in_change<>'new' then 1 end),
+    	null_ct=count(case when in_change is null then 1 end),
+    	total_ct=count(*)
+  from taxonomy_node
+  where msl_release_num = ",params$next_msl,"
+  group by level_id
+  order by level_id
+  "), file=sqlout)
+  
+  # QC query
+  cat(paste("-- QC Query
+  select 
+       level_id,in_change, ct=count(*)
+  from taxonomy_node
+  where msl_release_num = ",params$next_msl,"
+  group by level_id,in_change
+  order by level_id,in_change
+  
+  "), file=sqlout)
+  # ------------------------------------------------------------------------------
+  #
+  # SQL to update out_ in prevMSL
+  #
+  # column names and data codings in newMSL should match the taxonomy_node table. 
+  #
+  # convert newMSL to a data.frame, so we can convert factor columns to character, 
+  # then generate SQL
+  #
+  # ------------------------------------------------------------------------------
+  
+  cat("Writing out_* updates for prevMSL\n")
+  #
+  # only update these columns
+  #
+  curMslColList = c("out_change","out_target","out_filename","out_notes")
+  #
+  # convert factors to character
+  # (was easier to do on a data.frame, because of data.table FAQ 1.1)
+  #
+  curMslStr = as.data.frame(curMSL %>% filter(!is.na(out_change)) )
+  for( col in curMslColList)  {
+    if( class(curMslStr[,col]) == 'factor' ) {
+      cat("factor: ",col, "\n")
+    }
+    curMslStr[,col] = as.character(curMslStr[,col])
+  }
+  
+  #
+  # output start transaction
+  # 
+  cat("-- begin transaction\n", file=sqlout)
+  cat("-- rollback transaction\n", file=sqlout)
+  
+  #
+  # output an insert statement for each row
+  #
+  for(  row in rownames(curMslStr) )  {
+    #row=head(rownames(curMslStr),n=1) # debug
+    cat(paste0("update [taxonomy_node] set ",
+               
+               paste0(
+                 paste0(
+                   # column names
+                   "[",curMslColList,"]=",
+                   # convert NA to NULL (not 'NA')
+                   ifelse(is.na(curMslStr[row,curMslColList]),"NULL",
+                          paste0("'",
+                                 # escape apostrophes as double-apostrophes (MSSQL)
+                                 gsub("'","''", curMslStr[row,curMslColList])
+                                 ,"'"))
+                 ,collapse=","),
+               " where [taxnode_id]=",
+               curMslStr[row,"taxnode_id"]
+               ) 
+    ),
+    "\n",
+    file=sqlout)
+  }
+  # QC SQL
+  cat("\n-- build deltas (~7min) \n
+  exec rebuild_delta_nodes NULL
+  
+  -- rebuild merge/split (seconds) \n
+  EXECUTE [dbo].[rebuild_node_merge_split] 
+  
+  ", file=sqlout)
+  cat(paste("
+  -- NOW check if all newMSL have delta in, and prevMSL have delta out
+  select 'prevMSL w/o delta to new', count(*) from taxonomy_node
+  where msl_release_num = ",params$next_msl-1,"
+  and taxnode_id not in (select prev_taxid from taxonomy_node_delta)
+  union all
+  select  'newMSL w/o delta to prev',  count(*) from taxonomy_node
+  where msl_release_num = ",params$next_msl,"
+  and taxnode_id not in (select new_taxid from taxonomy_node_delta)
+  "),
   file=sqlout)
+  
+  # QC query
+  cat(paste("-- QC Query
+  select 
+       level_id,out_change, ct=count(*)
+  from taxonomy_node
+  where msl_release_num = ",params$next_msl-1,"
+  group by level_id,out_change
+  order by level_id,out_change
+  
+  "), file=sqlout)
+  #
+  # close/flush file
+  #
+  close(sqlout)
+  cat("WROTE   ", newSqlFilename, "\n")
 }
-# QC SQL
-cat("\n-- build deltas (~7min) \n
-exec rebuild_delta_nodes NULL
 
--- rebuild merge/split (seconds) \n
-EXECUTE [dbo].[rebuild_node_merge_split] 
-
-", file=sqlout)
-cat(paste("
--- NOW check if all newMSL have delta in, and prevMSL have delta out
-select 'prevMSL w/o delta to new', count(*) from taxonomy_node
-where msl_release_num = ",params$next_msl-1,"
-and taxnode_id not in (select prev_taxid from taxonomy_node_delta)
-union all
-select  'newMSL w/o delta to prev',  count(*) from taxonomy_node
-where msl_release_num = ",params$next_msl,"
-and taxnode_id not in (select new_taxid from taxonomy_node_delta)
-"),
-file=sqlout)
-
-# QC query
-cat(paste("-- QC Query
-select 
-     level_id,out_change, ct=count(*)
-from taxonomy_node
-where msl_release_num = ",params$next_msl-1,"
-group by level_id,out_change
-order by level_id,out_change
-
-"), file=sqlout)
-#
-# close/flush file
-#
-close(sqlout)
-cat("WROTE   ", newSqlFilename, "\n")
-
-#
-# stats to match in db
-#
-summary(as.factor(newMSL$in_change))
-# new      split  NA's 
-# 1043     0      13653 
-summary(as.factor(curMSL$out_change))
-#abolish  demote   merge    move promote  rename    type    NA's 
-#     20       0       0      20       0    1662       0   11971
-
-# summarize taxa by rank/change in new MSL
-data.frame(in_change=summary(as.factor(paste0(newMSL$rank,".",newMSL$in_change))))
-data.frame(in_change=summary(as.factor(paste0(newMSL$in_change))))
-
-# summarize taxa by rank/change in new MSL
-data.frame(out_change=summary(as.factor(paste0(curMSL$rank,".",curMSL$out_change))))
-data.frame(out_change=summary(as.factor(paste0(curMSL$out_change))))
-
-rdataFilename = paste0(params$proposals_dir,"/.RData")
-save.image(file=rdataFilename)
-cat("WROTE",rdataFilename,"\n")
+if( FALSE ) {
+  #
+  # stats to match in db
+  #
+  summary(as.factor(newMSL$in_change))
+  # new      split  NA's 
+  # 1043     0      13653 
+  summary(as.factor(curMSL$out_change))
+  #abolish  demote   merge    move promote  rename    type    NA's 
+  #     20       0       0      20       0    1662       0   11971
+  
+  # summarize taxa by rank/change in new MSL
+  data.frame(in_change=summary(as.factor(paste0(newMSL$rank,".",newMSL$in_change))))
+  data.frame(in_change=summary(as.factor(paste0(newMSL$in_change))))
+  
+  # summarize taxa by rank/change in new MSL
+  data.frame(out_change=summary(as.factor(paste0(curMSL$rank,".",curMSL$out_change))))
+  data.frame(out_change=summary(as.factor(paste0(curMSL$out_change))))
+}
+if( FALSE ) {
+  rdataFilename = paste0(params$proposals_dir,"/.RData")
+  save.image(file=rdataFilename)
+  cat("WROTE",rdataFilename,"\n")
+}
 
