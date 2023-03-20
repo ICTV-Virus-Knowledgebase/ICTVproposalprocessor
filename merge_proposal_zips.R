@@ -85,17 +85,15 @@ params <- parse_args(OptionParser(option_list=option_list))
 # this allows modification in place of a (data) passed
 # to a subroutine (pass-by-reference feature)
 suppressPackageStartupMessages(library(data.table))
-
 suppressPackageStartupMessages(library(yaml))
 suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(readxl))
 suppressPackageStartupMessages(library(writexl) )# another option library(openxlsx)
 suppressPackageStartupMessages(library(DescTools)) # AscToChar
-# read docx
-suppressPackageStartupMessages(library(qdapTools))
+suppressPackageStartupMessages(library(qdapTools)) # read docx
 
 
-#### load cache (xxx/.Rdata) ####
+#### load cache (ref/.Rdata) ####
 if(params$verbose){ cat(paste0("REF_DIR:        ",params$ref_dir,"/\n"))}
 cacheFilename=paste0(params$ref_dir,"/",params$cache_fname)
 if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
