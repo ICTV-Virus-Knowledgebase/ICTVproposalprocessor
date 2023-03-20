@@ -5,7 +5,7 @@
 #
 
 # Ubunutu base
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 # make sure installs dont hang on user input
 ENV DEBIAN_FRONTEND noninteractive
