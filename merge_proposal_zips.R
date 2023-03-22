@@ -1253,7 +1253,7 @@ qc_proposal = function(code, proposalDf) {
   
   # check row 3, cell 1 for 2023 and later version numbers
   if( substring(proposalDf[3,1],1,13) == "version 2023." ) {
-    templateVersion = substring(proposalDf[3,1],9,6)
+    templateVersion = substring(proposalDf[3,1],9,13)
     # 
     # process 2023 template layout
     #
