@@ -1252,8 +1252,8 @@ qc_proposal = function(code, proposalDf) {
   xlxs_colnames = toupper(c(letters,paste0("a",letters))) 
   
   # check row 3, cell 1 for 2023 and later version numbers
-  if( substring(proposalDf[3,1],1,6) == "2023.v" ) {
-    templateVersion = substring(proposalDf[3,1],1,6)
+  if( substring(proposalDf[3,1],1,13) == "version 2023." ) {
+    templateVersion = substring(proposalDf[3,1],9,6)
     # 
     # process 2023 template layout
     #
@@ -1412,7 +1412,7 @@ qc_proposal = function(code, proposalDf) {
   firstDataRow=4
   if(templateVersion=="v1") { firstDataRow=4; changeDf = proposalDf[firstDataRow:nrow(proposalDf),xlsx_v1_change_cols] }
   if(templateVersion=="v2") { firstDataRow=4; changeDf = proposalDf[firstDataRow:nrow(proposalDf),xlsx_v2_change_cols] }
-  if(templateVersion=="2023.v" ) {firstDataRow=6; changeDf = proposalDf[firstDataRow:nrow(proposalDf),xlsx_2023_change_cols]}
+  if(templateVersion=="2023." ) {firstDataRow=6; changeDf = proposalDf[firstDataRow:nrow(proposalDf),xlsx_2023_change_cols]}
   colnames(changeDf) = xlsx_change_colnames
   # a flag to exclude rows with irrecoverable errors
   changeDf[,".noErrors"] = TRUE
