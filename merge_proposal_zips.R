@@ -1253,7 +1253,6 @@ qc_proposal = function(code, proposalDf) {
   xlxs_colnames = toupper(c(letters,paste0("a",letters))) 
   
   # check row 3, cell 1 for 2023 and later version numbers
-  browser()
   if(!is.null(proposalDf[2,1]) && (substring(proposalDf[2,1],1,13) == "version 2023.")) {
     
     templateVersion = substring(proposalDf[2,1],9,13)
