@@ -3268,10 +3268,10 @@ if(params$export_msl) {
   }
   # QC SQL
   cat("\n-- build deltas (~7min) \n
-  exec rebuild_delta_nodes NULL
+  EXEC rebuild_delta_nodes NULL
   
   -- rebuild merge/split (seconds) \n
-  EXECUTE [dbo].[rebuild_node_merge_split] 
+  EXEC [dbo].[rebuild_node_merge_split] 
   
   ", file=sqlout)
   cat(paste("
