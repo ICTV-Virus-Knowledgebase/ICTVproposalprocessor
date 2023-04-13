@@ -746,7 +746,7 @@ xlsx_v2_row2=c(
     "COMMENTS"
     )
 
-xlsx_2023_row4 = c("CURRENT TAXONOMY" , NA_character_, NA_character_ , NA_character_, NA_character_,
+xlsx_2023_row3 = c("CURRENT TAXONOMY" , NA_character_, NA_character_ , NA_character_, NA_character_,
                    NA_character_, NA_character_, NA_character_, NA_character_, NA_character_,
                    NA_character_, NA_character_, NA_character_, NA_character_, NA_character_,
                    "PROPOSED TAXONOMY", NA_character_, NA_character_, NA_character_, NA_character_,
@@ -797,7 +797,7 @@ xlsx_v2_row3=c(
   "Comments"
 )
 
-xlsx_2023_row5=c(
+xlsx_2023_row4=c(
     "Realm", "Subrealm", "Kingdom", "Subkingdom", 
     "Phylum", "Subphylum", "Class", "Subclass", "Order", "Suborder", 
     "Family", "Subfamily", "Genus", "Subgenus", "Species",
@@ -1107,6 +1107,7 @@ load_proposal = function(code) {
     suppressMessages(
       read_excel(
         proposals[code,"xlsxpath"],
+        sheet="Proposal Template",
         trim_ws = TRUE,
         na = "Please select",
         skip = 2,
@@ -1252,13 +1253,32 @@ qc_proposal = function(code, proposalDf) {
   xlxs_colnames = toupper(c(letters,paste0("a",letters))) 
   
   # check row 3, cell 1 for 2023 and later version numbers
-  if( substring(proposalDf[3,1],1,13) == "version 2023." ) {
-    templateVersion = substring(proposalDf[3,1],9,13)
+  browser()
+  if(!is.null(proposalDf[2,1]) && (substring(proposalDf[2,1],1,13) == "version 2023.")) {
+    
+    templateVersion = substring(proposalDf[2,1],9,13)
     # 
     # process 2023 template layout
     #
     
     # complain about any formatting changes
+    row3match = (
+      tolower(gsub("[^[:alnum:]]","",proposalDf[3, seq(from = 1, to = min(length(xlsx_2023_row3), ncol(proposalDf)))]))
+      == 
+      tolower(gsub("[^[:alnum:]]","",xlsx_2023_row3))
+    )
+    #row3match[is.na(row3match)]=FALSE
+    row3mismatchCt = sum(!row3match, na.rm = T)
+    row3Error= paste("row3 mismatches template at: ", 
+                              paste(paste0("column ",
+                                           toupper(c(letters,paste0("a",letters)))[which(!row3match)],
+                                           "='",
+                                           proposalDf[2,which(!row3match)],
+                                           "' instead of '",
+                                           xlsx_2023_row3[which(!row3match)],"'"),
+                                    collapse="; ")
+    )
+                              
     row4match = (
       tolower(gsub("[^[:alnum:]]","",proposalDf[4, seq(from = 1, to = min(length(xlsx_2023_row4), ncol(proposalDf)))]))
       == 
@@ -1267,29 +1287,12 @@ qc_proposal = function(code, proposalDf) {
     row4match[is.na(row4match)]=FALSE
     row4mismatchCt = sum(!row4match, na.rm = T)
     row4Error= paste("row4 mismatches template at: ", 
-                              paste(paste0("column ",
-                                           toupper(c(letters,paste0("a",letters)))[which(!row4match)],
-                                           "='",
-                                           proposalDf[2,which(!row4match)],
-                                           "' instead of '",
-                                           xlsx_2023_row4[which(!row4match)],"'"),
-                                    collapse="; ")
-    )
-                              
-    row5match = (
-      tolower(gsub("[^[:alnum:]]","",proposalDf[5, seq(from = 1, to = min(length(xlsx_2023_row5), ncol(proposalDf)))]))
-      == 
-      tolower(gsub("[^[:alnum:]]","",xlsx_2023_row5))
-    )
-    row5match[is.na(row5match)]=FALSE
-    row5mismatchCt = sum(!row5match, na.rm = T)
-    row5Error= paste("row5 mismatches template at: ", 
                      paste(paste0("column ",
-                                  toupper(c(letters,paste0("a",letters)))[which(!row5match)],
+                                  toupper(c(letters,paste0("a",letters)))[which(!row4match)],
                                   "='",
-                                  proposalDf[2,which(!row5match)],
+                                  proposalDf[2,which(!row4match)],
                                   "' instead of '",
-                                  xlsx_2023_row5[which(!row5match)],"'"),
+                                  xlsx_2023_row4[which(!row4match)],"'"),
                            collapse="; ")
     )
     
@@ -1412,7 +1415,7 @@ qc_proposal = function(code, proposalDf) {
   firstDataRow=4
   if(templateVersion=="v1") { firstDataRow=4; changeDf = proposalDf[firstDataRow:nrow(proposalDf),xlsx_v1_change_cols] }
   if(templateVersion=="v2") { firstDataRow=4; changeDf = proposalDf[firstDataRow:nrow(proposalDf),xlsx_v2_change_cols] }
-  if(templateVersion=="2023." ) {firstDataRow=6; changeDf = proposalDf[firstDataRow:nrow(proposalDf),xlsx_2023_change_cols]}
+  if(templateVersion=="2023." ) {firstDataRow=5; changeDf = proposalDf[firstDataRow:nrow(proposalDf),xlsx_2023_change_cols]}
   colnames(changeDf) = xlsx_change_colnames
   # a flag to exclude rows with irrecoverable errors
   changeDf[,".noErrors"] = TRUE
