@@ -415,6 +415,17 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
     cvList[[cv]] = cvList[[cv]][!isRemoveTerm]
   }
   
+  # clean UTF8-NB_space 
+  for( cv in c("change","rank","scAbbrev","scName") ) {
+    for( i in seq(1:length(cvList[[cv]])) ) {
+        term = cvList[[cv]][i]
+        if( regexpr(text=term, pattern=paste0(AscToChar(194),AscToChar(160))) > 0 ) {
+          term = gsub(paste0("(",AscToChar(194),AscToChar(160),")+")," ",term)
+          cvList[[cv]][i] = term
+        }
+    }
+  }
+  
   #
   # build Subcommittee Map
   #
@@ -1194,10 +1205,12 @@ load_proposal = function(code) {
 
   # return data
   errorDf = .GlobalEnv$allErrorDf[FALSE,]
-  proposalDf = NA
+  proposalDf = NULL
   
   # get worksheet names
-  sheetNames = excel_sheets(proposals[code,"xlsxpath"])
+  sheetNames = suppressMessages(
+    excel_sheets(proposals[code,"xlsxpath"])
+  )
   if( !("Proposal Template" %in% sheetNames) ) {
     cat("code", code, ": A worksheet named 'Proposal Template' was not found","logging error","\n")
     errorDf=addError(errorDf,
@@ -1794,21 +1807,31 @@ qc_proposal = function(code, proposalDf) {
   #
   # remove lines containing invalid terms
   #
+  correctionsDf = changeDf[FALSE,]
   for(cv in names(cvList)) {
     # cv="molecule" # debug
     
     # compare to CV terms, removing all spaces and capitalization
     isTermPerfect = changeDf[,cv] %in% cvList[[cv]]
     isTermClose = 
-      tolower(gsub(pattern=" ",replacement="",changeDf[,cv])) %in% 
-      tolower(gsub(pattern=" ",replacement="",cvList[[cv]]))
+      tolower(gsub(pattern="[^[:alpha:]]",replacement="",changeDf[,cv])) %in% 
+      tolower(gsub(pattern="[^[:alpha:]]",replacement="",cvList[[cv]]))
 
+    # find the term we were close to
+    for( row in rownames(changeDf)[!isTermPerfect & isTermClose] ) {
+      correctedTermIdx = which(
+        tolower(gsub(pattern="[^[:alpha:]]",replacement="",changeDf[row,cv]))
+        ==
+          tolower(gsub(pattern="[^[:alpha:]]",replacement="",cvList[[cv]]))
+      )
+      correctionsDf[row,cv] = cvList[[cv]][correctedTermIdx]
+    }
     # 
     # reject unknown terms
     #
     badTerms=changeDf[!isTermClose,]
     if(nrow(badTerms)>0) {
-      # complain
+       # complain
       if(params$verbose) { cat("ERROR:",code,"illegal term in CV column '",cv,"':",
                               "[",paste(paste0(rownames(badTerms),":",badTerms[,cv]), collapse=","),"] on rows (",paste(rownames(badTerms),collapse=","),")\n") }
       # for optional CVs, NA the term, for obligatory ones, flag the line
@@ -1835,14 +1858,16 @@ qc_proposal = function(code, proposalDf) {
     #
     flawedTerms=changeDf[isTermClose & !isTermPerfect,] #cv, drop=FALSE]
     if(nrow(flawedTerms)>0) {
-      #browser()
       # complain
       if(params$verbose) { cat("INFO:",code,"typo in CV column '",cv,"':",
                                "[",paste(paste0(rownames(flawedTerms),":",flawedTerms[,cv]), collapse=","),"] on rows (",paste(rownames(flawedTerms),collapse=","),")\n") }
       errorDf=addError(errorDf,code,rownames(flawedTerms),
                        flawedTerms$change, flawedTerms$rank, flawedTerms$.changeTaxon,
                        "INFO","XLSX.TYPO_TERM",paste("fixed term with typo (space,caps) in column ",cv),
-                       paste("Term '",flawedTerms[,cv],"'' replaced with '","NA","'. Valid terms: [",paste0(cvList[[cv]],collapse=","),"]")) 
+                       paste0("Term '",flawedTerms[,cv],"' replaced with '",correctionsDf[rownames(flawedTerms),cv],"'. Valid terms: [",paste0(cvList[[cv]],collapse=","),"]")) 
+      
+      # correct
+      changeDf[rownames(flawedTerms),cv] = correctionsDf[rownames(flawedTerms),cv]
     } # if flawedTerms
   } # for cvList
   
@@ -1940,7 +1965,7 @@ for( code in codes ) {
         xlsxList[[code]] = results[["proposalDf"]]
         
         # if load had errors/warnings, update error file
-        if( is.na(xlsxList[[code]])) {
+        if( sum(is.na(xlsxList[[code]]))>0  ){
           write_error_summary(.GlobalEnv$loadErrorDf)          
         }
         cat("# LOADED: ",code,"\n")
@@ -1953,9 +1978,9 @@ for( code in codes ) {
       #
       # qc
       #
-      if( is.na(proposalDf) ) {
+      if( is.null(proposalDf) ) {
+        # load failed, move on
         cat("SKIP: ", code, ": proposal could not be loaded\n")
-        
       } else {
           # successful load
         cat("QC start: ", code, ": proposal loaded\n")
