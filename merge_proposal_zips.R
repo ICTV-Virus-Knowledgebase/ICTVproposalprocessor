@@ -1602,7 +1602,7 @@ qc_proposal = function(code, proposalDf) {
     pattern="([ ]+)"; pat_warn="non-breaking space character"; pat_replace=" "
     qc.matches =grep(changeDf[,col],pattern=pattern)
     if(length(qc.matches)>0) { 
-      browser()
+      #browser()
       if(params$verbose) { cat("INFO:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
       if( params$processing_mode %in% c("draft","final") ) {
         # supress picky error message
@@ -1776,7 +1776,7 @@ qc_proposal = function(code, proposalDf) {
        qc.matches =grep(changeDf[,col],pattern=value_validation[i,]$regex)
       if(length(qc.matches)>0) { 
         if(params$verbose) { cat(value_validation[i,]$class,":",error,"has",length(qc.matches),"cells with",value_validation[i,]$warn,"in column",col,"\n") }
-        browser()
+        #browser()
         errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
                          changeDf$change[qc.matches],changeDf$rank[qc.matches], changeDf$.changeTaxon[qc.matches],
                          value_validation[i,]$class,error, paste("XLSX has",value_validation[i,]$warn),
@@ -1843,7 +1843,7 @@ qc_proposal = function(code, proposalDf) {
 
     # find the term we were close to
     for( row in rownames(changeDf)[!isTermPerfect & isTermClose] ) {
-      browser()
+      #browser()
       correctedTermIdx = which(
         tolower(gsub(pattern="[^[:alpha:];+-]",replacement="",changeDf[row,cv]))
         ==
