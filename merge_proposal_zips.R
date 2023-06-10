@@ -75,8 +75,8 @@ option_list <- list(
   # input filenames
   make_option(c("--infileSupplPat"), default="_Suppl.", dest="infile_suppl_pat",
               help="Input files (in proposalDir/) containing this pattern in filename are ignored [default \"%default\"]"),
-  make_option(c("--infileFnameMode"), default="all", dest="infile_filename_mode",
-              help="Filename format for prposal xlsx files: 'all' (any .doc|docx|xls|xlsx), 'final' (no '.v#') or 'draft' (YYYY.###A.v#.')[default \"%default\"]"),
+  make_option(c("--mode"), default="validate", dest="processing_mode",
+              help="Stringency Mode: 'validate' (any .doc|docx|xls|xlsx), 'draft' (YYYY.###A.v#.'), or 'final' (no '.v#') [default \"%default\"]"),
 
   # metadata for new MSL
   make_option(c("--newMslName"), default="YYYY", dest="msl_name",
@@ -129,22 +129,22 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
   # 
   # final vs draft proposal filename patterns.
   #
-  if( params$infile_filename_mode == "final") {
+  if( params$processing_mode == "final") {
     filenameFormatRegex="^[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9][A-Z]\\.[A-Za-z]+\\.[^ ]*"
     filenameFormatMsg="####[A-Z].###[A-Z].[A-Z]+.____"
-  } else if( params$infile_filename_mode == "draft") {
+  } else if( params$processing_mode == "draft") {
     filenameFormatRegex="^[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9][A-Z]\\.[A-Za-z]+\\.v[0-9]+\\.[^ ]*"
     filenameFormatMsg="####[A-Z].###[A-Z].[A-Z]+.v#.____"
-  } else if( params$infile_filename_mode == "all") {
+  } else if( params$processing_mode == "validate") {
     # allow any doc/xls file
     filenameFormatRegex="^.*"
     filenameFormatMsg="*.____"
   } else {
     # unsupported format
-    cat("ERROR: infileFnameMode='",params$infile_filename_mode,"' is not a valid option: all, draft, or final\n")
-    exit(1)
+    cat(paste0("ERROR: --mode='",params$processing_mode,"' is not a valid option: validate, draft, or final\n"))
+    quit(save="no", status=1)
   }
-  if(params$verbose){ cat("XLSX_FNAME_MODE      :",params$infile_filename_mode,"\n") }
+  if(params$verbose){ cat("(PROCESSING) MODE      :",params$processing_mode,"\n") }
   
   # --------------------------------------------------------
   # << NEXT >>
@@ -635,12 +635,15 @@ if(sum(spacedOut) > 0) {
 
 docxBadFnameFormats = grep(docxs$docx, pattern=paste0(filenameFormatRegex,".docx$"), invert=T)
 if( length(docxBadFnameFormats) > 0 ) {
-  errorDf= docxs[docxBadFnameFormats,c("scAbbrev","code","docx")]
-  errorDf$level= "WARNING"
-  errorDf$error = "DOCX.BAD_FILENAME_FORMAT"
-  errorDf$message = paste0("Should be '",filenameFormatMsg,".docx'")
-  errorDf$notes= "####[A-Z]=year/study_section, ###[A-Z]=index/type, [A-Z]+=status, v#=version"
-  .GlobalEnv$loadErrorDf = rbindlist(list(.GlobalEnv$loadErrorDf, errorDf),fill=TRUE)
+  if( params$processing_mode %in% c("draft","final") ) {
+    # supress picky error message
+    errorDf= docxs[docxBadFnameFormats,c("scAbbrev","code","docx")]
+    errorDf$level= "WARNING"
+    errorDf$error = "DOCX.BAD_FILENAME_FORMAT"
+    errorDf$message = paste0("Should be '",filenameFormatMsg,".docx'")
+    errorDf$notes= "####[A-Z]=year/study_section, ###[A-Z]=index/type, [A-Z]+=status, v#=version"
+    .GlobalEnv$loadErrorDf = rbindlist(list(.GlobalEnv$loadErrorDf, errorDf),fill=TRUE)
+  }
 }
 #
 ##### SECTION: scan XLSX ##### 
@@ -679,12 +682,15 @@ xlsxs[,"code"] = rownames(xlsxs)
 # production format (no version)
 xlsxBadFnameFormats = grep(xlsxs$xlsx, pattern=paste0(filenameFormatRegex,".xlsx*$"), invert=T)
 if( length(xlsxBadFnameFormats) > 0 ) {
-  errorDf= xlsxs[xlsxBadFnameFormats,c("scAbbrev","code","xlsx")]
-  errorDf$level= "WARNING"
-  errorDf$error = "XLSX.BAD_FILENAME_FORMAT"
-  errorDf$message = paste0("Should be '",filenameFormatMsg,".xlsx'")
-  errorDf$notes= "####[A-Z]=year/study_section, ###[A-Z]=index/type, [A-Z]+=status, v#=version"
-  .GlobalEnv$loadErrorDf = rbindlist(list(.GlobalEnv$loadErrorDf, errorDf),fill=TRUE)
+  if( params$processing_mode %in% c("draft","final") ) {
+    # supress picky error message
+    errorDf= xlsxs[xlsxBadFnameFormats,c("scAbbrev","code","xlsx")]
+    errorDf$level= "WARNING"
+    errorDf$error = "XLSX.BAD_FILENAME_FORMAT"
+    errorDf$message = paste0("Should be '",filenameFormatMsg,".xlsx'")
+    errorDf$notes= "####[A-Z]=year/study_section, ###[A-Z]=index/type, [A-Z]+=status, v#=version"
+    .GlobalEnv$loadErrorDf = rbindlist(list(.GlobalEnv$loadErrorDf, errorDf),fill=TRUE)
+  }
   write_error_summary(.GlobalEnv$loadErrorDf)  
 }
 # spaces in XLSX filenames
@@ -694,6 +700,7 @@ if(sum(spacedOut) > 0) {
   errorDf$level = "WARNING"
   errorDf$error = "XLSX_FILENAME_SPACES"
   errorDf$message = "filename contains a space: please replace with _ or -"
+  errorDf$notes = gsub("( )","[\\1]",xlsxs[spacedOut,]$xlsx)
   .GlobalEnv$loadErrorDf = rbindlist(list(.GlobalEnv$loadErrorDf, errorDf),fill=TRUE)
   write_error_summary(.GlobalEnv$loadErrorDf)  
 }
@@ -786,18 +793,24 @@ if( sum(missing) > 0 ) {
 #
 # get SC names from last letter of code
 #
-
-proposals$scAbbrev = gsub("[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9]([A-Z])","\\1",proposals$code)
+proposals$scAbbrev = NA
+parsableCode = grep(proposals$code, pattern="[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9]([A-Z])" )
+if( length(parsableCode) >0 ) {
+  proposals[parsableCode,"scAbbrev"] =  gsub("[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9]([A-Z])","\\1",proposals$code[parsableCode])
+}
 # QC
 badProposalAbbrevs = !(proposals$scAbbrev %in% names(scAbbrevNameMap))
 if(sum(badProposalAbbrevs)>0) {
-  errorDf = proposals[badProposalAbbrevs, c("scAbbrev", "code", "xlsx", "docx")]
-  errorDf$level = "WARNING"
-  errorDf$error = "CODE_BAD_SC_ABBREV"
-  errorDf$message = "Last letter of CODE not a valid ICTV Subcommittee letter"
-  errorDf$notes = paste0("'",proposals[badProposalAbbrevs,"scAbbrev"],"' not in [",
-                        paste0(names(scAbbrevNameMap),collapse=","),"]")
-  .GlobalEnv$loadErrorDf = rbindlist(list(.GlobalEnv$loadErrorDf, errorDf),fill=TRUE)
+  if( params$processing_mode %in% c("draft","final") ) {
+    # supress picky error message
+    errorDf = proposals[badProposalAbbrevs, c("scAbbrev", "code", "xlsx", "docx")]
+    errorDf$level = "WARNING"
+    errorDf$error = "CODE_BAD_SC_ABBREV"
+    errorDf$message = "Last letter of CODE not a valid ICTV Subcommittee letter"
+    errorDf$notes = paste0("'",proposals[badProposalAbbrevs,"scAbbrev"],"' not in [",
+                           paste0(names(scAbbrevNameMap),collapse=","),"]")
+    .GlobalEnv$loadErrorDf = rbindlist(list(.GlobalEnv$loadErrorDf, errorDf),fill=TRUE)
+  }
   write_error_summary(.GlobalEnv$loadErrorDf)  
 }
 proposals$subcommittee = ifelse(badProposalAbbrevs,
@@ -1257,11 +1270,14 @@ load_proposal_docx = function(code) {
 
   # check if we even HAVE a docx file!
   if( is.na(proposals[code,"docxpath"]) ) {
-    errorDf = proposals[code, c("code", "xlsx")]
-    errorDf$level = "WARNING"
-    errorDf$error = "DOCX_MISSING"
-    errorDf$message = ".docx file not available"
-    .GlobalEnv$loadErrorDf = rbindlist(list(.GlobalEnv$loadErrorDf, errorDf),fill=TRUE)
+    if( params$processing_mode %in% c("draft","final") ) {
+      # supress picky error message
+      errorDf = proposals[code, c("code", "xlsx")]
+      errorDf$level = "WARNING"
+      errorDf$error = "DOCX_MISSING"
+      errorDf$message = ".docx file not available"
+      .GlobalEnv$loadErrorDf = rbindlist(list(.GlobalEnv$loadErrorDf, errorDf),fill=TRUE)
+    }
     return(list(metaDf=metaDf,errorDf=errorDf))
   }
   # read DOCX file, no column names
@@ -1586,12 +1602,16 @@ qc_proposal = function(code, proposalDf) {
     pattern="([ ]+)"; pat_warn="non-breaking space character"; pat_replace=" "
     qc.matches =grep(changeDf[,col],pattern=pattern)
     if(length(qc.matches)>0) { 
+      browser()
       if(params$verbose) { cat("INFO:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
-      errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
-                       changeDf$change[qc.matches],changeDf$rank[qc.matches],changeDf$.changeTaxon[qc.matches],
-                       "INFO","XLSX.NB_SPACE_REPLACED", paste("XLSX has",pat_warn),
-                       paste0(paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":")," (replacing with '",pat_replace,"')")
-      )
+      if( params$processing_mode %in% c("draft","final") ) {
+        # supress picky error message
+        errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
+                         changeDf$change[qc.matches],changeDf$rank[qc.matches],changeDf$.changeTaxon[qc.matches],
+                         "INFO","XLSX.NB_SPACE_REPLACED", paste("XLSX has",pat_warn),
+                         paste0(paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":")," (replacing with '",pat_replace,"')")
+        )
+      }
       # backup original values
       changeDf[qc.matches,paste0(col,"_orig")] == changeDf[qc.matches,col]
       # remove non-ascii chars
@@ -1753,13 +1773,17 @@ qc_proposal = function(code, proposalDf) {
       # 
       # check for presence of regex's to be replaced
       #
-      qc.matches =grep(changeDf[,col],pattern=value_validation[i,]$regex)
+       qc.matches =grep(changeDf[,col],pattern=value_validation[i,]$regex)
       if(length(qc.matches)>0) { 
         if(params$verbose) { cat(value_validation[i,]$class,":",error,"has",length(qc.matches),"cells with",value_validation[i,]$warn,"in column",col,"\n") }
+        browser()
         errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
                          changeDf$change[qc.matches],changeDf$rank[qc.matches], changeDf$.changeTaxon[qc.matches],
                          value_validation[i,]$class,error, paste("XLSX has",value_validation[i,]$warn),
-                         paste(col,gsub(value_validation[i,]$regex,"[\\1]",changeDf[qc.matches,col]),sep=":"))
+                         paste(col,gsub(value_validation[i,]$regex,"[\\1]",changeDf[qc.matches,col]),
+                               paste(unlist(strsplit(changeDf[qc.matches,col],"")),CharToAsc(unlist(strsplit(changeDf[qc.matches,col],""))), sep="=", collapse=","),
+                               sep=":")
+                         )
         # backup original values
         changeDf[qc.matches,paste0(col,"_orig")] == changeDf[qc.matches,col]
         # remove non-ascii chars
@@ -1819,10 +1843,11 @@ qc_proposal = function(code, proposalDf) {
 
     # find the term we were close to
     for( row in rownames(changeDf)[!isTermPerfect & isTermClose] ) {
+      browser()
       correctedTermIdx = which(
-        tolower(gsub(pattern="[^[:alpha:]]",replacement="",changeDf[row,cv]))
+        tolower(gsub(pattern="[^[:alpha:];+-]",replacement="",changeDf[row,cv]))
         ==
-          tolower(gsub(pattern="[^[:alpha:]]",replacement="",cvList[[cv]]))
+          tolower(gsub(pattern="[^[:alpha:]+-]",replacement="",cvList[[cv]]))
       )
       correctionsDf[row,cv] = cvList[[cv]][correctedTermIdx]
     }
@@ -3015,9 +3040,9 @@ for(i in seq(1,nrow(.GlobalEnv$allErrorDf)) ) {
     prettyErrorDf[prettyRow,c("subcommittee","code","xlsx")] = c(
       .GlobalEnv$allErrorDf[row,"subcommittee"],
       .GlobalEnv$allErrorDf[row,"code"],
-      ifelse(is.na(allErrorDf[row,"docx"]),
-             .GlobalEnv$allErrorDf[row,"xlsx"],
-             .GlobalEnv$allErrorDf[row,"docx"]
+      ifelse(is.na(allErrorDf[row,"xlsx"]),
+             .GlobalEnv$allErrorDf[row,"docx"],
+             .GlobalEnv$allErrorDf[row,"xlsx"]
       )
     )
     prettyRow=prettyRow+1
