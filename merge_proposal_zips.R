@@ -13,9 +13,9 @@
 suppressPackageStartupMessages(library("optparse"))
 option_list <- list( 
   # verbose/quiet/debug
-  make_option(c("-v", "--verbose"), action="store_true", default=FALSE,
+  make_option(c("-v", "--verbose"), action="store_true", default=T,#FALSE,
               help="Print extra output"),
-  make_option(c("-t", "--tmi"), action="store_true", default=FALSE,
+  make_option(c("-t", "--tmi"), action="store_true", default=T,#FALSE,
               help="Print lots of extra output (Too Much Information)"),
   make_option(c("-q", "--quiet"), action="store_false", dest="verbose", 
               help="Print no output"),
@@ -55,17 +55,19 @@ option_list <- list(
               help="Primary error/warning output xlsx file [default \"%default\"]"),
   
   # ref filenames
-  make_option(c("--dbRanks"), default="taxonomy_level.txt", dest="db_rank_fname",
+  make_option(c("--dbSourceHost"), default="taxonomy_host_source.utf8.txt", dest="db_host_source_fname",
+              help="Reference file listing allowable source/host values [default \"%default\"]"),
+  make_option(c("--dbRanks"), default="taxonomy_level.utf8.txt", dest="db_rank_fname",
               help="Reference file listing allowable ranks [default \"%default\"]"),
-  make_option(c("--dbMolecules"), default="taxonomy_molecule.txt", dest="db_molecule_fname",
+  make_option(c("--dbMolecules"), default="taxonomy_molecule.utf8.txt", dest="db_molecule_fname",
               help="Reference filelisting allowable genomic molecules [default \"%default\"]"),
-  make_option(c("--dbTaxa"), default="taxonomy_node_export.txt", dest="db_taxonomy_node_fname",
+  make_option(c("--dbTaxa"), default="taxonomy_node_export.utf8.txt", dest="db_taxonomy_node_fname",
               help="Reference file listing all historic taxa [default \"%default\"]"),
-  make_option(c("--cvTemplate"), default="TP_Template_Excel_module_2023_v2.xlsx", dest="template_xlsx_fname",
+  make_option(c("--cvTemplate"), default="TP_Template_Excel_module_2023_v1.xlsx", dest="template_xlsx_fname",
               help="Template proposal xlsx, used to load CVs [default \"%default\"]"),
   make_option(c("--cvTemplateSheet"), default="Menu Items (Do not change)", dest="template_xlsx_sheet",
               help="Template proposal xlsx, used to load CVs [default \"%default\"]"),
-  make_option(c("--vmr"), default="VMR_21-221122_MSL37.xlsx", dest="vmr_fname",
+  make_option(c("--vmr"), default="VMR_MSL38_v1.xlsx", dest="vmr_fname",
               help="VMR to check for accession re-use [default \"%default\"]"),
   make_option(c("--templateURL"), default="https://ictv.global/taxonomy/templates", dest="template_url",
               help="URL for out-of-date template message [default \"%default\"]"),
@@ -324,7 +326,8 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
   #taxonomyDf=read.delim(file=params$prev_taxa_fname,header=FALSE,col.names=names(taxonomy_node_names),stringsAsFactors=FALSE,na.strings="NULL")
   dbTaxonomyNodeFilename=file.path(params$ref_dir, params$db_taxonomy_node_fname)
   taxonomyDt=fread(file=dbTaxonomyNodeFilename,
-                   header=FALSE,col.names=names(taxonomy_node_names),colClasses=as.character(taxonomy_node_names),
+                   header=TRUE,#header=FALSE,col.names=names(taxonomy_node_names),
+                   colClasses=as.character(taxonomy_node_names),
                    stringsAsFactors=FALSE,na.strings=c("","NULL"))
   cat("Previous taxa:",dim(taxonomyDt), " from ",dbTaxonomyNodeFilename,"\n")
   
@@ -343,7 +346,8 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
   # DB CV loads
   dbCvList = list()
   dbCvMapList = list()
-  
+
+  ##### CVs from db dumps #####
   dbRankFilename=file.path(params$ref_dir, params$db_rank_fname)
   rankCV = read.delim(file=dbRankFilename,header=TRUE, stringsAsFactors=TRUE,na.strings=c("NULL"))
   rownames(rankCV) = rankCV$id
@@ -361,10 +365,8 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
   names(dbCvMapList[["molecule"]]) = moleculeCV$abbrev
   if( params$verbose) {cat("MoleculeCV: ", dim(moleculeCV), " from ",dbMoleculeFilename,"\n")}
   
-  # ```
-  # # Load CVs for Proposal QC
-  # ```{r load cvs}
-  
+  ##### CVs from Proposal Template #####
+
   #
   # this uses the PROPOSAL.XLSX schema (naming convention)
   #
@@ -389,6 +391,8 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
     cv_name = templateProposalCV[1,cv_col]
     cv = templateProposalCV[,cv_col][-1]
     cvList[[cv_name]]=c(cv[!is.na(cv)],NA)
+    if(params$tmi) {cat("ProposalTemplateCV[",cv_name,"]: ", length(cvList[[cv_name]]), " from ",refProposalTemplateFilename,":",params$template_xlsx_sheet,"\n")}
+    
   }
   
   
@@ -405,7 +409,7 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
   names(cvList)=cvNameMap[names(cvList)]
   
   # remove ("Please select",NA) from "change" & "rank" CVs - that is a required field
-  for( cv in c("change","rank","scAbbrev","scName") ) {
+  for( cv in c("change","rank","scAbbrev","scName","hostSource") ) {
     isRemoveTerm = tolower(gsub("[^[:alnum:]]","",cvList[[cv]])) %in% c(
       "pleaseselect", # 2023
       "[Please select]", # 2023
@@ -456,9 +460,23 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
     "multiple"=NA
     )
   
+  # 
+  ##### augment hostSource CV from db   ##### 
   #
-  # load hostSource CV from VMR (most up-to-date)
+  # this is just names, no IDs
   #
+  dbHostSourceFilename=file.path(params$ref_dir, params$db_host_source_fname)
+  hostSourceCV = read.delim(file=dbHostSourceFilename,header=TRUE, stringsAsFactors=TRUE,na.strings=c("NULL"))
+  #rownames(hostSourceCV) = hostSourceCV$id
+  dbCvList[["hostSource"]] = hostSourceCV$host_source
+  dbCvMapList[["hostSource"]] = hostSourceCV$host_source
+  names(dbCvMapList[["hostSource"]]) = hostSourceCV$host_source
+  if(params$verbose) {cat("HostSourceCV: ", dim(hostSourceCV), " from ",dbHostSourceFilename,"\n")}
+  cvList[["hostSource"]] = union(cvList[["hostSource"]],dbCvList[["hostSource"]])
+  #
+  ##### CVs from VMR xlsx  #####
+  #
+  
   vmrFilename = file.path(params$ref_dir, params$vmr_fname)
   vmrDf = data.frame(
       # suppress errors about column names
@@ -466,7 +484,7 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
       suppressMessages(
         read_excel(
           path    = vmrFilename,
-          sheet   = "Terms",
+          #sheet   = "Terms",
           trim_ws = TRUE,
           na      = "Please select",
           skip    = 0,
@@ -475,19 +493,11 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
         )
       )
     )
-  cvList[["hostSource"]] = union(
-      cvList[["hostSource"]],
-      vmrDf[,"Host.Source"]
-  )
-  
-  cat("VMR(hostSource): ", length(vmrDf[,"Host.Source"]), " from ",params$VMR_filename," [Terms]\n")
   
   #
   
-  # ```
   # 
-  # # scan for proposal .xlsx files
-  # ```{r scan for proposal matching xlsx and docx}
+  #### scan for proposal .xlsx files   #### 
   # 
   # error reporting data frame
   # 

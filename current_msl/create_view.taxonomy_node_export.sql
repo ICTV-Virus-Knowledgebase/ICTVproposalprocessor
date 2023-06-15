@@ -30,7 +30,7 @@ select
     ,tn.[genbank_refseq_accession_csv]
     ,tn.[refseq_accession_csv]
     ,tn.[isolate_csv]
-    ,tn.[notes]
+    ,notes=replace(tn.[notes],char(13),'') -- DOS newline
     ,tn.[is_ref]
     ,tn.[is_official]
     ,tn.[is_hidden]
