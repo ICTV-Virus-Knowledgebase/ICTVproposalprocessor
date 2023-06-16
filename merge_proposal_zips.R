@@ -365,7 +365,7 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
   names(dbCvMapList[["molecule"]]) = moleculeCV$abbrev
   if( params$verbose) {cat("MoleculeCV: ", dim(moleculeCV), " from ",dbMoleculeFilename,"\n")}
   
-  ##### CVs from Proposal Template #####
+  ##### CVs from Proposals Template #####
 
   #
   # this uses the PROPOSAL.XLSX schema (naming convention)
@@ -390,6 +390,8 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
   for(cv_col in 1:ncol(templateProposalCV)) {
     cv_name = templateProposalCV[1,cv_col]
     cv = templateProposalCV[,cv_col][-1]
+    # clean UTF8-NB_space and other unprintable whitespaces
+    cvClean = gsub("[^[:alnum:]();[]+-]+","*",cv)
     cvList[[cv_name]]=c(cv[!is.na(cv)],NA)
     if(params$tmi) {cat("ProposalTemplateCV[",cv_name,"]: ", length(cvList[[cv_name]]), " from ",refProposalTemplateFilename,":",params$template_xlsx_sheet,"\n")}
     
@@ -412,8 +414,6 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
   for( cv in c("change","rank","scAbbrev","scName","hostSource") ) {
     isRemoveTerm = tolower(gsub("[^[:alnum:]]","",cvList[[cv]])) %in% c(
       "pleaseselect", # 2023
-      "[Please select]", # 2023
-      "Please select",   # 2022
         NA
     ) 
     cvList[[cv]] = cvList[[cv]][!isRemoveTerm]
@@ -576,19 +576,21 @@ inputFiles[parseableFilenames,"code"]          = sub("^([0-9]+\\.[0-9]+[A-Z]).*"
 inputFiles[parseableFilenames,"scAbbrev"]      = sub("^[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9]([A-Z])\\.","\\1",inputFiles[parseableFilenames,"code"] )
 
 
-# remove all *.Ud.* files
-filtered = grep(inputFiles$file, pattern=".*\\.Ud\\..*")
-if( length(filtered)) {
-  errorDf = inputFiles[filtered,]
-  errorDf$level = "INFO"
-  errorDf$error = "IGNORE_FNAME_.Ud."
-  errorDf$message = "All files with '.Ud.' in filename are ignored"
-  .GlobalEnv$loadErrorDf = rbindlist(list(.GlobalEnv$loadErrorDf, errorDf),fill=TRUE)
-  write_error_summary(.GlobalEnv$loadErrorDf)
-  if(params$tmi) { cat(paste0("# .Ud. files filtered out: N=",length(filtered),"\n"))}
+# remove all *.Ud.* files, when in draft/final modes
+if( params$processing_mode %in% c("draft","final") ) {
+  filtered = grep(inputFiles$file, pattern=".*\\.Ud\\..*")
+  if( length(filtered)) {
+    errorDf = inputFiles[filtered,]
+    errorDf$level = "INFO"
+    errorDf$error = "IGNORE_FNAME_.Ud."
+    errorDf$message = "All files with '.Ud.' in filename are ignored"
+    .GlobalEnv$loadErrorDf = rbindlist(list(.GlobalEnv$loadErrorDf, errorDf),fill=TRUE)
+    write_error_summary(.GlobalEnv$loadErrorDf)
+    if(params$tmi) { cat(paste0("# .Ud. files filtered out: N=",length(filtered),"\n"))}
+  }
+  inputFiles = inputFiles[grep(inputFiles$file, pattern=".*\\.Ud\\..*", invert=T),]
+  if(params$tmi) { cat("# xls|doc(x) files after .Ud. removal: N=",nrow(inputFiles),"\n")}
 }
-inputFiles = inputFiles[grep(inputFiles$file, pattern=".*\\.Ud\\..*", invert=T),]
-if(params$tmi) { cat("# xls|doc(x) files after .Ud. removal: N=",nrow(inputFiles),"\n")}
 
 # ignore "Suppl" files 
 filtered = grep(inputFiles$file,pattern=params$infile_suppl_pat)
@@ -1231,17 +1233,23 @@ load_proposal = function(code) {
   proposalDf = NULL
   
   # get worksheet names
+  proposalsSheetNameRegex = "proposals* template"
   sheetNames = suppressMessages(
     excel_sheets(proposals[code,"xlsxpath"])
   )
-  if( !("Proposal Template" %in% sheetNames) ) {
-    cat("code", code, ": A worksheet named 'Proposal Template' was not found","logging error","\n")
+  # it changes from year to year, find one that works.
+  proposalsSheetName = grep("proposals* template",sheetNames,ignore.case = T, value=T)[1]
+  if( is.na(proposalsSheetName) ) {
+    cat(paste0("code ", code, ": A worksheet name matching '",proposalsSheetNameRegex,"' was not found","logging error","\n"))
     errorDf=addError(errorDf,
                      code,"","","","",
                      "ERROR","XLSX_NOT_PROPOSAL",
-                     "XLS file does not match proposal template",
-                     "A worksheet named 'Proposal Template' was not found")
-    cat("code", code, ": A worksheet named 'Proposal Template' was not found","returning NA","\n")
+                     "XLS file does not match proposals template",
+                     paste0("A worksheet name matching '",proposalsSheetNameRegex,"' was not found, only: ",
+                            "'",paste0(sheetNames,collapse="','"),"'"
+                            )
+                     )
+    cat(paste0("code ", code, ": A worksheet name matching '",proposalsSheetNameRegex,"' was not found","returning NA","\n"))
   } else {
     
     # read XLSX file, no column names
@@ -1251,7 +1259,7 @@ load_proposal = function(code) {
       suppressMessages(
         read_excel(
           proposals[code,"xlsxpath"],
-          sheet="Proposal Template",
+          sheet=proposalsSheetName,
           trim_ws = TRUE,
           na = "Please select",
           skip = 2,
@@ -3030,7 +3038,7 @@ cat("# DONE. Found",length(rownames(proposals)),"proposals; Processed",processed
 # r2excel: (install fails?) http://www.sthda.com/english/wiki/r2excel-read-write-and-format-easily-excel-files-using-r-software#install-and-load-r2excel-package
 # xlsx (requires java)
 # XLConnect (requires rJava)
-browser()
+
 prettyErrorDf = data.frame(.GlobalEnv$allErrorDf %>% filter(FALSE))
 prettyRow = 0
 prevCode = ""
