@@ -1025,7 +1025,7 @@ value_validation = rbind(value_validation, data.frame(
   class = "INFO",
   code = "XLSX.CHANGE_CV_REMOVE_NON_ALPHA-NUMERIC-SPACE-SEMI",
   warn = "Change col:non-(AlphaNumeric,hyphen,space,dash) characters removed",
-  replace = ""
+  replace = " "
 ))
 
 # Abbrev: semi-colon separated lists
@@ -1085,7 +1085,7 @@ value_validation = rbind(value_validation, data.frame(
   class = "INFO",
   code = "XLSX.NON_PRINTABLE_REMOVED",
   warn = "unprintable/non-ASCII removed",
-  replace = ""
+  replace = " "
 ))
 
 # exemplarIsolate and exemplarName are anything printable. 
@@ -1854,8 +1854,8 @@ qc_proposal = function(code, proposalDf) {
     # compare to CV terms, removing all spaces and capitalization
     isTermPerfect = changeDf[,cv] %in% cvList[[cv]]
     isTermClose = 
-      tolower(gsub(pattern="[^[:alpha:]]",replacement="",changeDf[,cv])) %in% 
-      tolower(gsub(pattern="[^[:alpha:]]",replacement="",cvList[[cv]]))
+      tolower(gsub(pattern="[^[:alpha:];+-]",replacement="",changeDf[,cv])) %in% 
+      tolower(gsub(pattern="[^[:alpha:];+-]",replacement="",cvList[[cv]]))
 
     # find the term we were close to
     for( row in rownames(changeDf)[!isTermPerfect & isTermClose] ) {
@@ -1863,7 +1863,7 @@ qc_proposal = function(code, proposalDf) {
       correctedTermIdx = which(
         tolower(gsub(pattern="[^[:alpha:];+-]",replacement="",changeDf[row,cv]))
         ==
-          tolower(gsub(pattern="[^[:alpha:]+-]",replacement="",cvList[[cv]]))
+          tolower(gsub(pattern="[^[:alpha:];+-]",replacement="",cvList[[cv]]))
       )
       correctionsDf[row,cv] = cvList[[cv]][correctedTermIdx]
     }
