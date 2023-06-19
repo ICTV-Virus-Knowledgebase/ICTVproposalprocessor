@@ -391,7 +391,7 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
     cv = templateProposalCV[,cv_col][-1]
     # clean UTF8-NB_space and other unprintable whitespaces
     cvClean = gsub("[^[:alnum:][:punct:]]+"," ",cv)
-    cvList[[cv_name]]=c(cv[!is.na(cv)],NA)
+    cvList[[cv_name]]=c(cvClean[!is.na(cvClean)],NA)
     if(params$tmi) {cat("ProposalTemplateCV[",cv_name,"]: ", length(cvList[[cv_name]]), " from ",refProposalTemplateFilename,":",params$template_xlsx_sheet,"\n")}
     
   }
@@ -418,7 +418,7 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
     cvList[[cv]] = cvList[[cv]][!isRemoveTerm]
   }
   
-  # clean UTF8-NB_space 
+  # clean UTF8-NB_space (mac) 
   for( cv in c("change","rank","scAbbrev","scName") ) {
     for( i in seq(1:length(cvList[[cv]])) ) {
         term = cvList[[cv]][i]
