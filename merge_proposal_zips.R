@@ -380,7 +380,6 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
   
   #cvDf = data.f rame(trib[,])  # remove "select one" line
   if( params$verbose) {cat("ProposalTemplate[",params$template_xlsx_sheet,"]: ", dim(templateProposalCV), " from ",refProposalTemplateFilename,"\n")}
-  
   # patch up studysection, which is a map, not just a CV list
   templateProposalCV[1,6]="Subcommittee Abbrev"
   templateProposalCV[1,7]="Subcommittee Name"
@@ -391,7 +390,7 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
     cv_name = templateProposalCV[1,cv_col]
     cv = templateProposalCV[,cv_col][-1]
     # clean UTF8-NB_space and other unprintable whitespaces
-    cvClean = gsub("[^[:alnum:]();[]+-]+","*",cv)
+    cvClean = gsub("[^[:alnum:][:punct:]]+"," ",cv)
     cvList[[cv_name]]=c(cv[!is.na(cv)],NA)
     if(params$tmi) {cat("ProposalTemplateCV[",cv_name,"]: ", length(cvList[[cv_name]]), " from ",refProposalTemplateFilename,":",params$template_xlsx_sheet,"\n")}
     
@@ -476,7 +475,6 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
   #
   ##### CVs from VMR xlsx  #####
   #
-  
   vmrFilename = file.path(params$ref_dir, params$vmr_fname)
   vmrDf = data.frame(
       # suppress errors about column names
