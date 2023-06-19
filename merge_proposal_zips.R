@@ -53,6 +53,8 @@ option_list <- list(
               help="Amount to increment taxnode_ids by to create a new MSL [default \"%default\"]"),
   make_option(c("--qcPrettySummary"), default="QC.pretty_summary.all.xlsx", dest="qc_summary_fname", 
               help="Primary error/warning output xlsx file [default \"%default\"]"),
+  make_option(c("--qcTsvSummary"), default="QC.summary.tsv", dest="qc_summary_tsv_fname", 
+              help="Primary error/warning output TSV file [default \"%default\"]"),
   
   # ref filenames
   make_option(c("--dbSourceHost"), default="taxonomy_host_source.utf8.txt", dest="db_host_source_fname",
@@ -111,9 +113,15 @@ suppressPackageStartupMessages(library(qdapTools)) # read docx
 # in case we crash part way through
 #
 write_error_summary = function(errorDf) {
+  # XLS version
   fname = file.path(params$out_dir,params$qc_summary_fname)
   write_xlsx( x=errorDf,path=fname)
   cat("Wrote: ", fname, " (",nrow(errorDf),"rows)\n")
+  # TSV version
+  fnameTsv = file.path(params$out_dir,params$qc_summary_tsv_fname)
+  write_delim(x=errorDf,file=fnameTsv, delim="\t")
+  cat("Wrote: ", fnameTsv, " (",nrow(errorDf),"rows)\n")
+  
 }
 
 #### load cache (ref/.Rdata) ####
@@ -2499,6 +2507,10 @@ apply_changes = function(code,proposalBasename,changeDf) {
         # add new taxon to newMSL
         if(params$verbose) {print(paste0("rbindlist(newMSL,",newTaxon[1,"taxnode_id"],":",destLineage,")"))}
         .GlobalEnv$newMSL <- rbindlist(list(.GlobalEnv$newMSL,newTaxon),fill=TRUE)
+        errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
+                         "SUCCESS", "CREATE.OK", "Change=CREATE, applied successfully", 
+                         paste0("Create ", newTaxon$rank," of ",newTaxon$lineage)
+        )
       } # create new taxon
     } else  if(actionClean %in% c("rename") ) {
     
@@ -2591,6 +2603,13 @@ apply_changes = function(code,proposalBasename,changeDf) {
         .GlobalEnv$curMSL[srcPrevTarget,"out_filename"] = proposalZip
         .GlobalEnv$curMSL[srcPrevTarget,"out_target"] = destTaxonName
         .GlobalEnv$curMSL[srcPrevTarget,"out_notes"] = paste0("linenum=",linenum)
+        
+        # success note
+        errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
+                         "SUCCESS", "RENAME.OK", "Change=RENAME, applied successfully", 
+                         paste0("RENAME ",srcTaxonRank, " from ",srcTaxonName," to ", destTaxonName)
+        )
+        
         ## ZZZ add comments to out_notes?
       } # target found
       # RENAME
@@ -2666,7 +2685,13 @@ apply_changes = function(code,proposalBasename,changeDf) {
       .GlobalEnv$curMSL[srcPrevTarget,"out_filename"] = proposalZip
       .GlobalEnv$curMSL[srcPrevTarget,"out_target"] = destTaxonName
       .GlobalEnv$curMSL[srcPrevTarget,"out_notes"] = paste0("linenum=",linenum) # add comments?
-       
+      
+      # success note
+      errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
+                       "SUCCESS", "ABOLISH.OK", "Change=ABOLISH, applied successfully", 
+                       paste0("ABOLISH ",srcTaxonRank, " named ",srcTaxonName)
+      )
+      
     } else if(actionClean %in% c("move") ) { 
       #  -------------------------------------------------------------------------
       #
@@ -2914,6 +2939,13 @@ apply_changes = function(code,proposalBasename,changeDf) {
       .GlobalEnv$curMSL[srcPrevTarget,"out_filename"] = proposalZip
       .GlobalEnv$curMSL[srcPrevTarget,"out_target"] = destLineage
       .GlobalEnv$curMSL[srcPrevTarget,"out_notes"] = paste0("linenum=",linenum) # add comments?
+      
+      # success note
+      errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
+                       "SUCCESS", "MOVE.OK", "Change=MOVE, applied successfully", 
+                       paste0("MOVE ",srcTaxonRank, " named ",srcTaxonName, " to ", destLineage)
+      )
+      
        
     } else {
       #  -------------------------------------------------------------------------
@@ -3021,7 +3053,9 @@ for( code in codes) {
       if(interactive()) {browser()}
     }
     errorDf = results[["errorDf"]]
-    cat("# PROCed: ",code," with ",nrow(errorDf)," errors/warnings\n")
+    levelSummary = summary(errorDf$level)
+    levelSummary = levelSummary[levelSummary>0]
+    cat("# PROCed: ",code," with ",paste(names(levelSummary),levelSummary,sep=":"),"\n")
     if(nrow(errorDf)>0){.GlobalEnv$allErrorDf=rbindlist(list(.GlobalEnv$allErrorDf,errorDf),fill=TRUE)}
     
     processed=processed+1
