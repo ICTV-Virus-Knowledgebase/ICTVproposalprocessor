@@ -13,9 +13,9 @@
 suppressPackageStartupMessages(library("optparse"))
 option_list <- list( 
   # verbose/quiet/debug
-  make_option(c("-v", "--verbose"), action="store_true", default=T,#FALSE,
+  make_option(c("-v", "--verbose"), action="store_true", default=FALSE,
               help="Print extra output"),
-  make_option(c("-t", "--tmi"), action="store_true", default=T,#FALSE,
+  make_option(c("-t", "--tmi"), action="store_true", default=FALSE,
               help="Print lots of extra output (Too Much Information)"),
   make_option(c("-q", "--quiet"), action="store_false", dest="verbose", 
               help="Print no output"),
@@ -404,7 +404,6 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
     
   }
   
-  
   # map to actual input xlsx column names
   cvNameMap = c(
     "Genome coverage"=    "genomeCoverage",
@@ -418,19 +417,19 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
   names(cvList)=cvNameMap[names(cvList)]
   
   # remove ("Please select",NA) from "change" & "rank" CVs - that is a required field
-  for( cv in c("change","rank","scAbbrev","scName","hostSource") ) {
+  for( cv in c("change","rank") ) { #},"scAbbrev","scName","hostSource") ) {
     isRemoveTerm = tolower(gsub("[^[:alnum:]]","",cvList[[cv]])) %in% c(
       "pleaseselect", # 2023
         NA
     ) 
     cvList[[cv]] = cvList[[cv]][!isRemoveTerm]
   }
-  
-  # clean UTF8-NB_space (mac) 
+
+    # clean UTF8-NB_space (mac) 
   for( cv in c("change","rank","scAbbrev","scName") ) {
     for( i in seq(1:length(cvList[[cv]])) ) {
         term = cvList[[cv]][i]
-        if( regexpr(text=term, pattern=paste0(AscToChar(194),AscToChar(160))) > 0 ) {
+        if( is.na(term) || regexpr(text=term, pattern=paste0(AscToChar(194),AscToChar(160))) > 0 ) {
           term = gsub(paste0("(",AscToChar(194),AscToChar(160),")+")," ",term)
           cvList[[cv]][i] = term
         }
@@ -691,6 +690,10 @@ if( sum(dups) > 0 ) {
   .GlobalEnv$loadErrorDf = rbindlist(list(.GlobalEnv$loadErrorDf, errorDf),fill=TRUE)
   # output
   write_error_summary(.GlobalEnv$loadErrorDf)
+  
+  # terminate
+  cat("ERROR: can not proceed with duplicated proposal IDs:", paste(levels(as.factor(xlsxs[dups,"code"])),collapse=","),"\n")
+  stop(1)
 }
 rownames(xlsxs) = ifelse(is.na(xlsxs$code),rownames(xlsxs),xlsxs$code)
 xlsxs[,"code"] = rownames(xlsxs)
@@ -1867,13 +1870,19 @@ qc_proposal = function(code, proposalDf) {
 
     # find the term we were close to
     for( row in rownames(changeDf)[!isTermPerfect & isTermClose] ) {
-      #browser()
-      correctedTermIdx = which(
+       correctedTermIdx = which(
         tolower(gsub(pattern="[^[:alpha:];+-]",replacement="",changeDf[row,cv]))
         ==
-          tolower(gsub(pattern="[^[:alpha:];+-]",replacement="",cvList[[cv]]))
+        tolower(gsub(pattern="[^[:alpha:];+-]",replacement="",cvList[[cv]]))
       )
-      correctionsDf[row,cv] = cvList[[cv]][correctedTermIdx]
+      # check for multiple close matches
+      if(length(correctedTermIdx) > 1) {
+        # matching multiple things solves nothin
+        isTermClose[which(row==rownames(changeDf))]=FALSE
+      } else {
+        # one, and only one approximate match: then use it!
+       correctionsDf[row,cv] = cvList[[cv]][correctedTermIdx]
+      }
     }
     # 
     # reject unknown terms
@@ -1907,14 +1916,17 @@ qc_proposal = function(code, proposalDf) {
     #
     flawedTerms=changeDf[isTermClose & !isTermPerfect,] #cv, drop=FALSE]
     if(nrow(flawedTerms)>0) {
-      # complain
-      if(params$verbose) { cat("INFO:",code,"typo in CV column '",cv,"':",
-                               "[",paste(paste0(rownames(flawedTerms),":",flawedTerms[,cv]), collapse=","),"] on rows (",paste(rownames(flawedTerms),collapse=","),")\n") }
-      errorDf=addError(errorDf,code,rownames(flawedTerms),
-                       flawedTerms$change, flawedTerms$rank, flawedTerms$.changeTaxon,
-                       "INFO","XLSX.TYPO_TERM",paste("fixed term with typo (space,caps) in column ",cv),
-                       paste0("Term '",flawedTerms[,cv],"' replaced with '",correctionsDf[rownames(flawedTerms),cv],"'. Valid terms: [",paste0(cvList[[cv]],collapse=","),"]")) 
-      
+      # complain, never mind, just auto-correct
+      if( params$tmi ) {
+        if(params$verbose || params$tmi ) { 
+          cat("INFO:",code,"typo in CV column '",cv,"':",
+              "[",paste(paste0(rownames(flawedTerms),":",flawedTerms[,cv]), collapse=","),"] on rows (",paste(rownames(flawedTerms),collapse=","),")\n") 
+        }
+        errorDf=addError(errorDf,code,rownames(flawedTerms),
+                         flawedTerms$change, flawedTerms$rank, flawedTerms$.changeTaxon,
+                         "INFO","XLSX.TYPO_TERM",paste("fixed term with typo (space,caps) in column ",cv),
+                         paste0("Term '",flawedTerms[,cv],"' replaced with '",correctionsDf[rownames(flawedTerms),cv],"'. Valid terms: [",paste0(cvList[[cv]],collapse=","),"]")) 
+      }
       # correct
       changeDf[rownames(flawedTerms),cv] = correctionsDf[rownames(flawedTerms),cv]
     } # if flawedTerms
@@ -2174,8 +2186,8 @@ apply_changes = function(code,proposalBasename,changeDf) {
     # clean action
     actionClean = actionCV[tolower(action)]
     if( is.na(actionClean) ) { 
-      errorDf = with(changeDf[linenum,],addError(errorDf,code,linenum,change,rank,.changeTaxon,"
-                                                 ERROR","ACTION.UNK","Unknown action/change",action))
+      errorDf = with(changeDf[linenum,],addError(errorDf,code,linenum,change,rank,.changeTaxon,
+                                                 "ERROR","ACTION.UNK","Unknown action/change",action))
       next;
     }
     
@@ -2331,13 +2343,21 @@ apply_changes = function(code,proposalBasename,changeDf) {
       #
       isDupAccession = (.GlobalEnv$newMSL$genbank_accession_csv == change$exemplarAccession)
       if(sum(isDupAccession, na.rm=TRUE)>0) {
-        errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.destTaxon,
-                         "ERROR", "CREATE.DUP_ACC", "Change=CREATE, a species with this accession number already exists", 
-                         paste0("accession=", change$exemplarAccession, ", existingSpecies=",.GlobalEnv$newMSL[isDupAccession,]$lineage)
-        )
-        ## QQQ what proposal created this? (from this round? historically? Need a function: last_modified())
-        next;
-        
+        # this is a warning/error depending on mode
+        errorLevel = "ERROR"
+        if( params$processing_mode == "validate" && change$exemplarAccession=="pending") { 
+          errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.destTaxon,
+                            "WARNING", "CREATE.PENDING_ACC", "Change=CREATE, accession number is 'pending'", 
+                            paste0("accession=", change$exemplarAccession)
+          )
+        } else {
+          # hard error for each other species with this accession
+          errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.destTaxon,
+                           errorLevel, "CREATE.DUP_ACC", "Change=CREATE, a species with this accession number already exists", 
+                           paste0("accession=", change$exemplarAccession, ", existingSpecies=",.GlobalEnv$newMSL[isDupAccession,]$lineage)
+          )
+        }                 
+         ## QQQ what proposal created this? (from this round? historically? Need a function: last_modified())
       }
       # 
       # verify that PARENT taxon exists already in newMSL
@@ -2431,9 +2451,20 @@ apply_changes = function(code,proposalBasename,changeDf) {
             )
             
           }
+          
+          # 
+          # check hostSource
+          #
+          if( is.na(change$hostSource) || grepl("please.*select",change$hostSource, ignore.case=T) ) {
+            errorDf=addError(errorDf,code,linenum,change$change,change$rank,change$.destTaxon,
+                             "WARNING", "CREATE.SPECIES_NO_HOST_SOURCE", 
+                             "Change=CREATE, but proposed species must have a host/source value", 
+                             paste0("parent genus name =", genusTaxon$name)
+            )
+          }
         }
  
-               # 
+        # 
         # create new taxon
         #
         
@@ -2478,6 +2509,7 @@ apply_changes = function(code,proposalBasename,changeDf) {
 
         ## for species only
         if( destTaxonRank == "species" ) {
+          ##### CREATE.SPECIES #####
           # "genbank_accession_csv"
           newTaxon[1,xlsx2dbMap["exemplarAccession"]] = change[1,"exemplarAccession"] 
           # exemplar_name
