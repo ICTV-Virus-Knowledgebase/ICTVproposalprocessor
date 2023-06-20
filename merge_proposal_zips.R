@@ -1684,7 +1684,8 @@ qc_proposal = function(code, proposalDf) {
     #
     # curvy quotes
     # AscToChar(210)AscToChar(211)
-    pattern=paste0("([“”]+)"); pat_warn="curvy quotes";pat_replace='"'
+    # AscToChar(c(226, 128, 156)) & AscToChar(c(226, 128, 157))
+    pattern=paste0("([“”",AscToChar(210),AscToChar(211),AscToChar(c(226, 128, 156)),AscToChar(c(226, 128, 157)),"]+)"); pat_warn="curvy quotes";pat_replace='"'
     qc.matches =grep(changeDf[,col],pattern=pattern)
     if(length(qc.matches)>0) { 
       if(params$verbose) { cat("INFO:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
