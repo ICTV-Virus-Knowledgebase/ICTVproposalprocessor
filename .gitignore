@@ -9,3 +9,6 @@ zips/
 .Rhistory
 # output not to track
 merge_proposal_zips.html
+# version with git hash added - created as part of release process
+version_git.txt
+
