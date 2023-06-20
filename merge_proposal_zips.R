@@ -81,7 +81,11 @@ option_list <- list(
               help="Input files (in proposalDir/) containing this pattern in filename are ignored [default \"%default\"]"),
   make_option(c("--mode"), default="validate", dest="processing_mode",
               help="Stringency Mode: 'validate' (any .doc|docx|xls|xlsx), 'draft' (YYYY.###A.v#.'), or 'final' (no '.v#') [default \"%default\"]"),
-
+  make_option(c("--version_file"), default="version_git.txt", dest="version_file",
+              help="File to use to report version. v#.#.###### (last part is git hash); run ./version_git.sh to update [default \"%default\"]"),
+  make_option(c("--version"), dest="version",
+              help="code version  [default \"%default\"]"),
+  
   # metadata for new MSL
   make_option(c("--newMslName"), default="YYYY", dest="msl_name",
               help="Root node name for new MSL [default \"%default\"]"),
@@ -112,16 +116,101 @@ suppressPackageStartupMessages(library(qdapTools)) # read docx
 # we do this frequently, so there will be an artifact to return to the user
 # in case we crash part way through
 #
-write_error_summary = function(errorDf) {
+write_error_summary = function(errorDf,final=FALSE) {
+  # make sure version is correct
+  errorDf$version = params[["version"]]
+  
+  #### pretty format ####
+  # write current error list
+  # TODO: add line breaks, bold
+  # openxlsx
+  # r2excel: (install fails?) http://www.sthda.com/english/wiki/r2excel-read-write-and-format-easily-excel-files-using-r-software#install-and-load-r2excel-package
+  # xlsx (requires java)
+  # XLConnect (requires rJava)
+  
+  prettyErrorDf = data.frame(errorDf %>% filter(FALSE))
+  prettyRow = 0
+  prevCode = ""
+  errorSortCols = errorDf[,c("code","row")]
+  errorSortCols$rown = as.integer(errorSortCols$row)
+  errorsSorted = do.call(order,errorSortCols[,c("code","rown")])
+  
+  for(i in seq(1,nrow(errorDf)) ) {
+    row=errorsSorted[i]
+    # add blank line and header when document changes
+    if(errorDf[row,"code"]!= prevCode) { 
+      prevCode = errorDf[row,"code"]
+      
+      prettyErrorDf[prettyRow,c("subcommittee")] = c(errorDf[row,"subcommittee"])
+      prettyRow=prettyRow+1
+      
+      prettyErrorDf[prettyRow,c("subcommittee","code","xlsx")] = c(
+        errorDf[row,"subcommittee"],
+        errorDf[row,"code"],
+        ifelse(is.na(allErrorDf[row,"xlsx"]),
+               errorDf[row,"docx"],
+               errorDf[row,"xlsx"]
+        )
+      )
+      prettyRow=prettyRow+1
+    }
+    
+    # copy other lines as-is
+    prettyErrorDf[prettyRow,]=errorDf[row,]
+    prettyRow=prettyRow+1
+  }
+  prettyCols = grep(names(prettyErrorDf),pattern="(code|docx|subcommittee)",invert=T,value=T)
+  
+  if( final ) {
+    # this should get chunked into files/worksheets by "subcommittee"
+    for(committee in levels(as.factor(prettyErrorDf$subcommittee)) ) {
+      subcommitteeFilename = str_replace_all(str_replace(committee,pattern="(.*) \\(([A-Z])\\) .*","\\2 \\1")," ","_")
+      filename = file.path(params$out_dir,
+                           paste0("QC.pretty_summary.",subcommitteeFilename,".xlsx")
+      )
+      
+      select = (prettyErrorDf$subcommittee == committee)
+      write_xlsx( x=prettyErrorDf[select,prettyCols],path=filename)
+      cat("Wrote: ", filename, " (",nrow(prettyErrorDf[select,]),"rows )\n")
+    }
+  }
+  
+  #### write files ####
   # XLS version
   fname = file.path(params$out_dir,params$qc_summary_fname)
-  write_xlsx( x=errorDf,path=fname)
+  write_xlsx( x=as.data.frame(prettyErrorDf)[,prettyCols][,prettyCols],path=fname)
   cat("Wrote: ", fname, " (",nrow(errorDf),"rows)\n")
   # TSV version
   fnameTsv = file.path(params$out_dir,params$qc_summary_tsv_fname)
   write_delim(x=errorDf,file=fnameTsv, delim="\t")
   cat("Wrote: ", fnameTsv, " (",nrow(errorDf),"rows)\n")
   
+}
+
+#
+# load version file
+#
+load_version = function() {
+  # 
+  # does it exist? 
+  # 
+  if( !file.exists(params$version_file) ) {
+    # try to create it
+    cat(paste0("BUILD_VERSION_GIT: ",params$version_file," does not exists. Rebuilding with ./version_git.sh","\n"))
+    system("./version_git.sh")
+  }
+  if( !file.exists(params$version_file) ) {
+    cat(paste0("BUILD_VERSION_GIT: ",params$version_file," still does not exist, after running ./version_git.sh","\n"))
+    stop(1)
+  }
+  #
+  # load version number, store in params
+  #
+  .GlobalEnv$params[["version"]] = read.table("version_git.txt")[1,1]
+  #
+  # print
+  # 
+  cat( paste0("VERSION: ",params$version,"\n"))
 }
 
 #### load cache (ref/.Rdata) ####
@@ -134,7 +223,7 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
   #cat("RM(changeList) # re-run QC")
 } else {
   if(params$verbose){ cat("SKIP: loading cache file ", cacheFilename, "\n")}
-
+  
   
   # 
   # final vs draft proposal filename patterns.
@@ -193,7 +282,7 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
   #   * write merged proposal data frame to a Unicode(UTF-16LE) TSV file (params$merged) that can be loaded into MSSQL on Windows using "Import Data...." 
   #   * write a status sheet listing parsing and QC success/fail status for each proposal (params$status)
   #   * write new MSL load & updates to prev_msl.out_*
-    
+  
   #```{r setup, include=FALSE}
   
   
@@ -216,7 +305,7 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
   #
   createNewMSL = function(curMSL,prev_msl,dest_msl,taxnode_delta) {
     # curMSL = curMSL; prev_msl=max(curMSL$msl_release_num); dest_msl=max(curMSL$msl_release_num)+1; taxnode_delta=as.integer(params$taxnode_delta)
-  
+    
     #
     # copy previous years MSL rows to create a basis for this years
     #
@@ -241,10 +330,10 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
     
     # update the node ids
     fkTaxnodeIdCols = c("taxnode_id","parent_id","tree_id"
-                   # ,paste0(tolower(
-                   #   c("Realm", "Subrealm", "Kingdom", "Subkingdom", 
-                   #     "Phylum", "Subphylum", "Class", "Subclass", "Order", "Suborder", 
-                   #     "Family", "Subfamily", "Genus", "Subgenus", "Species")),"_id")
+                        # ,paste0(tolower(
+                        #   c("Realm", "Subrealm", "Kingdom", "Subkingdom", 
+                        #     "Phylum", "Subphylum", "Class", "Subclass", "Order", "Suborder", 
+                        #     "Family", "Subfamily", "Genus", "Subgenus", "Species")),"_id")
     )
     newMSL[,(fkTaxnodeIdCols) := lapply(.SD, function(id) id+as.integer(taxnode_delta)),.SDcols=fkTaxnodeIdCols]
     
@@ -277,6 +366,11 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
     return(max(subset(taxonomy_node,msl_release_num==msl)$taxnode_id)+1)
     
   }
+  #
+  ##### load version #####
+ 
+   load_version()
+  
   # ```
   # # load previous MSLs
   # ```{r load prev MSL, echo=F}
@@ -437,7 +531,7 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
   }
   
   #
-  # build Subcommittee Map
+  ##### build Subcommittee Map   ##### 
   #
   scAbbrevNameMap = cvList[["scName"]]
   names(scAbbrevNameMap) = cvList[["scAbbrev"]]
@@ -502,7 +596,7 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
   #
   
   # 
-  #### scan for proposal .xlsx files   #### 
+  #### create allErrorDf   #### 
   # 
   # error reporting data frame
   # 
@@ -518,13 +612,15 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
     "level" = factor(levels=c("ERROR","WARNING","INFO")),
     "error" = character(),
     "message" = character(),
-    "notes" = character()
+    "notes" = character(),
+    "scAbbrev" = character(),
+    "version" = character()
   )
   .GlobalEnv$loadErrorDf = allErrorDf %>% filter(FALSE)
 
   
   #
-  # extract current taxonomy
+  #### setup taxonomies: last,old, & cur  #### 
   #
   lastMSL = max(as.integer(taxonomyDt$msl_release_num))
   .GlobalEnv$oldMSLs = subset(taxonomyDt, msl_release_num < lastMSL)
@@ -539,8 +635,11 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
   .GlobalEnv$newMSL=createNewMSL(.GlobalEnv$curMSL,lastMSL, lastMSL+1, params$taxnode_delta)
   
   }
-
+#
+#
 #### SAVE REF CACHE ####
+#
+#
 if( params$update_cache ) {
   if(params$verbose){ cat("WRITE: cache file ", cacheFilename, "\n")}
   params$update_cache=FALSE
@@ -552,12 +651,20 @@ dir.create(params$out_dir,recursive=T,showWarnings = F)
 #
 #
 #### SECTION scan for files ####
-##
+#
+#
 inputFiles = data.frame(docpath=list.files(path=params$proposals_dir,
-                                        pattern=".*\\.(doc|xls)x*$", 
+                                        pattern="^[^~.].*\\.(doc|xls)x*$", 
+                                        #pattern="^[^~.].*\\.(doc|xls)x*$", 
                                         recursive=T, full.names=TRUE)
 )
-if(params$tmi) { cat("# xls|doc(x) files found: N=",nrow(inputFiles),"\n")}
+# list files found, if in TMI mode
+if(params$tmi) { 
+  cat("# xls|doc(x) files found: N=",nrow(inputFiles),"\n")
+  for( f in inputFiles$docpath ) {
+    cat("\t",f,"\n")
+  }
+}
 
 # check if we found any files at all
 if( nrow(inputFiles) == 0 ) {
@@ -2508,9 +2615,15 @@ apply_changes = function(code,proposalBasename,changeDf) {
         # comments
         newTaxon[1,xlsx2dbMap["comments"]]= change[1,"comments"]
 
-        ## for species only
+        
+        #
+        ##### CREATE.SPECIES #####
+        #
         if( destTaxonRank == "species" ) {
-          ##### CREATE.SPECIES #####
+          #
+          ## for species only
+          #
+          
           # "genbank_accession_csv"
           newTaxon[1,xlsx2dbMap["exemplarAccession"]] = change[1,"exemplarAccession"] 
           # exemplar_name
@@ -2540,9 +2653,11 @@ apply_changes = function(code,proposalBasename,changeDf) {
         # add new taxon to newMSL
         if(params$verbose) {print(paste0("rbindlist(newMSL,",newTaxon[1,"taxnode_id"],":",destLineage,")"))}
         .GlobalEnv$newMSL <- rbindlist(list(.GlobalEnv$newMSL,newTaxon),fill=TRUE)
+        
+        # SUCCESS message
         errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
                          "SUCCESS", "CREATE.OK", "Change=CREATE, applied successfully", 
-                         paste0("Create ", newTaxon$rank," of ",newTaxon$lineage)
+                         paste0("Create ", newTaxon$rank," of '",newTaxon$lineage,"'")
         )
       } # create new taxon
     } else  if(actionClean %in% c("rename") ) {
@@ -2640,7 +2755,11 @@ apply_changes = function(code,proposalBasename,changeDf) {
         # success note
         errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
                          "SUCCESS", "RENAME.OK", "Change=RENAME, applied successfully", 
-                         paste0("RENAME ",srcTaxonRank, " from ",srcTaxonName," to ", destTaxonName)
+                         paste0("RENAME ",srcTaxonRank, 
+                                " from ", "'",srcTaxonName,"'",
+                                " to ",   "'", .GlobalEnv$newMSL[srcNewTarget,"name"], "'",
+                                " in ",   "'", .GlobalEnv$newMSL[srcNewTarget,"lineage"], "'"
+                         )
         )
         
         ## ZZZ add comments to out_notes?
@@ -2649,7 +2768,7 @@ apply_changes = function(code,proposalBasename,changeDf) {
     } else if(actionClean %in% c("abolish") ) { 
       #  -------------------------------------------------------------------------
       #
-      # ABOLISH 
+      ####  ABOLISH       #### 
       #
       #  -------------------------------------------------------------------------
       # check if srcTaxon was specified in xlsx (required)
@@ -2728,7 +2847,7 @@ apply_changes = function(code,proposalBasename,changeDf) {
     } else if(actionClean %in% c("move") ) { 
       #  -------------------------------------------------------------------------
       #
-      # MOVE (w/ or w/o RENAME) 
+      #### MOVE (w/ or w/o RENAME) #### 
       #
       #  -------------------------------------------------------------------------
       # check if srcTaxon was specified in xlsx (required)
@@ -2956,13 +3075,9 @@ apply_changes = function(code,proposalBasename,changeDf) {
           }
         }
         
-        # info-only columns - wont be saved to DB
-        .GlobalEnv$newMSL[srcNewTarget,"lineage"]    = destLineage
- 
-        # QQQQQ RECURSE TO SET LINEAGE OF KIDS
-        taxnode_id = .GlobalEnv$newMSL$taxnode_id[srcNewTarget]
+        #  RECURSE TO SET LINEAGE OF destPARENT's KIDS
         #if( 202203764==taxnode_id) {browser()} # Luteovirus
-        update_lineage(taxnode_id,destLineage)
+        update_lineage(parentTaxon$taxnode_id,parentTaxon$lineage)
       }
       #
       # update curMSL [out_*]
@@ -2976,14 +3091,16 @@ apply_changes = function(code,proposalBasename,changeDf) {
       # success note
       errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
                        "SUCCESS", "MOVE.OK", "Change=MOVE, applied successfully", 
-                       paste0("MOVE ",srcTaxonRank, " named ",srcTaxonName, " to ", destLineage)
+                       paste0("MOVED ",srcTaxonRank, 
+                              " named '", .GlobalEnv$curMSL[srcPrevTarget,"name"],    "'", 
+                              " from '",  .GlobalEnv$curMSL[srcPrevTarget,"lineage"], "'", 
+                              " to '",    .GlobalEnv$newMSL[srcNewTarget, "lineage"], "'")
       )
-      
        
     } else {
       #  -------------------------------------------------------------------------
       #
-      # ACTION not implemented.
+      #### UNKNOWN ACTION not implemented. ####
       #
       #  -------------------------------------------------------------------------
       errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
@@ -3097,68 +3214,7 @@ for( code in codes) {
 cat("# DONE. Found",length(rownames(proposals)),"proposals; Processed",processed,", skipped",skipped,"\n")
 
 #### SECTION write error list #####
-# write current error list
-# TODO: add line breaks, bold
-# openxlsx
-# r2excel: (install fails?) http://www.sthda.com/english/wiki/r2excel-read-write-and-format-easily-excel-files-using-r-software#install-and-load-r2excel-package
-# xlsx (requires java)
-# XLConnect (requires rJava)
-
-prettyErrorDf = data.frame(.GlobalEnv$allErrorDf %>% filter(FALSE))
-prettyRow = 0
-prevCode = ""
-errorSortCols = .GlobalEnv$allErrorDf[,c("code","row")]
-errorSortCols$rown = as.integer(errorSortCols$row)
-errorsSorted = do.call(order,errorSortCols[,c("code","rown")])
-
-for(i in seq(1,nrow(.GlobalEnv$allErrorDf)) ) {
-  row=errorsSorted[i]
-  # add blank line and header when document changes
-  if(.GlobalEnv$allErrorDf[row,"code"]!= prevCode) { 
-    prevCode = .GlobalEnv$allErrorDf[row,"code"]
-
-    prettyErrorDf[prettyRow,c("subcommittee")] = c(.GlobalEnv$allErrorDf[row,"subcommittee"])
-    prettyRow=prettyRow+1
-    
-    prettyErrorDf[prettyRow,c("subcommittee","code","xlsx")] = c(
-      .GlobalEnv$allErrorDf[row,"subcommittee"],
-      .GlobalEnv$allErrorDf[row,"code"],
-      ifelse(is.na(allErrorDf[row,"xlsx"]),
-             .GlobalEnv$allErrorDf[row,"docx"],
-             .GlobalEnv$allErrorDf[row,"xlsx"]
-      )
-    )
-    prettyRow=prettyRow+1
-    }
-  
-  # copy other lines as-is
-  prettyErrorDf[prettyRow,]=.GlobalEnv$allErrorDf[row,]
-  prettyRow=prettyRow+1
-}
-# this should get chunked into files/worksheets by "subcommittee"
-for(committee in levels(as.factor(prettyErrorDf$subcommittee)) ) {
-  subcommitteeFilename = str_replace_all(str_replace(committee,pattern="(.*) \\(([A-Z])\\) .*","\\2 \\1")," ","_")
-  filename = file.path(params$out_dir,
-                       paste0("QC.pretty_summary.",subcommitteeFilename,".xlsx")
-  )
-  prettyCols = grep(names(prettyErrorDf),pattern="(code|docx|subcommittee)",invert=T,value=T)
-  
-  select = (prettyErrorDf$subcommittee == committee)
-  write_xlsx( x=prettyErrorDf[select,prettyCols],path=filename)
-  cat("Wrote: ", filename, " (",nrow(prettyErrorDf[select,]),"rows )\n")
-}
-filename = file.path(params$out_dir,params$qc_summary_fname)
-prettyCols = grep(names(prettyErrorDf),pattern="(code|docx)",invert=T,value=T)
-write_xlsx( x=prettyErrorDf[,prettyCols],path=filename)
-cat("Wrote: ", filename, " (",nrow(prettyErrorDf),"rows)\n")
-
-qcSummaryXlsxFilename=file.path(params$out_dir,"QC.summary.xlsx")
-write_xlsx( x=.GlobalEnv$allErrorDf,path=qcSummaryXlsxFilename)
-cat("Wrote: ", qcSummaryXlsxFilename, " (",nrow(.GlobalEnv$allErrorDf),"rows)\n")
-
-qcSummaryTxtFilename=file.path(params$out_dir,"QC.summary.tsv")
-write_delim(x=.GlobalEnv$allErrorDf,file=qcSummaryTxtFilename, delim="\t")
-cat("Wrote: ", qcSummaryTxtFilename, " (",nrow(.GlobalEnv$allErrorDf),"rows)\n")
+write_error_summary(.GlobalEnv$allErrorDf,TRUE)
 
 #### EXPORT MSL ####
 if(params$export_msl) {
