@@ -3216,7 +3216,10 @@ for( code in codes) {
 cat("# DONE. Found",length(rownames(proposals)),"proposals; Processed",processed,", skipped",skipped,"\n")
 
 #### SECTION write error list #####
-write_error_summary(.GlobalEnv$allErrorDf,TRUE)
+#
+# set "final" to be TRUE (which produces per-subcommittee error files) only if not in "validate" mode
+
+write_error_summary(.GlobalEnv$allErrorDf,params$processing_mode != "validate")
 
 #### EXPORT MSL ####
 if(params$export_msl) {
