@@ -46,7 +46,9 @@ RUN set -e \
 #
 # copy in our application
 #
+# do this as a git clone, instead!?!?
 COPY merge_proposal_zips.R .
+COPY version_git.txt .
 
 #
 # copy in reference data
