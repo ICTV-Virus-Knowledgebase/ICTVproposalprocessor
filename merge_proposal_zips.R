@@ -129,35 +129,37 @@ write_error_summary = function(errorDf,final=FALSE) {
   # XLConnect (requires rJava)
   
   prettyErrorDf = data.frame(errorDf %>% filter(FALSE))
-  prettyRow = 0
-  prevCode = ""
-  errorSortCols = errorDf[,c("code","row")]
-  errorSortCols$rown = as.integer(errorSortCols$row)
-  errorsSorted = do.call(order,errorSortCols[,c("code","rown")])
-  
-  for(i in seq(1,nrow(errorDf)) ) {
-    row=errorsSorted[i]
-    # add blank line and header when document changes
-    if(errorDf[row,"code"]!= prevCode) { 
-      prevCode = errorDf[row,"code"]
-      
-      prettyErrorDf[prettyRow,c("subcommittee")] = c(errorDf[row,"subcommittee"])
-      prettyRow=prettyRow+1
-      
-      prettyErrorDf[prettyRow,c("subcommittee","code","xlsx")] = c(
-        errorDf[row,"subcommittee"],
-        errorDf[row,"code"],
-        ifelse(is.na(allErrorDf[row,"xlsx"]),
-               errorDf[row,"docx"],
-               errorDf[row,"xlsx"]
+  if( nrow(errorDf) > 0) {
+    prettyRow = 0
+    prevCode = ""
+    errorSortCols = errorDf[,c("code","row")]
+    errorSortCols$rown = as.integer(errorSortCols$row)
+    errorsSorted = do.call(order,errorSortCols[,c("code","rown")])
+    
+    for(i in seq(1,nrow(errorDf)) ) {
+      row=errorsSorted[i]
+      # add blank line and header when document changes
+      if(errorDf[row,"code"]!= prevCode) { 
+        prevCode = errorDf[row,"code"]
+        
+        prettyErrorDf[prettyRow,c("subcommittee")] = c(errorDf[row,"subcommittee"])
+        prettyRow=prettyRow+1
+        
+        prettyErrorDf[prettyRow,c("subcommittee","code","xlsx")] = c(
+          errorDf[row,"subcommittee"],
+          errorDf[row,"code"],
+          ifelse(is.na(allErrorDf[row,"xlsx"]),
+                 errorDf[row,"docx"],
+                 errorDf[row,"xlsx"]
+          )
         )
-      )
+        prettyRow=prettyRow+1
+      }
+      
+      # copy other lines as-is
+      prettyErrorDf[prettyRow,]=errorDf[row,]
       prettyRow=prettyRow+1
     }
-    
-    # copy other lines as-is
-    prettyErrorDf[prettyRow,]=errorDf[row,]
-    prettyRow=prettyRow+1
   }
   prettyCols = grep(names(prettyErrorDf),pattern="(code|docx|subcommittee)",invert=T,value=T)
   
