@@ -1595,12 +1595,12 @@ qc_proposal = function(code, proposalDf) {
       # report the unexpected values
       if( row2v1matchCt > row2v2matchCt ) { 
         templateLine2Error= paste("similar to v1, but with ", 
-                                  paste(paste0("column ",toupper(c(letters,paste0("a",letters)))[which(!row2v1match)],"='",proposalDf[2,which(!row2v1match)],"' instead of '",xlsx_row2_v1[which(!row2v1match)],"'"),collapse="; ")
+                                  paste(paste0("column ",toupper(c(letters,paste0("a",letters)))[which(!row2v1match)],"='",proposalDf[2,which(!row2v1match)],"' instead of '",xlsx_v1_row2[which(!row2v1match)],"'"),collapse="; ")
         )
       } 
       if( row2v1matchCt < row2v2matchCt ) { 
         templateLine2Error= paste("similar to v2, but with ", 
-                                  paste(paste0("column ",toupper(c(letters,paste0("a",letters)))[which(!row2v2match)],"='",proposalDf[2,which(!row2v2match)],"' instead of '",xlsx_row2_v2[which(!row2v2match)],"'"),collapse="; ")
+                                  paste(paste0("column ",toupper(c(letters,paste0("a",letters)))[which(!row2v2match)],"='",proposalDf[2,which(!row2v2match)],"' instead of '",xlsx_v1_row2[which(!row2v2match)],"'"),collapse="; ")
         )
       } 
     }

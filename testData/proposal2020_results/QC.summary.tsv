@@ -1,0 +1,8 @@
+subcommittee	code	docx	xlsx	row	change	rank	taxon	level	error	message	notes	scAbbrev	version
+Animal DNA viruses and Retroviruses (D) proposals	2020.005D	MISSING	2020.005D.R.Nudiviridae_2ngen_8nsp.xlsx	3	NA	NA	NA	ERROR	XLSX.TEMPLATE_UNK	XLSX template version	"ROW2 is unrecognized (similar to v1, but with  column ='' instead of ''), ROW3 is unrecognized (similar to v1, but with  column P='Type sp?
+(1/0)' instead of 'Exemplar GenBank Accession Number'; column Q='Exemplar GenBank Accession Number' instead of 'Realm'; column R='Realm' instead of 'Subrealm'; column S='Subrealm' instead of 'Kingdom'; column T='Kingdom' instead of 'Subkingdom'; column U='Subkingdom' instead of 'Phylum'; column V='Phylum' instead of 'Subphylum'; column W='Subphylum' instead of 'Class'; column X='Class' instead of 'Subclass'; column Y='Subclass' instead of 'Order'; column Z='Order' instead of 'Suborder'; column AA='Suborder' instead of 'Family'; column AB='Family' instead of 'Subfamily'; column AC='Subfamily' instead of 'Genus'; column AD='Genus' instead of 'Subgenus'; column AE='Subgenus' instead of 'Species'; column AF='Species' instead of 'Exemplar GenBank Accession Number'; column AG='Type species?
+(1/0)' instead of 'Exemplar 
+virus name'; column AH='Exemplar GenBank Accession Number' instead of 'Virus name abbrevn'; column AI='Exemplar 
+virus name' instead of 'Exemplar
+isolate designation'; column AJ='Virus name abbrevn' instead of 'Genome coverage'; column AK='Exemplar
+isolate designation' instead of 'Genome composition'; column AL='Genome coverage' instead of 'Host/Source'; column AM='Genome composition' instead of 'Change'; column AN='Change' instead of 'Rank')"	NA	v1.7.be6038b
