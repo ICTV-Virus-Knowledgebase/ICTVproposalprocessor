@@ -118,7 +118,7 @@ suppressPackageStartupMessages(library(qdapTools)) # read docx
 #
 write_error_summary = function(errorDf,final=FALSE) {
   # make sure version is correct
-  errorDf$version = params[["version"]]
+  errorDf$validator_version = params[["version"]]
   
   #### pretty format ####
   # write current error list
@@ -616,7 +616,7 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
     "message" = character(),
     "notes" = character(),
     "scAbbrev" = character(),
-    "version" = character()
+    "validator_version" = character()
   )
   .GlobalEnv$loadErrorDf = allErrorDf %>% filter(FALSE)
 
