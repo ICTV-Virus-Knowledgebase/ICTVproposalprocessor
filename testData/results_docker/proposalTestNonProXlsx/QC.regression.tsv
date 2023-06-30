@@ -1,0 +1,2 @@
+subcommittee	code	docx	xlsx	row	change	rank	taxon	level	error	message	notes	scAbbrev
+NA	1	MISSING	variable_name_mapping.xlsx					ERROR	XLSX_NOT_PROPOSAL	XLS file does not match proposals template	A worksheet name matching 'proposals* template' was not found, only: 'Sheet1'	NA
