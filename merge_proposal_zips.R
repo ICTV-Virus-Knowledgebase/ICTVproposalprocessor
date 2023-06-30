@@ -100,10 +100,10 @@ option_list <- list(
 params <- parse_args(OptionParser(option_list=option_list))
 
 # debug
-params$verbose = T
-params$tmi = T
-params$proposals_dir = "./testData/proposalTestEmpty"
-params$out_dir       = "./testData/results/proposalTestEmpty"
+#params$verbose = T
+#params$tmi = T
+#params$proposals_dir = "./testData/proposalTestEmpty"
+#params$out_dir       = "./testData/results/proposalTestEmpty"
 
 #
 # WARNING: we use data.TABLE instead of data.FRAME

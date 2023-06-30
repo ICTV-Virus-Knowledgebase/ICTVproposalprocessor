@@ -4,7 +4,8 @@
 #
 #
 TEST_DIR=testData
-
+REPORT=regression_test.summary.txt
+date > $REPORT
 #
 # scan for test directories
 #
@@ -20,7 +21,8 @@ for TEST in $TESTS; do
     #
     SRC_DIR=$TEST_DIR/$TEST
     DEST_DIR=${TEST_DIR}/results/$TEST
-    REGRESS=${DEST_DIR}/QC.regression.tsv
+    RESULTS=${DEST_DIR}/QC.regression.new.tsv
+    BASELINE=${DEST_DIR}/QC.regression.tsv
     OUT=${DEST_DIR}/log.txt
 
     mkdir -p $DEST_DIR
@@ -28,11 +30,12 @@ for TEST in $TESTS; do
     # header
     #
     echo "#########################################"
-    echo "###### $TEST ######"
+    echo "###### $TEST "
     echo "#########################################"
     echo SRC_DIR=$SRC_DIR
     echo DEST_DIR=$DEST_DIR
-    echo REGRESS=$REGRESS
+    echo RESULTS=$RESULTS
+    echo BASELINE=$BASELINE
     echo OUT=$OUT
 
     #
@@ -42,18 +45,28 @@ for TEST in $TESTS; do
         Rscript merge_proposal_zips.R \
 	    --proposalsDir=$SRC_DIR \
 	    --outDir=$DEST_DIR \
-	    --qcTsvRegression=$(basename $REGRESS) \
+	    --qcTsvRegression=$(basename $RESULTS) \
 	    2>&1 > $OUT
     Rscript merge_proposal_zips.R \
 	    --proposalsDir=$SRC_DIR \
 	    --outDir=$DEST_DIR \
-	    --qcTsvRegression=$(basename $REGRESS) \
+	    --qcTsvRegression=$(basename $RESULTS) \
 	    2>&1 >> $OUT
 
     #
     # check output
     #
-    git status -s $REGRESS
+    echo diff -q -w $RESULTS $BASELINE
+    diff -q -w $RESULTS $BASELINE 2>&1 > /dev/null; RC=$?
+    if [ $RC -eq "0" ]; then
+	echo "PASS  $TEST" | tee -a $REPORT
+    else
+	echo "FAIL$RC $TEST" | tee -a $REPORT
+    fi	
+    
 done
-
+echo "#########################################"
+echo "############### SUMMARY ################# "
+echo "#########################################"
+cat $REPORT
    
