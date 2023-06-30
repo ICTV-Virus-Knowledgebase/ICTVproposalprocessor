@@ -52,9 +52,11 @@ option_list <- list(
   make_option(c("--taxnodeIdDelta"), default="100000", dest="taxnode_delta", 
               help="Amount to increment taxnode_ids by to create a new MSL [default \"%default\"]"),
   make_option(c("--qcPrettySummary"), default="QC.pretty_summary.all.xlsx", dest="qc_summary_fname", 
-              help="Primary error/warning output xlsx file [default \"%default\"]"),
+              help="Primary error/warning output xlsx file, returned to user [default \"%default\"]"),
   make_option(c("--qcTsvSummary"), default="QC.summary.tsv", dest="qc_summary_tsv_fname", 
-              help="Primary error/warning output TSV file [default \"%default\"]"),
+              help="Primary error/warning output TSV file, parsed by web app [default \"%default\"]"),
+  make_option(c("--qcTsvRegression"), default="QC.regression.tsv", dest="qc_regression_tsv_fname", 
+              help="Primary error/warning output TSV file, used by regression testing (no version column) [default \"%default\"]"),
   
   # ref filenames
   make_option(c("--dbSourceHost"), default="taxonomy_host_source.utf8.txt", dest="db_host_source_fname",
@@ -97,6 +99,11 @@ option_list <- list(
 # otherwise if options not found on command line then set defaults, 
 params <- parse_args(OptionParser(option_list=option_list))
 
+# debug
+params$verbose = T
+params$tmi = T
+params$proposals_dir = "./testData/proposal2020/"
+params$out_dir       = "./testData/proposal2020_results/"
 #
 # WARNING: we use data.TABLE instead of data.FRAME
 #
@@ -178,15 +185,19 @@ write_error_summary = function(errorDf,final=FALSE) {
   }
   
   #### write files ####
-  # XLS version
+  # XLS version (for end human user)
   fname = file.path(params$out_dir,params$qc_summary_fname)
   write_xlsx( x=as.data.frame(prettyErrorDf)[,prettyCols][,prettyCols],path=fname)
   cat("Wrote: ", fname, " (",nrow(errorDf),"rows)\n")
-  # TSV version
+  # TSV version for web app parsing
   fnameTsv = file.path(params$out_dir,params$qc_summary_tsv_fname)
   write_delim(x=errorDf,file=fnameTsv, delim="\t")
   cat("Wrote: ", fnameTsv, " (",nrow(errorDf),"rows)\n")
-  
+  # TSV version for regression testing (no version column)
+  fnameTsv = file.path(params$out_dir,params$qc_regression_tsv_fname)
+  nonVersionCols=grep(names(errorDf),pattern="version",invert=T)
+  write_delim(x=errorDf[,..nonVersionCols],file=fnameTsv, delim="\t")
+  cat("Wrote: ", fnameTsv, " (",nrow(errorDf),"rows)\n")
 }
 
 #

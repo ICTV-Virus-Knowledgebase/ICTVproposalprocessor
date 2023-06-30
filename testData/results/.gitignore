@@ -1,0 +1,16 @@
+#
+# only store "regresion.tsv" output file, which is stripped of version numbers
+# Don't store end-user XLSX output report, nor machine-readable output (with version) used by web app
+#
+#
+# web-app parsed output
+#
+QC.summary.tsv
+#
+# end-user readable output
+#
+QC.pretty_summary.all.xlsx
+#
+# and regression harness stdout/stderr files
+#
+log.txt
