@@ -102,8 +102,9 @@ params <- parse_args(OptionParser(option_list=option_list))
 # debug
 params$verbose = T
 params$tmi = T
-params$proposals_dir = "./testData/proposal2020/"
-params$out_dir       = "./testData/proposal2020_results/"
+params$proposals_dir = "./testData/proposalTestEmpty"
+params$out_dir       = "./testData/results/proposalTestEmpty"
+
 #
 # WARNING: we use data.TABLE instead of data.FRAME
 #
@@ -146,7 +147,8 @@ write_error_summary = function(errorDf,final=FALSE) {
     for(i in seq(1,nrow(errorDf)) ) {
       row=errorsSorted[i]
       # add blank line and header when document changes
-      if(errorDf[row,"code"]!= prevCode) { 
+      rowCode = errorDf[row,"code"]
+      if(!is.na(rowCode) && rowCode != prevCode) { 
         prevCode = errorDf[row,"code"]
         
         prettyErrorDf[prettyRow,c("subcommittee")] = c(errorDf[row,"subcommittee"])

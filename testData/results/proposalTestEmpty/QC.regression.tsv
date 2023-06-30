@@ -1,0 +1,2 @@
+subcommittee	code	docx	xlsx	row	change	rank	taxon	level	error	message	notes	scAbbrev
+NA	NA	NA	NA	NA	NA	NA	NA	ERROR	NO_INPUT_FILES	found no .xls[x] or .doc[x] files	Input folder='./testData/proposalTestEmpty/'	NA
