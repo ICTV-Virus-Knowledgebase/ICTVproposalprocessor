@@ -14,3 +14,10 @@ QC.pretty_summary.all.xlsx
 # and regression harness stdout/stderr files
 #
 log.txt
+#
+# We check in 
+#   QC.regression.tsv 
+# but running tests creates
+#   QC.regression.new.tsv 
+# so we can diff them 
+QC.regression.new.tsv
