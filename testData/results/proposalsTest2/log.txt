@@ -1,0 +1,26 @@
+# Rscript merge_proposal_zips.R --proposalsDir=testData/proposalsTest2 --outDir=testData/results/proposalsTest2 --qcTsvRegression=QC.regression.new.tsv
+VERSION: v1.8.5366578
+Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt 
+Wrote:  testData/results/proposalsTest2/QC.pretty_summary.all.xlsx  ( 1 rows)
+Wrote:  testData/results/proposalsTest2/QC.summary.tsv  ( 1 rows)
+Wrote:  testData/results/proposalsTest2/QC.regression.new.tsv  ( 1 rows)
+# LOAD_PROPOSAL_DOCX( 1 )
+# LOADED:  1  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 1 )
+# LOADED:  1  XLS with  0  errors/warnings
+Wrote:  testData/results/proposalsTest2/QC.pretty_summary.all.xlsx  ( 1 rows)
+Wrote:  testData/results/proposalsTest2/QC.summary.tsv  ( 1 rows)
+Wrote:  testData/results/proposalsTest2/QC.regression.new.tsv  ( 1 rows)
+# LOADED:  1 
+QC start:  1 : proposal loaded
+# QCed:  1  with  2  errors/warnings
+changeList:  1 
+Wrote:  testData/results/proposalsTest2/QC.pretty_summary.all.xlsx  ( 3 rows)
+Wrote:  testData/results/proposalsTest2/QC.summary.tsv  ( 3 rows)
+Wrote:  testData/results/proposalsTest2/QC.regression.new.tsv  ( 3 rows)
+# START PROC:  1  with  2  changes
+# PROCed:  1  with  WARNING:8 SUCCESS:2 
+# DONE. Found 1 proposals; Processed 1 , skipped 0 
+Wrote:  testData/results/proposalsTest2/QC.pretty_summary.all.xlsx  ( 13 rows)
+Wrote:  testData/results/proposalsTest2/QC.summary.tsv  ( 13 rows)
+Wrote:  testData/results/proposalsTest2/QC.regression.new.tsv  ( 13 rows)

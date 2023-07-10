@@ -11,6 +11,9 @@ QC.summary.tsv
 #
 QC.pretty_summary.all.xlsx
 #
-# and regression harness stdout/stderr files
+# new output from this regression QC run
 #
-log.txt
+#
+*.diff
+*.diff.*
+*.new.*
