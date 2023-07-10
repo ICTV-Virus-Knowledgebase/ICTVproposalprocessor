@@ -1,0 +1,7 @@
+# Rscript merge_proposal_zips.R --proposalsDir=testData/proposalTest1Doc --outDir=testData/results/proposalTest1Doc --qcTsvRegression=QC.regression.new.tsv
+VERSION: v1.8.5366578
+Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt 
+Wrote:  testData/results/proposalTest1Doc/QC.pretty_summary.all.xlsx  ( 2 rows)
+Wrote:  testData/results/proposalTest1Doc/QC.summary.tsv  ( 2 rows)
+Wrote:  testData/results/proposalTest1Doc/QC.regression.new.tsv  ( 2 rows)
+# ERROR: NO_INPUT_FILES found in  testData/proposalTest1Doc 

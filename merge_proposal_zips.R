@@ -99,12 +99,17 @@ option_list <- list(
 # otherwise if options not found on command line then set defaults, 
 params <- parse_args(OptionParser(option_list=option_list))
 
-# debug
-#params$verbose = T
-#params$tmi = T
-#params$proposals_dir = "./testData/proposalTestEmpty"
-#params$out_dir       = "./testData/results/proposalTestEmpty"
-
+##### debug overrides #####
+if( FALSE ) {
+  print("!!!!||||||||||||||||||||||||!!!!")
+  print("!!!! DEBUG OVERIDES ENGAGED !!!!")
+  print("!!!!||||||||||||||||||||||||!!!!")
+  params$verbose = T
+  params$tmi = T
+  params$proposals_dir = "./testData/proposalsTest4"
+  params$out_dir       = "./testData/results/proposalsTest4"
+  params$qc_regression_tsv_fname = "QC.regression.new.tsv"
+}
 #
 # WARNING: we use data.TABLE instead of data.FRAME
 #
@@ -127,6 +132,11 @@ suppressPackageStartupMessages(library(qdapTools)) # read docx
 write_error_summary = function(errorDf,final=FALSE) {
   # make sure version is correct
   errorDf$validator_version = params[["version"]]
+
+  # sort by row of worksheet
+  errorSortCols = errorDf[,c("code","row")]
+  errorSortCols$row_n = as.integer(errorSortCols$row)
+  errorsSorted = do.call(order,errorSortCols[,c("code","row_n")])
   
   #### pretty format ####
   # write current error list
@@ -140,9 +150,6 @@ write_error_summary = function(errorDf,final=FALSE) {
   if( nrow(errorDf) > 0) {
     prettyRow = 0
     prevCode = ""
-    errorSortCols = errorDf[,c("code","row")]
-    errorSortCols$rown = as.integer(errorSortCols$row)
-    errorsSorted = do.call(order,errorSortCols[,c("code","rown")])
     
     for(i in seq(1,nrow(errorDf)) ) {
       row=errorsSorted[i]
@@ -193,12 +200,12 @@ write_error_summary = function(errorDf,final=FALSE) {
   cat("Wrote: ", fname, " (",nrow(errorDf),"rows)\n")
   # TSV version for web app parsing
   fnameTsv = file.path(params$out_dir,params$qc_summary_tsv_fname)
-  write_delim(x=errorDf,file=fnameTsv, delim="\t")
+  write_delim(x=errorDf[errorsSorted],file=fnameTsv, delim="\t")
   cat("Wrote: ", fnameTsv, " (",nrow(errorDf),"rows)\n")
   # TSV version for regression testing (no version column)
   fnameTsv = file.path(params$out_dir,params$qc_regression_tsv_fname)
   nonVersionCols=grep(names(errorDf),pattern="version",invert=T)
-  write_delim(x=errorDf[,..nonVersionCols],file=fnameTsv, delim="\t")
+  write_delim(x=errorDf[errorsSorted,..nonVersionCols],file=fnameTsv, delim="\t")
   cat("Wrote: ", fnameTsv, " (",nrow(errorDf),"rows)\n")
 }
 
@@ -493,7 +500,6 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
   
   refProposalTemplateFilename=file.path(params$ref_dir, params$template_xlsx_fname)
   templateProposalCV = suppressMessages(data.frame(read_excel(refProposalTemplateFilename,sheet = params$template_xlsx_sheet,col_names = FALSE)))
-  templateProposalDf = suppressMessages(data.frame(read_excel(refProposalTemplateFilename,sheet = 1,col_names = FALSE)))
   
   #cvDf = data.f rame(trib[,])  # remove "select one" line
   if( params$verbose) {cat("ProposalTemplate[",params$template_xlsx_sheet,"]: ", dim(templateProposalCV), " from ",refProposalTemplateFilename,"\n")}
@@ -507,7 +513,8 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
     cv_name = templateProposalCV[1,cv_col]
     cv = templateProposalCV[,cv_col][-1]
     # clean UTF8-NB_space and other unprintable whitespaces
-    cvClean = gsub("[^[:alnum:][:punct:]]+"," ",cv)
+    cvClean = gsub("\u00A0"," ",cv) # UTF8-NBSP
+    cvClean = gsub("[^[:alnum:][:punct:]]+"," ",cvClean) # anything else
     cvList[[cv_name]]=c(cvClean[!is.na(cvClean)],NA)
     if(params$tmi) {cat("ProposalTemplateCV[",cv_name,"]: ", length(cvList[[cv_name]]), " from ",refProposalTemplateFilename,":",params$template_xlsx_sheet,"\n")}
     
@@ -922,13 +929,15 @@ if( sum(missing) > 0 ) {
     }
   }
   # suppress name-mismatch warnings
-  loadErrorDfFilt = .GlobalEnv$loadErrorDf %>% filter(error != "XSLX.TYPO")
+  loadErrorDfFilt = errorDf
+  if( params$processing_mode == "validate" ) {
+      # filter out some errors
+      loadErrorDfFilt = errorDf %>% filter(error != "XSLX.TYPO")
+  }
   if(nrow(loadErrorDfFilt) > 0) {
     # append to global list
     .GlobalEnv$loadErrorDf = rbindlist(list(.GlobalEnv$loadErrorDf, errorDf),fill=TRUE)
-    # QC output
-    #kable(errorDf,caption = paste0("QC02: ERRORS: DOCX without matching XLSX"))
-  }
+   }
   write_error_summary(.GlobalEnv$loadErrorDf)  
 }
 # QQQ don't check for missing docx files? 
@@ -1515,7 +1524,7 @@ addError=function(errorDf,code,row,change,rank,taxon,levelStr,errorCode,errorStr
   nextErrorDf = data.frame(
     subcommittee = proposals[code,]$subcommittee,
     code = code,
-    row = row,
+    row = as.numeric(row),
     change = change, 
     rank=rank,
     taxon = taxon,
@@ -1543,7 +1552,9 @@ qc_proposal = function(code, proposalDf) {
   templateVersion = "error"
   xlxs_colnames = toupper(c(letters,paste0("a",letters))) 
   
-  # check row 3, cell 1 for 2023 and later version numbers
+  #### guess template version ####
+
+    # check row 3, cell 1 for 2023 and later version numbers
   if(!is.null(proposalDf[2,1]) && (substring(proposalDf[2,1],1,13) == "version 2023.")) {
     
     templateVersion = substring(proposalDf[2,1],9,13)
@@ -1720,9 +1731,176 @@ qc_proposal = function(code, proposalDf) {
   } else {
     proposals[code,"nChanges"] = nrow(changeDf)
   }
-  
+
   #
-  # extract src/dest taxon names for error reporting
+  #### QC spaces, quotes, etc ####
+  # 
+  # TODO: remove leading/trailing spaces, quotes
+  dataColumns = grep(names(changeDf),pattern='^\\.', value=T, invert=T)
+  for( col in dataColumns ) {
+    # col = "srcSpecies" # debug
+    #  col = "hostSource" # debug
+    
+    #
+    # silent fixes
+    # 
+
+    # non-breaking spaces
+    # Mac: AscToChar(202)
+    pattern=AscToChar(202); pat_warn="non-breaking space character"; pat_replace=" "
+    qc.matches =grep(changeDf[,col],pattern=pattern)
+    if(params$tmi && length(qc.matches)>0) { 
+      cat("TMI:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") 
+    }
+    changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
+    # linux & mac
+    pattern="\u00A0"; pat_warn="non-breaking space character"; pat_replace=" "
+    qc.matches =grep(changeDf[,col],pattern=pattern)
+    if(params$tmi && length(qc.matches)>0) { 
+      cat("TMI:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") 
+    }
+    changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
+    
+    # long-dashes:  "–" and "—"
+    pattern=paste0("([",AscToChar(207),AscToChar(208),"]+)"); pat_warn="long-dash[en/em dashes]";pat_replace="-"
+    qc.matches =grep(changeDf[,col],pattern=pattern)
+    if(params$tmi && length(qc.matches)>0) { 
+      cat("TMI:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") 
+    }
+    changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
+    
+    # curvy quotes
+    # Mac: AscToChar(210)AscToChar(211)
+    # Linux: AscToChar(c(226, 128, 156)) & AscToChar(c(226, 128, 157))
+    # AscToChar(211) and SacToChar(210) caused problem son mac, but only when run from the command-line, not inside RStudio!
+    #pattern=paste0("([“”",AscToChar(210),AscToChar(211),AscToChar(c(226, 128, 156)),AscToChar(c(226, 128, 157)),"]+)"); pat_warn="curvy quotes";pat_replace='"'
+    pattern=paste0("([“”",AscToChar(c(226, 128, 156)),AscToChar(c(226, 128, 157)),"]+)"); pat_warn="curvy quotes";pat_replace='"'
+    qc.matches =grep(changeDf[,col],pattern=pattern)
+    if(params$tmi && length(qc.matches)>0) { 
+      cat("TMI:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") 
+    }
+    changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
+    
+    # newline
+    pattern="([\r\n]+)"; pat_warn="newline character(s)";pat_replace=";"
+    qc.matches =grep(changeDf[,col],pattern=pattern)
+    if(params$tmi && length(qc.matches)>0) { 
+      cat("TMI:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") 
+    }
+    changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
+    
+    # leading white space
+    pattern="^([ \t]+)"; pat_warn="leading whitespace"; pat_replace=""
+    qc.matches =grep(changeDf[,col],pattern=pattern)
+    if(params$tmi && length(qc.matches)>0) { 
+      cat("TMI:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") 
+    }
+    changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
+    
+    # trailing white space
+    pattern="([ \t]+)$"; pat_warn="trailing whitespace"; pat_replace=""
+    qc.matches =grep(changeDf[,col],pattern=pattern)
+    if(params$tmi && length(qc.matches)>0) { 
+      cat("TMI:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") 
+    }
+    changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
+    
+    #
+    # curvy single-quotes
+    # AscToChar(212)AscToChar(213)
+    pattern=paste0("([‘’]+)"); pat_warn="curvy single quotes";pat_replace="'"
+    qc.matches =grep(changeDf[,col],pattern=pattern)
+    if(params$tmi && length(qc.matches)>0) { 
+      cat("TMI:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") 
+    }
+    changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
+    
+    #
+    # repeated spaces
+    #
+    pattern='( [ ]+)'; pat_warn="repeated_spaces"; pat_replace=" "
+    qc.matches =grep(changeDf[,col],pattern=pattern)
+    if(params$tmi && length(qc.matches)>0) { 
+      cat("TMI:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") 
+    }
+    changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
+    
+    #
+    # quotes
+    #
+    if( col != "comments" ) {
+      pattern='(["]+)'; pat_warn="quote"; pat_replace=""
+      qc.matches =grep(changeDf[,col],pattern=pattern)
+      if(length(qc.matches)>0) { 
+        if(params$verbose) { cat("INFO:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
+        errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
+                         changeDf$change[qc.matches],changeDf$rank[qc.matches],changeDf$.changeTaxon[qc.matches],
+                         "INFO","XLSX.QUOTES_REMOVED", paste("XLSX has",pat_warn),
+                         paste0(paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":")," (replacing with '",pat_replace,"')")
+        )
+        # backup original values
+        changeDf[qc.matches,paste0(col,"_orig")] == changeDf[qc.matches,col]
+        # remove non-ascii chars
+        changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
+      } 
+    }
+   }
+  #
+  # check regex's for each column
+  for(i in rownames(value_validation) ) {
+    # 
+    # more rigorous for some columns
+    #
+    #pattern=xlsx_col_info[col,"pattern"]; pat_warn=xlsx_col_info[col,"pat_warn"]
+    col = value_validation[i,]$col
+    error = value_validation[i,]$code
+    if( value_validation[i,]$type == "replace") {
+      # 
+      # check for presence of regex's to be replaced
+      #
+      qc.matches =grep(changeDf[,col],pattern=value_validation[i,]$regex)
+      if(length(qc.matches)>0) { 
+        if(params$verbose) { cat(value_validation[i,]$class,":",error,"has",length(qc.matches),"cells with",value_validation[i,]$warn,"in column",col,"\n") }
+        #browser()
+        errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
+                         changeDf$change[qc.matches],changeDf$rank[qc.matches], changeDf$.changeTaxon[qc.matches],
+                         value_validation[i,]$class,error, paste("XLSX has",value_validation[i,]$warn),
+                         paste(col,gsub(value_validation[i,]$regex,"[\\1]",changeDf[qc.matches,col]),
+                               paste(unlist(strsplit(changeDf[qc.matches,col],"")),CharToAsc(unlist(strsplit(changeDf[qc.matches,col],""))), sep="=", collapse=","),
+                               sep=":")
+        )
+        # backup original values
+        changeDf[qc.matches,paste0(col,"_orig")] == changeDf[qc.matches,col]
+        # remove non-ascii chars
+        changeDf[,col] = gsub(value_validation[i,]$regex,value_validation[i,]$replace,changeDf[,col])
+      }
+    } else if( value_validation[i,]$type == "required" ) {
+      #
+      # check required regex matches
+      #
+      # find values failing regex, and also not NA
+      qc.matches = 
+        !grepl(changeDf[,col],pattern=value_validation[i,]$regex) &
+        !is.na(changeDf[,col])
+      
+      if(sum(qc.matches)>0) { 
+        if(params$verbose) { cat(value_validation[i,]$class,":",error,"has",sum(qc.matches),"cells with",value_validation[i,]$warn,"in column",col,"\n") }
+        errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
+                         changeDf$change[qc.matches],changeDf$rank[qc.matches], changeDf$.changeTaxon[qc.matches],
+                         value_validation[i,]$class,error,value_validation[i,]$warn,
+                         paste(col,gsub(value_validation[i,]$regex,"[\\1]",changeDf[qc.matches,col]),sep=":"))
+        # backup original values
+        #changeDf[qc.matches,paste0(col,"_orig")] == changeDf[qc.matches,col]
+        # remove non-ascii chars
+        #changeDf[,col] = gsub(value_validation[i,]$regex,value_validation[i,]$replace,changeDf[,col])
+      }
+    }  # for col
+  } # for regex 
+  
+  
+    
+  #
+  #### extract src/dest taxon names for error reporting ####
   #
   changeDf$.srcTaxon =     apply(changeDf[,xlsx_change_srcCols], 1,getTaxon)
   changeDf$.srcRank =      apply(changeDf[,xlsx_change_srcCols], 1,getTaxonRank)
@@ -1738,232 +1916,7 @@ qc_proposal = function(code, proposalDf) {
   changeDf$.changeTaxon = with(changeDf,ifelse(!is.na(.srcTaxon),.srcTaxon,.destTaxon))
   
   #
-  # QC spaces, quotes, etc (regex's for each column)
-  # 
-  # TODO: remove leading/trailing spaces, quotes
-  for( col in names(changeDf) ) {
-    # col = "srcSpecies" # debug
-    #  col = "hostSource" # debug
-
-    #
-    # non-breaking space
-    # AscToChar(202)
-    pattern="([ ]+)"; pat_warn="non-breaking space character"; pat_replace=" "
-    qc.matches =grep(changeDf[,col],pattern=pattern)
-    if(length(qc.matches)>0) { 
-      #browser()
-      if(params$verbose) { cat("INFO:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
-      if( params$processing_mode %in% c("draft","final") ) {
-        # supress picky error message
-        errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
-                         changeDf$change[qc.matches],changeDf$rank[qc.matches],changeDf$.changeTaxon[qc.matches],
-                         "INFO","XLSX.NB_SPACE_REPLACED", paste("XLSX has",pat_warn),
-                         paste0(paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":")," (replacing with '",pat_replace,"')")
-        )
-      }
-      # backup original values
-      changeDf[qc.matches,paste0(col,"_orig")] == changeDf[qc.matches,col]
-      # remove non-ascii chars
-      changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
-    }     
-
-    #
-    # newline
-    #
-    pattern="([\r\n]+)"; pat_warn="newline character(s)";pat_replace=";"
-    qc.matches =grep(changeDf[,col],pattern=pattern)
-    if(length(qc.matches)>0) { 
-      if(params$verbose) { cat("INFO:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
-      errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
-                       changeDf$change[qc.matches],changeDf$rank[qc.matches],changeDf$.changeTaxon[qc.matches],
-                       "INFO","XLSX.NEWLINE_REPLACED", paste("XLSX has",pat_warn),
-                       paste0(paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":")," (replacing with '",pat_replace,"')")
-      )
-      # backup original values
-      changeDf[qc.matches,paste0(col,"_orig")] == changeDf[qc.matches,col]
-      # remove non-ascii chars
-      changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
-    }     
-    
-    #
-    # long-dashes
-    # "–" and "—"
-    pattern=paste0("([",AscToChar(207),AscToChar(208),"]+)"); pat_warn="long-dash[en/em dashes]";pat_replace="-"
-    qc.matches =grep(changeDf[,col],pattern=pattern)
-    if(length(qc.matches)>0) { 
-      if(params$verbose) { cat("INFO:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
-      errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
-                       changeDf$change[qc.matches],changeDf$rank[qc.matches],changeDf$.changeTaxon[qc.matches],
-                       "INFO","XLSX.LONG_DASH_REPLACED", paste("XLSX has",pat_warn),
-                       paste0(paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":")," (replacing with '",pat_replace,"')")
-      )
-      # backup original values
-      changeDf[qc.matches,paste0(col,"_orig")] == changeDf[qc.matches,col]
-      # remove non-ascii chars
-      changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
-    }     
- 
-    #
-    # curvy quotes
-    # AscToChar(210)AscToChar(211)
-    # AscToChar(c(226, 128, 156)) & AscToChar(c(226, 128, 157))
-    pattern=paste0("([“”",AscToChar(210),AscToChar(211),AscToChar(c(226, 128, 156)),AscToChar(c(226, 128, 157)),"]+)"); pat_warn="curvy quotes";pat_replace='"'
-    qc.matches =grep(changeDf[,col],pattern=pattern)
-    if(length(qc.matches)>0) { 
-      if(params$verbose) { cat("INFO:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
-      errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
-                       changeDf$change[qc.matches],changeDf$rank[qc.matches],changeDf$.changeTaxon[qc.matches],
-                       "INFO","XLSX.CURVY_DOUBLE_QUOTES_REPLACED", paste("XLSX has",pat_warn),
-                       paste0(paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":")," (replacing with '",pat_replace,"')")
-      )
-      # backup original values
-      changeDf[qc.matches,paste0(col,"_orig")] == changeDf[qc.matches,col]
-      # remove non-ascii chars
-      changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
-    }     
-    #
-    # curvy single-quotes
-    # AscToChar(212)AscToChar(213)
-    pattern=paste0("([‘’]+)"); pat_warn="curvy single quotes";pat_replace="'"
-    qc.matches =grep(changeDf[,col],pattern=pattern)
-    if(length(qc.matches)>0) { 
-      if(params$verbose) { cat("INFO:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
-      errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
-                       changeDf$change[qc.matches],changeDf$rank[qc.matches],changeDf$.changeTaxon[qc.matches],
-                       "INFO","XLSX.CURVY_SINGLE_QUOTES_REPLACED", paste("XLSX has",pat_warn),
-                       paste0(paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":")," (replacing with '",pat_replace,"')")
-      )
-      # backup original values
-      changeDf[qc.matches,paste0(col,"_orig")] == changeDf[qc.matches,col]
-      # remove non-ascii chars
-      changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
-    }     
-    
-    #
-    # leading white space
-    #
-    pattern="^([ \t]+)"; pat_warn="leading whitespace"; pat_replace=""
-    qc.matches =grep(changeDf[,col],pattern=pattern)
-    if(length(qc.matches)>0) { 
-      if(params$verbose) { cat("INFO:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
-      errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
-                       changeDf$change[qc.matches],changeDf$rank[qc.matches],changeDf$.changeTaxon[qc.matches],
-                       "INFO","XLSX.LEAD_SPACE_REMOVED", paste("XLSX has",pat_warn),
-                       paste0(paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":")," (replacing with '",pat_replace,"')")
-      )
-      # backup original values
-      changeDf[qc.matches,paste0(col,"_orig")] == changeDf[qc.matches,col]
-      # remove non-ascii chars
-      changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
-    } 
-    #
-    # trailing white space
-    #
-    pattern="([ \t]+)$"; pat_warn="trailing whitespace"; pat_replace=""
-    qc.matches =grep(changeDf[,col],pattern=pattern)
-    if(length(qc.matches)>0) { 
-      if(params$verbose) { cat("INFO:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
-      errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
-                       changeDf$change[qc.matches],changeDf$rank[qc.matches], changeDf$.changeTaxon[qc.matches],
-                       "INFO","XLSX.TRAIL_SPACE_REMOVED", paste("XLSX has",pat_warn),
-                       paste0(paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":")," (replacing with '",pat_replace,"')")
-      )
-      # backup original values
-      changeDf[qc.matches,paste0(col,"_orig")] == changeDf[qc.matches,col]
-      # remove non-ascii chars
-      changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
-    } 
-    #
-    # quotes
-    #
-    if( col != "comments" ) {
-      pattern='(["]+)'; pat_warn="quote"; pat_replace=""
-      qc.matches =grep(changeDf[,col],pattern=pattern)
-      if(length(qc.matches)>0) { 
-        if(params$verbose) { cat("INFO:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
-        errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
-                         changeDf$change[qc.matches],changeDf$rank[qc.matches],changeDf$.changeTaxon[qc.matches],
-                         "INFO","XLSX.QUOTES_REMOVED", paste("XLSX has",pat_warn),
-                         paste0(paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":")," (replacing with '",pat_replace,"')")
-        )
-        # backup original values
-       changeDf[qc.matches,paste0(col,"_orig")] == changeDf[qc.matches,col]
-        # remove non-ascii chars
-        changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
-      } 
-    }
-    #
-    # repeated spaces
-    #
-    pattern='( [ ]+)'; pat_warn="repeated_spaces"; pat_replace=" "
-    qc.matches =grep(changeDf[,col],pattern=pattern)
-    if(length(qc.matches)>0) { 
-      if(params$verbose) { cat("INFO:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
-      errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
-                       changeDf$change[qc.matches],changeDf$rank[qc.matches],changeDf$.changeTaxon[qc.matches],
-                       "INFO","XLSX.REPEATED_SPACES_REMOVED", paste("XLSX has",pat_warn),
-                       paste0(paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":")," (replacing with '",pat_replace,"')")
-      )
-      # backup original values
-      changeDf[qc.matches,paste0(col,"_orig")] == changeDf[qc.matches,col]
-      # remove non-ascii chars
-      changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
-    } 
-  }
-  #
-  # check regex's for each column
-  for(i in rownames(value_validation) ) {
-    # 
-    # more rigorous for some columns
-    #
-    #pattern=xlsx_col_info[col,"pattern"]; pat_warn=xlsx_col_info[col,"pat_warn"]
-    col = value_validation[i,]$col
-    error = value_validation[i,]$code
-    if( value_validation[i,]$type == "replace") {
-      # 
-      # check for presence of regex's to be replaced
-      #
-       qc.matches =grep(changeDf[,col],pattern=value_validation[i,]$regex)
-      if(length(qc.matches)>0) { 
-        if(params$verbose) { cat(value_validation[i,]$class,":",error,"has",length(qc.matches),"cells with",value_validation[i,]$warn,"in column",col,"\n") }
-        #browser()
-        errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
-                         changeDf$change[qc.matches],changeDf$rank[qc.matches], changeDf$.changeTaxon[qc.matches],
-                         value_validation[i,]$class,error, paste("XLSX has",value_validation[i,]$warn),
-                         paste(col,gsub(value_validation[i,]$regex,"[\\1]",changeDf[qc.matches,col]),
-                               paste(unlist(strsplit(changeDf[qc.matches,col],"")),CharToAsc(unlist(strsplit(changeDf[qc.matches,col],""))), sep="=", collapse=","),
-                               sep=":")
-                         )
-        # backup original values
-        changeDf[qc.matches,paste0(col,"_orig")] == changeDf[qc.matches,col]
-        # remove non-ascii chars
-        changeDf[,col] = gsub(value_validation[i,]$regex,value_validation[i,]$replace,changeDf[,col])
-      }
-    } else if( value_validation[i,]$type == "required" ) {
-      #
-      # check required regex matches
-      #
-      # find values failing regex, and also not NA
-      qc.matches = 
-        !grepl(changeDf[,col],pattern=value_validation[i,]$regex) &
-        !is.na(changeDf[,col])
-
-      if(sum(qc.matches)>0) { 
-        if(params$verbose) { cat(value_validation[i,]$class,":",error,"has",sum(qc.matches),"cells with",value_validation[i,]$warn,"in column",col,"\n") }
-        errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
-                         changeDf$change[qc.matches],changeDf$rank[qc.matches], changeDf$.changeTaxon[qc.matches],
-                         value_validation[i,]$class,error,value_validation[i,]$warn,
-                         paste(col,gsub(value_validation[i,]$regex,"[\\1]",changeDf[qc.matches,col]),sep=":"))
-        # backup original values
-        #changeDf[qc.matches,paste0(col,"_orig")] == changeDf[qc.matches,col]
-        # remove non-ascii chars
-        #changeDf[,col] = gsub(value_validation[i,]$regex,value_validation[i,]$replace,changeDf[,col])
-      }
-   }  # for col
-  } # for regex 
-  
-  #
-  # QC controlled vocabularies
+  #### QC controlled vocabularies ####
   #
 
   # check that all columns are present
@@ -2042,13 +1995,16 @@ qc_proposal = function(code, proposalDf) {
       # complain, never mind, just auto-correct
       if( params$tmi ) {
         if(params$verbose || params$tmi ) { 
-          cat("INFO:",code,"typo in CV column '",cv,"':",
+          cat("TMI:",code,"typo in CV column '",cv,"':",
               "[",paste(paste0(rownames(flawedTerms),":",flawedTerms[,cv]), collapse=","),"] on rows (",paste(rownames(flawedTerms),collapse=","),")\n") 
         }
-        errorDf=addError(errorDf,code,rownames(flawedTerms),
-                         flawedTerms$change, flawedTerms$rank, flawedTerms$.changeTaxon,
-                         "INFO","XLSX.TYPO_TERM",paste("fixed term with typo (space,caps) in column ",cv),
-                         paste0("Term '",flawedTerms[,cv],"' replaced with '",correctionsDf[rownames(flawedTerms),cv],"'. Valid terms: [",paste0(cvList[[cv]],collapse=","),"]")) 
+        if( params$tmi ) { 
+          # only warn about terms with spacing issues if we're in TMI mode
+          errorDf=addError(errorDf,code,rownames(flawedTerms),
+                           flawedTerms$change, flawedTerms$rank, flawedTerms$.changeTaxon,
+                           "TMI","XLSX.TYPO_TERM",paste("fixed term with typo (space,caps) in column ",cv),
+                           paste0("Term '",flawedTerms[,cv],"' replaced with '",correctionsDf[rownames(flawedTerms),cv],"'. Valid terms: [",paste0(cvList[[cv]],collapse=","),"]")) 
+        }
       }
       # correct
       changeDf[rownames(flawedTerms),cv] = correctionsDf[rownames(flawedTerms),cv]
@@ -2281,6 +2237,9 @@ apply_changes = function(code,proposalBasename,changeDf) {
   # iterate over changes
   # 
   errorDf = allErrorDf[FALSE,]
+  
+  # genera to scan for binomial issues when we're done
+  renamedGenera = c()
   
   # action mappings - externalize or move up
   actionCV = c(
@@ -2532,49 +2491,11 @@ apply_changes = function(code,proposalBasename,changeDf) {
           )
         }
 
-        #
+        #### binomial check ####
         # if new SPECIES, check binomial prefix matches parent genus
         #
         if( destTaxonRank=="species" ) {
-          parentTaxon = .GlobalEnv$newMSL[parentDestNewMatches,]
-          # check if parent is a genus
-          if(parentTaxon$rank=="genus") {
-            genusTaxon = parentTaxon
-          } else {
-            if(parentTaxon$rank == "subgenus" ) {
-              # check up one rank
-              genusTaxon = .GlobalEnv$newMSL %>% filter(taxnode_id == parentTaxon$parent_id)
-              if(genusTaxon$rank != "genus") {
-                # can't find genus parent
-                errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.destTaxon,
-                                 "ERROR", "CREATE.SPECIES_SUBGENUS_NO_GENUS", 
-                                 "Change=CREATE, can not find parent genus", 
-                                 paste0("subgenus '",parentTaxon$name,"' is not in a genus;",
-                                        " it's parent '",genusTaxon$name,"' is a ",genusTaxon$rank )
-                )
-                next;
-              }
-            } else {
-              # parent isn't subgenus or genus
-              errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.destTaxon,
-                                 "ERROR", "CREATE.SPECIES_NO_GENUS", 
-                                 "Change=CREATE, can not find parent genus", 
-                                 paste0("parent '",parentTaxon$name,"' is a ",parentTaxon$rank )
-              )
-              next;
-            }
-          } 
-          # have genus (parent or grandparent)
-          # check binomial naming
-          if( str_detect(destTaxonName,paste0(genusTaxon$name," ")) != TRUE ) {
-            errorDf=addError(errorDf,code,linenum,change$change,change$rank,change$.destTaxon,
-                             "WARNING", "CREATE.SPECIES_BINOMIAL_MISMATCH", 
-                             "Change=CREATE, but proposed species names does not start with 'genus[space]' per binomial naming convention", 
-                             paste0("parent genus name =", genusTaxon$name)
-            )
-            
-          }
-          
+
           # 
           # check hostSource
           #
@@ -2582,13 +2503,53 @@ apply_changes = function(code,proposalBasename,changeDf) {
             errorDf=addError(errorDf,code,linenum,change$change,change$rank,change$.destTaxon,
                              "WARNING", "CREATE.SPECIES_NO_HOST_SOURCE", 
                              "Change=CREATE, but proposed species must have a host/source value", 
-                             paste0("parent genus name =", genusTaxon$name)
+                             ""
             )
           }
+          
+          # check if parent is a genus
+          destParentTaxon = .GlobalEnv$newMSL[parentDestNewMatches,]
+          if(destParentTaxon$rank=="genus") {
+            destParentGenusTaxon = destParentTaxon
+          } else {
+            if(destParentTaxon$rank == "subgenus" ) {
+              # check up one rank
+              destParentGenusTaxon = .GlobalEnv$newMSL %>% filter(taxnode_id == destParentTaxon$parent_id)
+              if(destParentGenusTaxon$rank != "genus") {
+                # can't find genus parent
+                errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.destTaxon,
+                                 "ERROR", "CREATE.SPECIES_SUBGENUS_NO_GENUS", 
+                                 "Change=CREATE, can not find parent genus", 
+                                 paste0("subgenus '",destParentTaxon$name,"' is not in a genus;",
+                                        " it's parent '",destParentGenusTaxon$name,"' is a ",destParentGenusTaxon$rank )
+                )
+                next;
+              }
+            } else {
+              # parent isn't subgenus or genus
+              errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.destTaxon,
+                               "ERROR", "CREATE.SPECIES_NO_GENUS", 
+                               "Change=CREATE, can not find parent genus", 
+                               paste0("parent '",destParentTaxon$name,"' is a ",destParentTaxon$rank )
+              )
+              next;
+            }
+          } 
+          # have genus (parent or grandparent)
+          # check binomial naming
+          if( str_detect(destTaxonName,paste0(destParentGenusTaxon$name," ")) != TRUE ) {
+            errorDf=addError(errorDf,code,linenum,change$change,change$rank,change$.destTaxon,
+                             "ERROR", "CREATE.SPECIES_BINOMIAL_MISMATCH", 
+                             "Change=CREATE, but proposed species names does not start with 'genus[space]' per binomial naming convention", 
+                             paste0("parent genus name =", destParentGenusTaxon$name)
+            )
+            next;
+          }
+          
         }
- 
+        
         # 
-        # create new taxon
+        #####  create new taxon  ##### 
         #
         
         
@@ -2612,7 +2573,7 @@ apply_changes = function(code,proposalBasename,changeDf) {
         newTaxon[1,"in_filename"] = proposalZip
         newTaxon[1,"in_notes"]    = paste0("xlsx_row=",linenum)
         newTaxon[1,"in_target"]   = destLineage
-
+        
         newTaxon[1,"name"]        = destTaxonName
         newTaxon[1,"cleaned_name"]= destTaxonName
         newTaxon[1,"level_id"]    = rankCV$id[rankCV$name==destTaxonRank]
@@ -2623,16 +2584,16 @@ apply_changes = function(code,proposalBasename,changeDf) {
         
         # genomeComposition = molecule_id 
         newTaxon[1,xlsx2dbMap["molecule"]] = dbCvMapList[["molecule"]][change[1,"molecule"] ]
-      
+        
         # NOTE: column does not (yet) exist in [taxonomy_node], only in [load_next_msl##]
         newTaxon[1,xlsx2dbMap["hostSource"]] = change[1,"hostSource"] 
-
+        
         # comments
         newTaxon[1,xlsx2dbMap["comments"]]= change[1,"comments"]
-
+        
         
         #
-        ##### CREATE.SPECIES #####
+        #### CREATE.SPECIES ####  
         #
         if( destTaxonRank == "species" ) {
           #
@@ -2738,9 +2699,61 @@ apply_changes = function(code,proposalBasename,changeDf) {
         srcNewParent= (.GlobalEnv$newMSL$taxnode_id==.GlobalEnv$newMSL[srcNewTarget,]$parent_id )
         # print(paste("srcPrevTarget=",sum(srcPrevTarget),"srcNewParent=",sum(srcNewParent)))
         
+        ##### binomial check #####
+        
+        # if rename SPECIES, check binomial prefix matches parent genus
+        #
+        if( destTaxonRank=="species" ) {
+          # check if parent is a genus
+          destParentTaxon = as.data.frame(newMSL[srcNewParent,])
+          if(destParentTaxon$rank=="genus") {
+            destParentGenusTaxon = destParentTaxon
+          } else {
+            if(destParentTaxon$rank == "subgenus" ) {
+              # check up one rank
+              destParentGenusTaxon = .GlobalEnv$newMSL %>% filter(taxnode_id == destParentTaxon$parent_id)
+              if(destParentGenusTaxon$rank != "genus") {
+                # can't find genus parent
+                errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.destTaxon,
+                                 "ERROR", "RENAME.SPECIES_SUBGENUS_NO_GENUS", 
+                                 "Change=RENAME, can not find parent genus", 
+                                 paste0("subgenus '",destParentTaxon$name,"' is not in a genus;",
+                                        " it's parent '",destParentGenusTaxon$name,"' is a ",destParentGenusTaxon$rank )
+                )
+                next;
+              }
+            } else {
+              # parent isn't subgenus or genus
+              errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.destTaxon,
+                               "ERROR", "CREATE.SPECIES_NO_GENUS", 
+                               "Change=CREATE, can not find parent genus", 
+                               paste0("parent '",destParentTaxon$name,"' is a ",destParentTaxon$rank )
+              )
+              next;
+            }
+          } 
+          # have genus (parent or grandparent)
+          # check binomial naming
+          if( str_detect(destTaxonName,paste0(destParentGenusTaxon$name," ")) != TRUE ) {
+            errorDf=addError(errorDf,code,linenum,change$change,change$rank,change$.destTaxon,
+                             "ERROR", "RENAME.SPECIES_BINOMIAL_MISMATCH", 
+                             "Change=RENAME, but proposed species names does not start with 'genus[space]' per binomial naming convention", 
+                             paste0("parent genus name =", destParentGenusTaxon$name)
+            )
+            next;
+          }
+          
+        }
+        
+        ##### apply changes #####
         # change the name and update lineage
         .GlobalEnv$newMSL[srcNewTarget,"name"] = destTaxonName
         .GlobalEnv$newMSL[srcNewTarget,"lineage"] = paste(newMSL[srcNewParent,"lineage"],destTaxonName,sep=";") # should we do this? 
+        
+        # add to list of genera to check for binomial problems after proposal is complete
+       if(  destTaxonRank == "genus" ) {
+          renamedGenera[destTaxonName$genus] = linenum
+        } 
         
         # check if that is the expected lineage
         # WARN that PARENT_LINEAGE is not expected, AND USE MSL/OBSERVED PARENT LINEAGE
@@ -2783,7 +2796,7 @@ apply_changes = function(code,proposalBasename,changeDf) {
     } else if(actionClean %in% c("abolish") ) { 
       #  -------------------------------------------------------------------------
       #
-      ####  ABOLISH       #### 
+      #####  ABOLISH       #### 
       #
       #  -------------------------------------------------------------------------
       # check if srcTaxon was specified in xlsx (required)
@@ -2972,8 +2985,8 @@ apply_changes = function(code,proposalBasename,changeDf) {
       } else {
         # find parent by name (must be unique)
         parentDestNewMatches=(.GlobalEnv$newMSL$name==as.character(destParentName))
-     }
- 
+      }
+      
       if(params$verbose) {print(paste0("MOVE: ",code," line ",linenum," '",destTaxonName, "' findParent(",destParentName,")=",sum(parentDestNewMatches)))}
     
       if(sum(parentDestNewMatches,na.rm=TRUE)==0) {
@@ -3023,31 +3036,82 @@ apply_changes = function(code,proposalBasename,changeDf) {
           )
         }
 
+        # remember to check later if a genus name change broke binomial
+        if(  destTaxonRank == "genus" ) {
+          renamedGenera[destTaxonName$genus] = linenum
+        } 
+        
         # 
         # MOVE the taxon
         #
         
         
         # get parent
-        parentTaxon = .GlobalEnv$newMSL[parentDestNewMatches,]
+        destParentTaxon = .GlobalEnv$newMSL[parentDestNewMatches,]
         
         # WARN if PARENT_LINEAGE is not expected
-        if( !is.na(destParentLineage) && (parentTaxon$lineage != destParentLineage) ) {
+        if( !is.na(destParentLineage) && (destParentTaxon$lineage != destParentLineage) ) {
           errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
                            "WARNING", "MOVE.PARENT_LINEAGE", 
                            "Change=MOVE, proposed parent taxon exists, but not with expected lineage", 
                            paste0("proposedParentLineage=", destParentLineage,
-                                  ", observedParentLineage=",parentTaxon$lineage,
-                                  ", otherProposals=",parentTaxon$prev_proposals)
+                                  ", observedParentLineage=",destParentTaxon$lineage,
+                                  ", otherProposals=",destParentTaxon$prev_proposals)
           )
         }
+        
+        #### binomial check (species) ####
+        
+        # if move SPECIES, check binomial prefix matches parent genus
+        #
+        if( destTaxonRank=="species" ) {
+          # check if parent is a genus
+          if(destParentTaxon$rank=="genus") {
+            destParentGenusTaxon = destParentTaxon
+          } else {
+            if(destParentTaxon$rank == "subgenus" ) {
+              # check up one rank
+              destParentGenusTaxon = .GlobalEnv$newMSL %>% filter(taxnode_id == destParentTaxon$parent_id)
+              if(destParentGenusTaxon$rank != "genus") {
+                # can't find genus parent
+                errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.destTaxon,
+                                 "ERROR", "MOVE.SPECIES_SUBGENUS_NO_GENUS", 
+                                 "Change=MOVE, can not find parent genus", 
+                                 paste0("subgenus '",destParentTaxon$name,"' is not in a genus;",
+                                        " it's parent '",destParentGenusTaxon$name,"' is a ",destParentGenusTaxon$rank )
+                )
+                next;
+              }
+            } else {
+              # parent isn't subgenus or genus
+              errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.destTaxon,
+                               "ERROR", "MOVE.SPECIES_NO_GENUS", 
+                               "Change=MOVE, can not find parent genus", 
+                               paste0("parent '",destParentTaxon$name,"' is a ",destParentTaxon$rank )
+              )
+              next;
+            }
+          } 
+          # have genus (parent or grandparent)
+          # check binomial naming
+          if( str_detect(destTaxonName,paste0(destParentGenusTaxon$name," ")) != TRUE ) {
+            errorDf=addError(errorDf,code,linenum,change$change,change$rank,change$.destTaxon,
+                             "ERROR", "MOVE.SPECIES_BINOMIAL_MISMATCH", 
+                             "Change=MOVE, but proposed species names does not start with 'genus[space]' per binomial naming convention", 
+                             paste0("parent genus name =", destParentGenusTaxon$name)
+            )
+            next;
+          }
+          
+        }
+        
         
         # add new info - primary columns
         .GlobalEnv$newMSL[srcNewTarget,"name"]       = destTaxonName
         # this part shouldn't be a change unless this is promote/demote....
         .GlobalEnv$newMSL[srcNewTarget,"level_id"]   = rankCV$id[rankCV$name==destTaxonRank]
         .GlobalEnv$newMSL[srcNewTarget,"rank"]       = destTaxonRank
-        .GlobalEnv$newMSL[srcNewTarget,"parent_id"]  = parentTaxon[1,"taxnode_id"]
+        .GlobalEnv$newMSL[srcNewTarget,"parent_id"]  = destParentTaxon[1,"taxnode_id"]
 
 
         # genomeComposition = molecule_id 
@@ -3092,7 +3156,7 @@ apply_changes = function(code,proposalBasename,changeDf) {
         
         #  RECURSE TO SET LINEAGE OF destPARENT's KIDS
         #if( 202203764==taxnode_id) {browser()} # Luteovirus
-        update_lineage(parentTaxon$taxnode_id,parentTaxon$lineage)
+        update_lineage(destParentTaxon$taxnode_id,destParentTaxon$lineage)
       }
       #
       # update curMSL [out_*]
@@ -3136,7 +3200,8 @@ apply_changes = function(code,proposalBasename,changeDf) {
   #  -------------------------------------------------------------------------
   
   #
-  # did proposal create empty (non-species) taxa?
+  ##### empty taxa #####
+  # did proposal create empty (non-species) taxa? (global scan)
   #
   kidCounts = apply(.GlobalEnv$newMSL[,"taxnode_id"],1,
                     function(parent_id,MSL) { sum(MSL$parent_id==parent_id)},
@@ -3152,6 +3217,34 @@ apply_changes = function(code,proposalBasename,changeDf) {
     # mark empty taxa so we don't re-report them
     .GlobalEnv$newMSL[.GlobalEnv$newMSL$name %in% emptyTaxa$name,".emptyReported"] = xlsxs[code,"xlsx"]
   }
+  
+  ##### renamed genera - binomial #####
+  for( destGenusName in names(renamedGenera) )  {
+    renamedGeneraTaxIds = .GlobalEnv$newMSL %>% filter(name == destGenusName )
+    # subgenera
+    renamedGeneraSubgeneraTaxIds = .GlobalEnv$newMSL %>% 
+      filter(parent_id %in% c(renamedGeneraTaxIds$taxnode_id)) %>%
+      filter(level_id == 550 )
+    # species
+    renamedGeneraSpecies = .GlobalEnv$newMSL %>% 
+      filter(parent_id %in% c(renamedGeneraTaxIds$taxnode_id,renamedGeneraSubgeneraTaxIds$taxnode_id)) %>%
+      filter(level_id==600)
+    
+    # check names
+    binomialViolations =str_detect(renamedGeneraSpecies$name,paste0("^",destGenusName," "), negate=TRUE)
+    if( sum(binomialViolations) > 0 ) {
+      # get offending species list
+      speciesDf = as.data.frame(renamedGeneraSpecies)[binomialViolations,]
+      
+      errorDf=addError(errorDf,code,renamedGenera[destGenusName],"rename_genus","species",speciesDf$name,
+                       "ERROR", "RENAME_GENUS.SPECIES_BINOMIAL_MISMATCH", 
+                       "Change=RENAME_GENUS, but species name does not start with 'genus[space]' per binomial naming convention", 
+                       paste0("new genus name: ", destGenusName )
+      )
+    }
+      
+  }
+
 
   return(list(errorDf=errorDf))
 } # apply_changes()
@@ -3175,7 +3268,12 @@ apply_changes = function(code,proposalBasename,changeDf) {
 .GlobalEnv$allErrorDf = .GlobalEnv$loadErrorDf
 # debug 
 #cat("allErrorDf:",tracemem(allErrorDf),"\n");
-summary(as.factor(errorDf$code)); summary(as.factor(allErrorDf$code));
+if( params$tmi ) {
+    cat("Summary of errorDf$code:" )
+    summary(as.factor(errorDf$code))
+    cat("Summary of allErrorDf$code:" )
+    summary(as.factor(allErrorDf$code))
+}
 #
 # iterate through proposals
 #   iterate through changes
