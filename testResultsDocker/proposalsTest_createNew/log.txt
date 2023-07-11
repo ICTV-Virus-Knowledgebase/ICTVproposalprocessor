@@ -1,0 +1,24 @@
+# sudo docker run -it -v /var/www/drupal/apps/proposal_validator/MSL_merge/testData:/testData:ro -v /var/www/drupal/apps/proposal_validator/MSL_merge/testResultsDocker:/testResults:rw ictv_proposal_processor /merge_proposal_zips.R --proposalsDir=testData/proposalsTest_createNew --outDir=testResults/proposalsTest_createNew --qcTsvRegression=QC.regression.new.tsv
+[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25hVERSION: v1.10.6b620cc
+Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt 
+[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h# LOAD_PROPOSAL_DOCX( 2022.002G )
+# LOADED:  2022.002G  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 2022.002G )
+# LOADED:  2022.002G  XLS with  0  errors/warnings
+Wrote:  testResults/proposalsTest_createNew/QC.pretty_summary.all.xlsx  ( 0 rows)
+Wrote:  testResults/proposalsTest_createNew/QC.summary.tsv  ( 0 rows)
+Wrote:  testResults/proposalsTest_createNew/QC.regression.new.tsv  ( 0 rows)
+# LOADED:  2022.002G 
+QC start:  2022.002G : proposal loaded
+# QCed:  2022.002G  with  3  errors/warnings
+[?25hchangeList:  2022.002G 
+[?25hWrote:  testResults/proposalsTest_createNew/QC.pretty_summary.all.xlsx  ( 3 rows)
+Wrote:  testResults/proposalsTest_createNew/QC.summary.tsv  ( 3 rows)
+Wrote:  testResults/proposalsTest_createNew/QC.regression.new.tsv  ( 3 rows)
+[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h# START PROC:  2022.002G  with  22  changes
+# PROCed:  2022.002G  with  WARNING:30 SUCCESS:22 
+[?25h# DONE. Found 1 proposals; Processed 1 , skipped 0 
+[?25hWrote:  testResults/proposalsTest_createNew/QC.pretty_summary.all.xlsx  ( 55 rows)
+Wrote:  testResults/proposalsTest_createNew/QC.summary.tsv  ( 55 rows)
+Wrote:  testResults/proposalsTest_createNew/QC.regression.new.tsv  ( 55 rows)
+[?25h[?25h[?25h[?25h[?25h

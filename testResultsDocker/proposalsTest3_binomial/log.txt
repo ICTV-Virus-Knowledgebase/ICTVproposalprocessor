@@ -1,0 +1,24 @@
+# sudo docker run -it -v /var/www/drupal/apps/proposal_validator/MSL_merge/testData:/testData:ro -v /var/www/drupal/apps/proposal_validator/MSL_merge/testResultsDocker:/testResults:rw ictv_proposal_processor /merge_proposal_zips.R --proposalsDir=testData/proposalsTest3_binomial --outDir=testResults/proposalsTest3_binomial --qcTsvRegression=QC.regression.new.tsv
+[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25hVERSION: v1.10.6b620cc
+Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt 
+[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h# LOAD_PROPOSAL_DOCX( 2023.002A )
+# LOADED:  2023.002A  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 2023.002A )
+# LOADED:  2023.002A  XLS with  0  errors/warnings
+Wrote:  testResults/proposalsTest3_binomial/QC.pretty_summary.all.xlsx  ( 0 rows)
+Wrote:  testResults/proposalsTest3_binomial/QC.summary.tsv  ( 0 rows)
+Wrote:  testResults/proposalsTest3_binomial/QC.regression.new.tsv  ( 0 rows)
+# LOADED:  2023.002A 
+QC start:  2023.002A : proposal loaded
+# QCed:  2023.002A  with  0  errors/warnings
+[?25hchangeList:  2023.002A 
+[?25hWrote:  testResults/proposalsTest3_binomial/QC.pretty_summary.all.xlsx  ( 0 rows)
+Wrote:  testResults/proposalsTest3_binomial/QC.summary.tsv  ( 0 rows)
+Wrote:  testResults/proposalsTest3_binomial/QC.regression.new.tsv  ( 0 rows)
+[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h# START PROC:  2023.002A  with  8  changes
+# PROCed:  2023.002A  with  ERROR:17 WARNING:2 SUCCESS:6 
+[?25h# DONE. Found 1 proposals; Processed 1 , skipped 0 
+[?25hWrote:  testResults/proposalsTest3_binomial/QC.pretty_summary.all.xlsx  ( 25 rows)
+Wrote:  testResults/proposalsTest3_binomial/QC.summary.tsv  ( 25 rows)
+Wrote:  testResults/proposalsTest3_binomial/QC.regression.new.tsv  ( 25 rows)
+[?25h[?25h[?25h[?25h[?25h

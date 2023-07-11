@@ -1,0 +1,22 @@
+# sudo docker run -it -v /var/www/drupal/apps/proposal_validator/MSL_merge/testData:/testData:ro -v /var/www/drupal/apps/proposal_validator/MSL_merge/testResultsDocker:/testResults:rw ictv_proposal_processor /merge_proposal_zips.R --proposalsDir=testData/proposalsTest1 --outDir=testResults/proposalsTest1 --qcTsvRegression=QC.regression.new.tsv
+[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25hVERSION: v1.10.6b620cc
+Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt 
+[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h# LOAD_PROPOSAL_DOCX( 2023.001A )
+# LOADED:  2023.001A  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 2023.001A )
+# LOADED:  2023.001A  XLS with  0  errors/warnings
+Wrote:  testResults/proposalsTest1/QC.pretty_summary.all.xlsx  ( 0 rows)
+Wrote:  testResults/proposalsTest1/QC.summary.tsv  ( 0 rows)
+Wrote:  testResults/proposalsTest1/QC.regression.new.tsv  ( 0 rows)
+# LOADED:  2023.001A 
+QC start:  2023.001A : proposal loaded
+# QCed:  2023.001A  with  1  errors/warnings
+[?25hchangeList:   
+[?25hWrote:  testResults/proposalsTest1/QC.pretty_summary.all.xlsx  ( 1 rows)
+Wrote:  testResults/proposalsTest1/QC.summary.tsv  ( 1 rows)
+Wrote:  testResults/proposalsTest1/QC.regression.new.tsv  ( 1 rows)
+[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h# DONE. Found 1 proposals; Processed 0 , skipped 1 
+[?25hWrote:  testResults/proposalsTest1/QC.pretty_summary.all.xlsx  ( 1 rows)
+Wrote:  testResults/proposalsTest1/QC.summary.tsv  ( 1 rows)
+Wrote:  testResults/proposalsTest1/QC.regression.new.tsv  ( 1 rows)
+[?25h[?25h[?25h[?25h[?25h

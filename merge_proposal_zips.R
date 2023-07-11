@@ -32,13 +32,13 @@ option_list <- list(
   
   # in/out/ref directories
   make_option(c("-i","--proposalsDir"), 
-              default="proposalsTest", 
+              default="testData", 
               #default="proposalsTestEmpty", 
               #default="proposalTest1Doc", 
               #default="proposalTestNonProXlsx", 
               dest="proposals_dir",
               help = "Directory to scan for YYYY.###SC.*.xlsx proposal files [default \"%default\"]"),
-  make_option(c("-o","--outDir"), default="results", dest="out_dir",
+  make_option(c("-o","--outDir"), default="testResults", dest="out_dir",
               help = "Directory to write outputs to [default \"%default\"]"),
   make_option(c("-r","--refDir"), default="current_msl", dest="ref_dir", 
               help="Directory from which read current MSL and CV data from [default \"%default\"]"),
@@ -55,7 +55,7 @@ option_list <- list(
               help="Primary error/warning output xlsx file, returned to user [default \"%default\"]"),
   make_option(c("--qcTsvSummary"), default="QC.summary.tsv", dest="qc_summary_tsv_fname", 
               help="Primary error/warning output TSV file, parsed by web app [default \"%default\"]"),
-  make_option(c("--qcTsvRegression"), default="QC.regression.tsv", dest="qc_regression_tsv_fname", 
+  make_option(c("--qcTsvRegression"), default="QC.regression.new.tsv", dest="qc_regression_tsv_fname", 
               help="Primary error/warning output TSV file, used by regression testing (no version column) [default \"%default\"]"),
   
   # ref filenames
@@ -104,6 +104,8 @@ if( FALSE ) {
   print("!!!!||||||||||||||||||||||||!!!!")
   print("!!!! DEBUG OVERIDES ENGAGED !!!!")
   print("!!!!||||||||||||||||||||||||!!!!")
+  # defeat auto-caching when debugging
+  rm(docxList,xlsxList,changeList)
   params$verbose = T
   params$tmi = T
   params$proposals_dir = "./testData/proposalsTest4"
@@ -1733,6 +1735,24 @@ qc_proposal = function(code, proposalDf) {
   }
 
   #
+  #### extract src/dest taxon names for error reporting ####
+  #
+  # must be before QC spaces/quotes, etc, as error reporting there
+  # uses .changeTaxon!
+  changeDf$.srcTaxon =     apply(changeDf[,xlsx_change_srcCols], 1,getTaxon)
+  changeDf$.srcRank =      apply(changeDf[,xlsx_change_srcCols], 1,getTaxonRank)
+  changeDf$.srcLineage =   apply(changeDf[,xlsx_change_srcCols], 1,getLineage)
+
+  changeDf$.destTaxon =         apply(changeDf[,xlsx_change_destCols],1,getTaxon)
+  changeDf$.destRank =          apply(changeDf[,xlsx_change_destCols],1,getTaxonRank)
+  changeDf$.destLineage =       apply(changeDf[,xlsx_change_destCols], 1,getLineage)
+  changeDf$.destParentName =    apply(changeDf[,xlsx_change_destCols], 1,getParentTaxon)
+  changeDf$.destParentLineage = apply(changeDf[,xlsx_change_destCols], 1,getParentLineage)
+  
+  # active taxon: src, or, if missing, dest
+  changeDf$.changeTaxon = with(changeDf,ifelse(!is.na(.srcTaxon),.srcTaxon,.destTaxon))
+
+  #
   #### QC spaces, quotes, etc ####
   # 
   # TODO: remove leading/trailing spaces, quotes
@@ -1762,7 +1782,8 @@ qc_proposal = function(code, proposalDf) {
     changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
     
     # long-dashes:  "–" and "—"
-    pattern=paste0("([",AscToChar(207),AscToChar(208),"]+)"); pat_warn="long-dash[en/em dashes]";pat_replace="-"
+    #pattern=paste0("([\u2012\u2013\u2014\u2015",AscToChar(207),AscToChar(208),"]+)"); pat_warn="long-dash[en/em dashes]";pat_replace="-"
+    pattern=paste0("([\u2012\u2013\u2014\u2015]+)"); pat_warn="long-dash[en/em dashes]";pat_replace="-"
     qc.matches =grep(changeDf[,col],pattern=pattern)
     if(params$tmi && length(qc.matches)>0) { 
       cat("TMI:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") 
@@ -1774,12 +1795,25 @@ qc_proposal = function(code, proposalDf) {
     # Linux: AscToChar(c(226, 128, 156)) & AscToChar(c(226, 128, 157))
     # AscToChar(211) and SacToChar(210) caused problem son mac, but only when run from the command-line, not inside RStudio!
     #pattern=paste0("([“”",AscToChar(210),AscToChar(211),AscToChar(c(226, 128, 156)),AscToChar(c(226, 128, 157)),"]+)"); pat_warn="curvy quotes";pat_replace='"'
-    pattern=paste0("([“”",AscToChar(c(226, 128, 156)),AscToChar(c(226, 128, 157)),"]+)"); pat_warn="curvy quotes";pat_replace='"'
+    #pattern=paste0("([“”",AscToChar(c(226, 128, 156)),AscToChar(c(226, 128, 157)),"]+)"); pat_warn="curvy quotes";pat_replace='"'
+    pattern=paste0("([\u201C\u201D\u201E\u201F]+)"); pat_warn="curvy quotes";pat_replace='"'
     qc.matches =grep(changeDf[,col],pattern=pattern)
     if(params$tmi && length(qc.matches)>0) { 
       cat("TMI:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") 
     }
     changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
+
+    #
+    # curvy single-quotes
+    # AscToChar(212)AscToChar(213)
+    #pattern=paste0("([‘’]+)"); pat_warn="curvy single quotes";pat_replace="'"
+    pattern=paste0("([\u2018\u2019\u201A\u201B]+)"); pat_warn="curvy single quotes";pat_replace="'"	
+    qc.matches =grep(changeDf[,col],pattern=pattern)
+    if(params$tmi && length(qc.matches)>0) { 
+      cat("TMI:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") 
+    }
+    changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
+
     
     # newline
     pattern="([\r\n]+)"; pat_warn="newline character(s)";pat_replace=";"
@@ -1799,16 +1833,6 @@ qc_proposal = function(code, proposalDf) {
     
     # trailing white space
     pattern="([ \t]+)$"; pat_warn="trailing whitespace"; pat_replace=""
-    qc.matches =grep(changeDf[,col],pattern=pattern)
-    if(params$tmi && length(qc.matches)>0) { 
-      cat("TMI:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") 
-    }
-    changeDf[,col] = gsub(pattern,pat_replace,changeDf[,col])
-    
-    #
-    # curvy single-quotes
-    # AscToChar(212)AscToChar(213)
-    pattern=paste0("([‘’]+)"); pat_warn="curvy single quotes";pat_replace="'"
     qc.matches =grep(changeDf[,col],pattern=pattern)
     if(params$tmi && length(qc.matches)>0) { 
       cat("TMI:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") 
@@ -1854,13 +1878,16 @@ qc_proposal = function(code, proposalDf) {
     #pattern=xlsx_col_info[col,"pattern"]; pat_warn=xlsx_col_info[col,"pat_warn"]
     col = value_validation[i,]$col
     error = value_validation[i,]$code
+    if( params$tmi ) {
+        cat(with(value_validation[i,],paste0("\tTMI: column_validation(",col,",",code,"):s/",regex,"/",replace,"/\n")))
+    }
     if( value_validation[i,]$type == "replace") {
       # 
       # check for presence of regex's to be replaced
       #
       qc.matches =grep(changeDf[,col],pattern=value_validation[i,]$regex)
       if(length(qc.matches)>0) { 
-        if(params$verbose) { cat(value_validation[i,]$class,":",error,"has",length(qc.matches),"cells with",value_validation[i,]$warn,"in column",col,"\n") }
+        if(params$verbose) { cat(paste0(value_validation[i,]$class,":",error," has ",length(qc.matches)," cells with ",value_validation[i,]$warn," in column '",col,"'\n")) }
         #browser()
         errorDf=addError(errorDf,code,rownames(changeDf)[qc.matches],
                          changeDf$change[qc.matches],changeDf$rank[qc.matches], changeDf$.changeTaxon[qc.matches],
@@ -1899,22 +1926,6 @@ qc_proposal = function(code, proposalDf) {
   
   
     
-  #
-  #### extract src/dest taxon names for error reporting ####
-  #
-  changeDf$.srcTaxon =     apply(changeDf[,xlsx_change_srcCols], 1,getTaxon)
-  changeDf$.srcRank =      apply(changeDf[,xlsx_change_srcCols], 1,getTaxonRank)
-  changeDf$.srcLineage =   apply(changeDf[,xlsx_change_srcCols], 1,getLineage)
-
-  changeDf$.destTaxon =         apply(changeDf[,xlsx_change_destCols],1,getTaxon)
-  changeDf$.destRank =          apply(changeDf[,xlsx_change_destCols],1,getTaxonRank)
-  changeDf$.destLineage =       apply(changeDf[,xlsx_change_destCols], 1,getLineage)
-  changeDf$.destParentName =    apply(changeDf[,xlsx_change_destCols], 1,getParentTaxon)
-  changeDf$.destParentLineage = apply(changeDf[,xlsx_change_destCols], 1,getParentLineage)
-  
-  # active taxon: src, or, if missing, dest
-  changeDf$.changeTaxon = with(changeDf,ifelse(!is.na(.srcTaxon),.srcTaxon,.destTaxon))
-  
   #
   #### QC controlled vocabularies ####
   #
@@ -3486,7 +3497,7 @@ if(params$export_msl) {
   # remember to 
   #   1. don't quote NULLs (is.na)
   #   2. escape apostrophies
-  #   3. single-quote values
+  #   3. single-quot evalues
   #
   # ------------------------------------------------------------------------------
   # cat(paste0('"',paste(names(newMSL),collapse='",\n"'),'"'))

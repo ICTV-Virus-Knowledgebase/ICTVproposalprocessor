@@ -2,17 +2,50 @@
 #
 # run and evaluate regression tests
 #
+# USAGE: ./regression_test.sh [test_pattern] [container_version]
 #
+# On Linux, this runs the docker container
+# On MacOS, this runs R directly. 
+#
+
+# whcih tests to run 
+TEST_PAT="*"
+if [ ! -z "$1" ]; then TEST_PAT="*$1*"; shift; fi
+echo TEST_PAT=$TEST_PAT
+
+# which docker container to run
+if [ "$(uname)" == "Linux" ]; then 
+	CONTAINER=ictv_proposal_processor
+	if [ ! -z "$1" ]; then CONTAINER="curtish/${CONTAINER}:$1"; shift; fi
+	echo "CONTAINER=$CONTAINER"
+
+	# 
+	# update docker image, just incase
+	#
+	echo "# Building docker image"
+	echo ./docker_build_image.sh
+	./docker_build_image.sh
+fi
+
+#
+# test cases location
+# 
 TEST_DIR=testData
-REPORT=regression_test.summary.txt
-date > $REPORT
+echo TEST_DIR=$TEST_DIR
+RESULTS_DIR=testResults
+if [ ! -z "$CONTAINER" ]; then RESULTS_DIR=testResultsDocker; fi
+echo RESULTS_DIR=$RESULTS_DIR
+
+REPORT=QC.regression_test.summary.txt
+echo REPORT=$REPORT
+(date; hostname) > $REPORT
+
 #
 # scan for test directories
 #
-PAT="*"
-if [ ! -z "$1" ]; then PAT="*$1*"; fi
-TESTS=$(cd $TEST_DIR; find . -type d -name "$PAT" -name "proposal*" \! -name "*result*" -depth 1 -exec basename {} +)
-#TESTS=proposal2020
+echo "#$ find $TEST_DIR -type d -name "$TEST_PAT" -name "proposal*" \! -name "*result*" -exec basename {} \;"
+TESTS=$(find $TEST_DIR -type d -name "$TEST_PAT" -name "proposal*" \! -name "*result*" -exec basename {} \;)
+echo TESTS=$TESTS
 
 #
 # iterate
@@ -22,7 +55,7 @@ for TEST in $TESTS; do
     # input/output for script
     #
     SRC_DIR=$TEST_DIR/$TEST
-    DEST_DIR=${TEST_DIR}/results/$TEST
+    DEST_DIR=${RESULTS_DIR}/$TEST
     RESULTS=${DEST_DIR}/QC.regression.new.tsv
     RESULTSBASE=${DEST_DIR}/QC.regression.tsv
     RESULTSDIFF=${DEST_DIR}/QC.regression.diff
@@ -46,17 +79,39 @@ for TEST in $TESTS; do
     #
     # run script
     #
-    echo "#" \
-        Rscript merge_proposal_zips.R \
-	    --proposalsDir=$SRC_DIR \
-	    --outDir=$DEST_DIR \
-	    --qcTsvRegression=$(basename $RESULTS) \
-	    2>&1 | tee $LOG
-    Rscript merge_proposal_zips.R \
-	    --proposalsDir=$SRC_DIR \
-	    --outDir=$DEST_DIR \
-	    --qcTsvRegression=$(basename $RESULTS) \
-	    2>&1 >> $LOG
+    if [ -z "$CONTAINER" ]; then 
+	    echo "#" \
+	        Rscript merge_proposal_zips.R \
+		    --proposalsDir=$SRC_DIR \
+		    --outDir=$DEST_DIR \
+		    --qcTsvRegression=$(basename $RESULTS) \
+		    2>&1 | tee $LOG
+	    Rscript merge_proposal_zips.R \
+		    --proposalsDir=$SRC_DIR \
+		    --outDir=$DEST_DIR \
+		    --qcTsvRegression=$(basename $RESULTS) \
+		    2>&1 >> $LOG
+    else
+	    echo "#" \
+		sudo docker run -it \
+		    -v "$(pwd)/$TEST_DIR:/testData":ro \
+		    -v "$(pwd)/$RESULTS_DIR:/testResults":rw \
+	            $CONTAINER  \
+		    /merge_proposal_zips.R \
+		    --proposalsDir=$SRC_DIR \
+		    --outDir="testResults/$TEST" \
+		    --qcTsvRegression=$(basename $RESULTS) \
+		    2>&1 | tee $LOG
+	    sudo docker run -it \
+		    -v "$(pwd)/$TEST_DIR:/testData":ro \
+		    -v "$(pwd)/$RESULTS_DIR:/testResults":rw \
+	            $CONTAINER  \
+		    /merge_proposal_zips.R \
+		    --proposalsDir=$SRC_DIR \
+		    --outDir="testResults/$TEST" \
+		    --qcTsvRegression=$(basename $RESULTS) \
+		    2>&1 >> $LOG
+    fi	
 
     #
     # check output
@@ -71,8 +126,10 @@ for TEST in $TESTS; do
     #
     # check log
     #
-    echo diff -yw -W 200 $LOG $LOGBASE \> $LOGDIFF | tee $LOGDIFF
-    diff -yw -W 200 $LOG $LOGBASE 2>&1 >> $LOGDIFF; RC=$?
+    # use "tail -n +3" to skip date/version/etc in first 2 lines
+    #
+    echo "diff -yw -W 200 \<(tail -n +3 $LOG) \<(tail -n +3 $LOGBASE) \> $LOGDIFF" | tee $LOGDIFF
+    diff -yw -W 200 <(tail -n +3 $LOG) <(tail -n +3 $LOGBASE) 2>&1 >> $LOGDIFF; RC=$?
     if [ $RC -eq "0" ]; then
 	echo "LOG_PASS  $TEST" | tee -a $REPORT
     else

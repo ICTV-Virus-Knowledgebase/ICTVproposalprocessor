@@ -1,0 +1,38 @@
+# sudo docker run -it -v /var/www/drupal/apps/proposal_validator/MSL_merge/testData:/testData:ro -v /var/www/drupal/apps/proposal_validator/MSL_merge/testResultsDocker:/testResults:rw ictv_proposal_processor /merge_proposal_zips.R --proposalsDir=testData/proposalsMixedTest --outDir=testResults/proposalsMixedTest --qcTsvRegression=QC.regression.new.tsv
+[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25hVERSION: v1.10.6b620cc
+Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt 
+[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25hWrote:  testResults/proposalsMixedTest/QC.pretty_summary.all.xlsx  ( 2 rows)
+Wrote:  testResults/proposalsMixedTest/QC.summary.tsv  ( 2 rows)
+Wrote:  testResults/proposalsMixedTest/QC.regression.new.tsv  ( 2 rows)
+[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h# LOAD_PROPOSAL_DOCX( 2023.002A )
+# LOADED:  2023.002A  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 2023.002A )
+# LOADED:  2023.002A  XLS with  0  errors/warnings
+Wrote:  testResults/proposalsMixedTest/QC.pretty_summary.all.xlsx  ( 2 rows)
+Wrote:  testResults/proposalsMixedTest/QC.summary.tsv  ( 2 rows)
+Wrote:  testResults/proposalsMixedTest/QC.regression.new.tsv  ( 2 rows)
+# LOADED:  2023.002A 
+QC start:  2023.002A : proposal loaded
+# QCed:  2023.002A  with  0  errors/warnings
+# LOAD_PROPOSAL_DOCX( 3 )
+# LOADED:  3  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 3 )
+# LOADED:  3  XLS with  0  errors/warnings
+Wrote:  testResults/proposalsMixedTest/QC.pretty_summary.all.xlsx  ( 2 rows)
+Wrote:  testResults/proposalsMixedTest/QC.summary.tsv  ( 2 rows)
+Wrote:  testResults/proposalsMixedTest/QC.regression.new.tsv  ( 2 rows)
+# LOADED:  3 
+QC start:  3 : proposal loaded
+# QCed:  3  with  0  errors/warnings
+# LOAD_PROPOSAL_DOCX( 4 )
+# LOADED:  4  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 4 )
+code 4: A worksheet name matching 'proposals* template' was not foundlogging error
+code 4: A worksheet name matching 'proposals* template' was not foundreturning NA
+# LOADED:  4  XLS with  1  errors/warnings
+# LOADED:  4 
+SKIP:  4 : proposal could not be loaded
+# LOAD_PROPOSAL_DOCX( 2 )
+Error: XML content does not seem to be XML: ''
+Execution halted
+[?25h
