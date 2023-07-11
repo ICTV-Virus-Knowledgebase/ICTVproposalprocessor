@@ -1,4 +1,4 @@
-# Rscript merge_proposal_zips.R --proposalsDir=testData/proposalTestNonProXlsx --outDir=testData/results/proposalTestNonProXlsx --qcTsvRegression=QC.regression.new.tsv
+# Rscript merge_proposal_zips.R --proposalsDir=testData/proposalTestNonProXlsx --outDir=testResults/proposalTestNonProXlsx --qcTsvRegression=QC.regression.new.tsv
 VERSION: v1.8.5366578
 Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt 
 # LOAD_PROPOSAL_DOCX( 1 )
@@ -10,10 +10,10 @@ code 1: A worksheet name matching 'proposals* template' was not foundreturning N
 # LOADED:  1 
 SKIP:  1 : proposal could not be loaded
 changeList:   
-Wrote:  testData/results/proposalTestNonProXlsx/QC.pretty_summary.all.xlsx  ( 1 rows)
-Wrote:  testData/results/proposalTestNonProXlsx/QC.summary.tsv  ( 1 rows)
-Wrote:  testData/results/proposalTestNonProXlsx/QC.regression.new.tsv  ( 1 rows)
+Wrote:  testResults/proposalTestNonProXlsx/QC.pretty_summary.all.xlsx  ( 1 rows)
+Wrote:  testResults/proposalTestNonProXlsx/QC.summary.tsv  ( 1 rows)
+Wrote:  testResults/proposalTestNonProXlsx/QC.regression.new.tsv  ( 1 rows)
 # DONE. Found 1 proposals; Processed 0 , skipped 1 
-Wrote:  testData/results/proposalTestNonProXlsx/QC.pretty_summary.all.xlsx  ( 1 rows)
-Wrote:  testData/results/proposalTestNonProXlsx/QC.summary.tsv  ( 1 rows)
-Wrote:  testData/results/proposalTestNonProXlsx/QC.regression.new.tsv  ( 1 rows)
+Wrote:  testResults/proposalTestNonProXlsx/QC.pretty_summary.all.xlsx  ( 1 rows)
+Wrote:  testResults/proposalTestNonProXlsx/QC.summary.tsv  ( 1 rows)
+Wrote:  testResults/proposalTestNonProXlsx/QC.regression.new.tsv  ( 1 rows)

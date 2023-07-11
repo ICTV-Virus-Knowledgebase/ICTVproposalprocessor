@@ -1,23 +1,23 @@
-# Rscript merge_proposal_zips.R --proposalsDir=testData/proposalsTest --outDir=testData/results/proposalsTest --qcTsvRegression=QC.regression.new.tsv
+# Rscript merge_proposal_zips.R --proposalsDir=testData/proposalsTest --outDir=testResults/proposalsTest --qcTsvRegression=QC.regression.new.tsv
 VERSION: v1.8.5366578
 Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt 
 # LOAD_PROPOSAL_DOCX( 2022.002G )
 # LOADED:  2022.002G  DOCX with  0  errors/warnings
 # LOAD_PROPOSAL( 2022.002G )
 # LOADED:  2022.002G  XLS with  0  errors/warnings
-Wrote:  testData/results/proposalsTest/QC.pretty_summary.all.xlsx  ( 0 rows)
-Wrote:  testData/results/proposalsTest/QC.summary.tsv  ( 0 rows)
-Wrote:  testData/results/proposalsTest/QC.regression.new.tsv  ( 0 rows)
+Wrote:  testResults/proposalsTest/QC.pretty_summary.all.xlsx  ( 0 rows)
+Wrote:  testResults/proposalsTest/QC.summary.tsv  ( 0 rows)
+Wrote:  testResults/proposalsTest/QC.regression.new.tsv  ( 0 rows)
 # LOADED:  2022.002G 
 QC start:  2022.002G : proposal loaded
 # QCed:  2022.002G  with  1  errors/warnings
 changeList:  2022.002G 
-Wrote:  testData/results/proposalsTest/QC.pretty_summary.all.xlsx  ( 1 rows)
-Wrote:  testData/results/proposalsTest/QC.summary.tsv  ( 1 rows)
-Wrote:  testData/results/proposalsTest/QC.regression.new.tsv  ( 1 rows)
+Wrote:  testResults/proposalsTest/QC.pretty_summary.all.xlsx  ( 1 rows)
+Wrote:  testResults/proposalsTest/QC.summary.tsv  ( 1 rows)
+Wrote:  testResults/proposalsTest/QC.regression.new.tsv  ( 1 rows)
 # START PROC:  2022.002G  with  22  changes
 # PROCed:  2022.002G  with  WARNING:30 SUCCESS:22 
 # DONE. Found 1 proposals; Processed 1 , skipped 0 
-Wrote:  testData/results/proposalsTest/QC.pretty_summary.all.xlsx  ( 53 rows)
-Wrote:  testData/results/proposalsTest/QC.summary.tsv  ( 53 rows)
-Wrote:  testData/results/proposalsTest/QC.regression.new.tsv  ( 53 rows)
+Wrote:  testResults/proposalsTest/QC.pretty_summary.all.xlsx  ( 53 rows)
+Wrote:  testResults/proposalsTest/QC.summary.tsv  ( 53 rows)
+Wrote:  testResults/proposalsTest/QC.regression.new.tsv  ( 53 rows)
