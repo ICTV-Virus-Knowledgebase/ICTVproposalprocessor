@@ -32,7 +32,7 @@ option_list <- list(
   
   # in/out/ref directories
   make_option(c("-i","--proposalsDir"), 
-              default="prposalsTest", 
+              default="proposalsTest", 
               #default="testData", 
               #default="proposalsTestEmpty", 
               #default="proposalTest1Doc", 
