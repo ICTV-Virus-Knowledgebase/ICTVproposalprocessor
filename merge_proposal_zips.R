@@ -40,7 +40,7 @@ option_list <- list(
               dest="proposals_dir",
               help = "Directory to scan for YYYY.###SC.*.xlsx proposal files [default \"%default\"]"),
   make_option(c("-o","--outDir"), 
-	      default="results, 
+	      default="results", 
 	      #default="testResults", 
 	      dest="out_dir",
               help = "Directory to write outputs to [default \"%default\"]"),
