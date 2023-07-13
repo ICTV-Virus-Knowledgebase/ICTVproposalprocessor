@@ -1304,6 +1304,7 @@ getTaxon = function(realmSpecies) {
   if( sum(nonNAs) > 0 ) {
     return(realmSpecies[max(which(nonNAs))])
   } else {
+    if( params$debug_on_error) { print("INTERNAL ERROR: getTaxon()=NA"); browser()}
     return(NA)
   }
 }
@@ -1313,8 +1314,14 @@ getParentTaxon = function(realmSpecies) {
   #
   nonNAs = !is.na(realmSpecies[realmSpeciesCols])
   if( sum(nonNAs) > 1 ) {
+    # get 2nd to last rank 
     return(realmSpecies[sort(which(nonNAs),decreasing=T)[2]])
+  } else if( sum(nonNAs) == 1 ) {
+    # only one name means the parent is the tree root
+    return(params$msl_name)
   } else {
+    # no data at all, should probably error out
+    if( params$debug_on_error) { print("INTERNAL ERROR: getParentTaxon()=NA"); browser()}
     return(NA)
   }
 }
@@ -1331,6 +1338,7 @@ getLineage = function(realmSpecies,masks=c()) {
   if( sum(nonNAs) > 0 ) {
     return(paste0(realmSpecies[nonNAs],collapse=";"))
   } else {
+    if( params$debug_on_error) { print("INTERNAL ERROR: getLineage()=NA"); browser()}
     return(NA)
   }
 }
@@ -1340,6 +1348,7 @@ getParentLineage = function(realmSpecies) {
     rank=getTaxonRank(realmSpecies)
     return(getLineage(realmSpecies,masks=c(rank)))
   } else {
+    if( params$debug_on_error) { print("INTERNAL ERROR: getParentTaxon()=NA"); browser()}
     return(NA)
   }
 }
@@ -1351,6 +1360,7 @@ getTaxonRank = function(realmSpecies) {
     #
     return(as.character(rankCV$name[max(which(nonNAs))+1]))
   } else {
+    if( params$debug_on_error) { print("INTERNAL ERROR: getParentTaxon()=NA"); browser()}
     return(NA)
   }
 }
