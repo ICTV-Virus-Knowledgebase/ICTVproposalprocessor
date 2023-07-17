@@ -59,6 +59,7 @@ for TEST in $TESTS; do
     RESULTS=${DEST_DIR}/QC.regression.new.tsv
     RESULTSBASE=${DEST_DIR}/QC.regression.tsv
     RESULTSDIFF=${DEST_DIR}/QC.regression.diff
+    RESULTSDWDIFF=${DEST_DIR}/QC.regression.dwdiff
     LOG=${DEST_DIR}/log.new.txt
     LOGBASE=${DEST_DIR}/log.txt
     LOGDIFF=${DEST_DIR}/log.diff
@@ -116,6 +117,8 @@ for TEST in $TESTS; do
     #
     # check output
     #
+    echo "dwdiff --color  <(cut -f 5- $RESULTSBASE) <(cut -f 5- $RESULTS) #> $RESULTSDWDIFF" | tee $RESULTSDWDIFF
+    dwdiff --color <(cut -f 5- $RESULTSBASE) <(cut -f 5- $RESULTS) 2>&1 >> $RESULTSDWDIFF; RC=$?
     echo "diff -yw -W 200 \<(cut -f 5- $RESULTS) \<(cut -f 5- $RESULTSBASE) \> $RESULTSDIFF" | tee $RESULTSDIFF
     diff -yw -W 200 <(cut -f 5- $RESULTS) <(cut -f 5- $RESULTSBASE) 2>&1 >> $RESULTSDIFF; RC=$?
     if [ $RC -eq "0" ]; then
@@ -123,6 +126,10 @@ for TEST in $TESTS; do
     else
 	echo "FAIL$RC $TEST" | tee -a $REPORT
     fi	
+
+
+
+
     #
     # check log
     #

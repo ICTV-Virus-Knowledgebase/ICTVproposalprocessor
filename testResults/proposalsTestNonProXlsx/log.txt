@@ -10,10 +10,6 @@ code 1: A worksheet name matching 'proposals* template' was not foundreturning N
 # LOADED:  1 
 SKIP:  1 : proposal could not be loaded
 changeList:   
-Wrote:  testResults/proposalTestNonProXlsx/QC.pretty_summary.all.xlsx  ( 1 rows)
-Wrote:  testResults/proposalTestNonProXlsx/QC.summary.tsv  ( 1 rows)
-Wrote:  testResults/proposalTestNonProXlsx/QC.regression.new.tsv  ( 1 rows)
+Wrote:  OUTDIR/QC.summary.tsv  ( 1 rows)
 # DONE. Found 1 proposals; Processed 0 , skipped 1 
-Wrote:  testResults/proposalTestNonProXlsx/QC.pretty_summary.all.xlsx  ( 1 rows)
-Wrote:  testResults/proposalTestNonProXlsx/QC.summary.tsv  ( 1 rows)
-Wrote:  testResults/proposalTestNonProXlsx/QC.regression.new.tsv  ( 1 rows)
+Wrote:  OUTDIR/QC.summary.tsv  ( 1 rows)

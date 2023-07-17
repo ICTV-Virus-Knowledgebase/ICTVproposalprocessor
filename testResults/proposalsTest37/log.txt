@@ -1,23 +1,17 @@
 # Rscript merge_proposal_zips.R --proposalsDir=testData/proposalsTest37 --outDir=testResults/proposalsTest37 --qcTsvRegression=QC.regression.new.tsv
-VERSION: v1.8.5366578
+VERSION: v1.11.cbd090b
 Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt 
 # LOAD_PROPOSAL_DOCX( 2023.003A )
 # LOADED:  2023.003A  DOCX with  0  errors/warnings
 # LOAD_PROPOSAL( 2023.003A )
 # LOADED:  2023.003A  XLS with  0  errors/warnings
-Wrote:  testResults/proposalsTest37/QC.pretty_summary.all.xlsx  ( 0 rows)
-Wrote:  testResults/proposalsTest37/QC.summary.tsv  ( 0 rows)
-Wrote:  testResults/proposalsTest37/QC.regression.new.tsv  ( 0 rows)
+Wrote: OUTDIR/QC.summary.tsv (0rows)
 # LOADED:  2023.003A 
-QC start:  2023.003A : proposal loaded
-# QCed:  2023.003A  with  0  errors/warnings
+# QC start: 2023.003A: proposal loaded (1 out of 1)
+# QCed:      2023.003A  with  0  errors/warnings
 changeList:  2023.003A 
-Wrote:  testResults/proposalsTest37/QC.pretty_summary.all.xlsx  ( 0 rows)
-Wrote:  testResults/proposalsTest37/QC.summary.tsv  ( 0 rows)
-Wrote:  testResults/proposalsTest37/QC.regression.new.tsv  ( 0 rows)
-# START PROC:  2023.003A  with  4  changes
-# PROCed:  2023.003A  with  ERROR:3 WARNING:1 SUCCESS:2 
+Wrote: OUTDIR/QC.summary.tsv (0rows)
+# START PROC: 2023.003A with 4 changes  (1 out of 1)
+# PROCCESSED: 2023.003A with ERROR:3 WARNING:1 SUCCESS:2 
 # DONE. Found 1 proposals; Processed 1 , skipped 0 
-Wrote:  testResults/proposalsTest37/QC.pretty_summary.all.xlsx  ( 6 rows)
-Wrote:  testResults/proposalsTest37/QC.summary.tsv  ( 6 rows)
-Wrote:  testResults/proposalsTest37/QC.regression.new.tsv  ( 6 rows)
+Wrote: OUTDIR/QC.summary.tsv (6rows)

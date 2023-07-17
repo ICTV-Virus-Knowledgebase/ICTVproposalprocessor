@@ -39,4 +39,6 @@ QC.pretty_summary.all.xlsx
 *.new.*
 *.diff
 *.diff.*
+*.dwdiff.*
+*.dwdiff
 

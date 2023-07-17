@@ -1,21 +1,15 @@
-# Rscript merge_proposal_zips.R --proposalsDir=testData/proposal2020 --outDir=testResults/proposal2020 --qcTsvRegression=QC.regression.new.tsv
-VERSION: v1.8.5366578
+# Rscript merge_proposal_zips.R --proposalsDir=testData/proposals2020 --outDir=testResults/proposals2020 --qcTsvRegression=QC.regression.new.tsv
+VERSION: v1.11.cbd090b
 Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt 
 # LOAD_PROPOSAL_DOCX( 2020.005D )
 # LOADED:  2020.005D  DOCX with  0  errors/warnings
 # LOAD_PROPOSAL( 2020.005D )
 # LOADED:  2020.005D  XLS with  0  errors/warnings
-Wrote:  testResults/proposal2020/QC.pretty_summary.all.xlsx  ( 0 rows)
-Wrote:  testResults/proposal2020/QC.summary.tsv  ( 0 rows)
-Wrote:  testResults/proposal2020/QC.regression.new.tsv  ( 0 rows)
+Wrote: OUTDIR/QC.summary.tsv (0rows)
 # LOADED:  2020.005D 
-QC start:  2020.005D : proposal loaded
-# QCed:  2020.005D  with  1  errors/warnings
+# QC start: 2020.005D: proposal loaded (1 out of 1)
+# QCed:      2020.005D  with  1  errors/warnings
 changeList:   
-Wrote:  testResults/proposal2020/QC.pretty_summary.all.xlsx  ( 1 rows)
-Wrote:  testResults/proposal2020/QC.summary.tsv  ( 1 rows)
-Wrote:  testResults/proposal2020/QC.regression.new.tsv  ( 1 rows)
+Wrote: OUTDIR/QC.summary.tsv (1rows)
 # DONE. Found 1 proposals; Processed 0 , skipped 1 
-Wrote:  testResults/proposal2020/QC.pretty_summary.all.xlsx  ( 1 rows)
-Wrote:  testResults/proposal2020/QC.summary.tsv  ( 1 rows)
-Wrote:  testResults/proposal2020/QC.regression.new.tsv  ( 1 rows)
+Wrote: OUTDIR/QC.summary.tsv (1rows)

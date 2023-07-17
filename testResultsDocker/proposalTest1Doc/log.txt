@@ -1,8 +1,0 @@
-# sudo docker run -it -v /var/www/drupal/apps/proposal_validator/MSL_merge/testData:/testData:ro -v /var/www/drupal/apps/proposal_validator/MSL_merge/testResultsDocker:/testResults:rw ictv_proposal_processor /merge_proposal_zips.R --proposalsDir=testData/proposalTest1Doc --outDir=testResults/proposalTest1Doc --qcTsvRegression=QC.regression.new.tsv
-[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25hVERSION: v1.10.6b620cc
-Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt 
-[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25hWrote:  testResults/proposalTest1Doc/QC.pretty_summary.all.xlsx  ( 2 rows)
-Wrote:  testResults/proposalTest1Doc/QC.summary.tsv  ( 2 rows)
-Wrote:  testResults/proposalTest1Doc/QC.regression.new.tsv  ( 2 rows)
-# ERROR: NO_INPUT_FILES found in  testData/proposalTest1Doc 
-[?25h
