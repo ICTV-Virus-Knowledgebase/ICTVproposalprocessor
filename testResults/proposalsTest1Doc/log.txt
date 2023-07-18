@@ -1,5 +1,5 @@
 # Rscript merge_proposal_zips.R --proposalsDir=testData/proposalsTest1Doc --outDir=testResults/proposalsTest1Doc --qcTsvRegression=QC.regression.new.tsv
 VERSION: v1.11.cbd090b
 Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt 
-Wrote: OUTDIR/QC.summary.tsv (2rows)
+Wrote: OUTDIR/QC.summary.tsv (2 rows)
 # ERROR: NO_INPUT_FILES found in  testData/proposalsTest1Doc 

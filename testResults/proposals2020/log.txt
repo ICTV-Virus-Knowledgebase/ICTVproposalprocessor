@@ -5,11 +5,10 @@ Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt
 # LOADED:  2020.005D  DOCX with  0  errors/warnings
 # LOAD_PROPOSAL( 2020.005D )
 # LOADED:  2020.005D  XLS with  0  errors/warnings
-Wrote: OUTDIR/QC.summary.tsv (0rows)
 # LOADED:  2020.005D 
 # QC start: 2020.005D: proposal loaded (1 out of 1)
 # QCed:      2020.005D  with  1  errors/warnings
 changeList:   
-Wrote: OUTDIR/QC.summary.tsv (1rows)
+Wrote: OUTDIR/QC.summary.tsv (1 rows)
 # DONE. Found 1 proposals; Processed 0 , skipped 1 
-Wrote: OUTDIR/QC.summary.tsv (1rows)
+Wrote: OUTDIR/QC.summary.tsv (1 rows)

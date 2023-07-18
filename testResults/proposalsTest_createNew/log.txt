@@ -5,13 +5,12 @@ Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt
 # LOADED:  2022.002G  DOCX with  0  errors/warnings
 # LOAD_PROPOSAL( 2022.002G )
 # LOADED:  2022.002G  XLS with  0  errors/warnings
-Wrote: OUTDIR/QC.summary.tsv (0rows)
 # LOADED:  2022.002G 
 # QC start: 2022.002G: proposal loaded (1 out of 1)
 # QCed:      2022.002G  with  1  errors/warnings
 changeList:  2022.002G 
-Wrote: OUTDIR/QC.summary.tsv (1rows)
+Wrote: OUTDIR/QC.summary.tsv (1 rows)
 # START PROC: 2022.002G with 22 changes  (1 out of 1)
 # PROCCESSED: 2022.002G with WARNING:30 SUCCESS:22 
 # DONE. Found 1 proposals; Processed 1 , skipped 0 
-Wrote: OUTDIR/QC.summary.tsv (53rows)
+Wrote: OUTDIR/QC.summary.tsv (53 rows)

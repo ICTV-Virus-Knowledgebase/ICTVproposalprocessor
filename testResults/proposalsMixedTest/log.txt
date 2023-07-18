@@ -1,12 +1,11 @@
 # Rscript merge_proposal_zips.R --proposalsDir=testData/proposalsMixedTest --outDir=testResults/proposalsMixedTest --qcTsvRegression=QC.regression.new.tsv
 VERSION: v1.11.cbd090b
 Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt 
-Wrote: OUTDIR/QC.summary.tsv (2rows)
+Wrote: OUTDIR/QC.summary.tsv (2 rows)
 # LOAD_PROPOSAL_DOCX( 2023.002A )
 # LOADED:  2023.002A  DOCX with  0  errors/warnings
 # LOAD_PROPOSAL( 2023.002A )
 # LOADED:  2023.002A  XLS with  0  errors/warnings
-Wrote: OUTDIR/QC.summary.tsv (2rows)
 # LOADED:  2023.002A 
 # QC start: 2023.002A: proposal loaded (1 out of 4)
 # QCed:      2023.002A  with  0  errors/warnings
@@ -14,7 +13,6 @@ Wrote: OUTDIR/QC.summary.tsv (2rows)
 # LOADED:  3  DOCX with  0  errors/warnings
 # LOAD_PROPOSAL( 3 )
 # LOADED:  3  XLS with  0  errors/warnings
-Wrote: OUTDIR/QC.summary.tsv (2rows)
 # LOADED:  3 
 # QC start: 3: proposal loaded (2 out of 4)
 # QCed:      3  with  0  errors/warnings
@@ -24,6 +22,7 @@ Wrote: OUTDIR/QC.summary.tsv (2rows)
 code 4: A worksheet name matching 'proposals* template' was not foundlogging error
 code 4: A worksheet name matching 'proposals* template' was not foundreturning NA
 # LOADED:  4  XLS with  1  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (3 rows)
 # LOADED:  4 
 SKIP:  4 : proposal could not be loaded
 # LOAD_PROPOSAL_DOCX( 2 )

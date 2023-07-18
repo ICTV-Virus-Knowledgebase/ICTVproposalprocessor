@@ -127,9 +127,6 @@ for TEST in $TESTS; do
 	echo "FAIL$RC $TEST" | tee -a $REPORT
     fi	
 
-
-
-
     #
     # check log
     #

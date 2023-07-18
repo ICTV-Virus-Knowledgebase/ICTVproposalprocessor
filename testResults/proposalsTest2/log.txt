@@ -1,18 +1,17 @@
 # Rscript merge_proposal_zips.R --proposalsDir=testData/proposalsTest2 --outDir=testResults/proposalsTest2 --qcTsvRegression=QC.regression.new.tsv
 VERSION: v1.11.cbd090b
 Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt 
-Wrote: OUTDIR/QC.summary.tsv (1rows)
+Wrote: OUTDIR/QC.summary.tsv (1 rows)
 # LOAD_PROPOSAL_DOCX( 1 )
 # LOADED:  1  DOCX with  0  errors/warnings
 # LOAD_PROPOSAL( 1 )
 # LOADED:  1  XLS with  0  errors/warnings
-Wrote: OUTDIR/QC.summary.tsv (1rows)
 # LOADED:  1 
 # QC start: 1: proposal loaded (1 out of 1)
 # QCed:      1  with  2  errors/warnings
 changeList:  1 
-Wrote: OUTDIR/QC.summary.tsv (3rows)
+Wrote: OUTDIR/QC.summary.tsv (3 rows)
 # START PROC: 1 with 2 changes  (1 out of 1)
 # PROCCESSED: 1 with ERROR:2 WARNING:2 SUCCESS:2 
 # DONE. Found 1 proposals; Processed 1 , skipped 0 
-Wrote: OUTDIR/QC.summary.tsv (9rows)
+Wrote: OUTDIR/QC.summary.tsv (9 rows)

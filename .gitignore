@@ -1,3 +1,7 @@
+# editor files
+~*
+\#*
+# various temp dirs
 tmp/
 pro_zips/
 .DS_Store
