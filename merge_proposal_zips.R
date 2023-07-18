@@ -108,7 +108,7 @@ option_list <- list(
 params <- parse_args(OptionParser(option_list=option_list))
 
 ##### debug overrides #####
-if( FALSE ) {
+if( interactive() ) {
   print("!!!!||||||||||||||||||||||||!!!!")
   print("!!!! DEBUG OVERIDES ENGAGED !!!!")
   print("!!!!||||||||||||||||||||||||!!!!")
@@ -116,11 +116,11 @@ if( FALSE ) {
   #rm(docxList,xlsxList,changeList)
   params$verbose = T
   params$tmi = T
-  params$debug_on_error = F
+  params$debug_on_error = T
   #params$mode = 'draft'
   params$export_msl = T
-  params$proposals_dir = "./testData/proposalsTest_createNew"
-  params$out_dir       = "./testResults/proposalsTest_createNew"
+  params$proposals_dir = "./testData/proposalsTest7_pleaseSelect"
+  params$out_dir       = "./testResults/proposalsTest7_pleaseSelect"
   #params$proposals_dir = "EC55"
   #params$out_dir       = "EC55_results"
   params$qc_regression_tsv_fname = "QC.regression.new.tsv"
@@ -628,7 +628,7 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
           path    = vmrFilename,
           #sheet   = "Terms",
           trim_ws = TRUE,
-          na      = "Please select",
+          na      = c("Please select","[Please select]","[Please\u00A0select]"),
           skip    = 0,
           range   = cell_cols("A:AO"),
           col_names = TRUE
@@ -1436,7 +1436,7 @@ load_proposal = function(code) {
           proposals[code,"xlsxpath"],
           sheet=proposalsSheetName,
           trim_ws = TRUE,
-          na = "Please select",
+          na = c("Please select","[Please select]","[Please\u00A0select]"),
           skip = 2,
           range = cell_cols("A:AO"),
           col_names = FALSE
@@ -1980,6 +1980,13 @@ qc_proposal = function(code, proposalDf) {
                      paste("XLSX missing header [",missingCvNames,"]")) 
     return(list(errorDf=errorDf))
   }
+  
+  #
+  # convert "please select" to NA
+  #
+  isPleaseSelect = regexpr(text=changeDf, pattern=".*please.*select.*", ignore.case = T)>0
+  changeDf[isPleaseSelect]=NA
+  
   #
   # check that all the terms are legal
   #
@@ -2747,7 +2754,7 @@ apply_changes = function(code,proposalBasename,changeDf) {
         newTaxon[1,"ictv_id"]     = newTaxon$taxnode_id
         
         # genomeComposition = molecule_id 
-        newTaxon[1,xlsx2dbMap["molecule"]] = dbCvMapList[["molecule"]][change[1,"molecule"] ]
+        newTaxon[1,xlsx2dbMap["molecule"]] = ifelse(is.na(change$molecule),NA,dbCvMapList[["molecule"]][change$molecule])
         
         # NOTE: column does not (yet) exist in [taxonomy_node], only in [load_next_msl##]
         newTaxon[1,xlsx2dbMap["hostSource"]] = change[1,"hostSource"] 

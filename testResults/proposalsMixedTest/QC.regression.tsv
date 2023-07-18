@@ -1,3 +1,4 @@
 subcommittee	code	docx	xlsx	row	change	rank	taxon	level	error	message	notes	scAbbrev
 NA	2	labels - 30 up - Confiture de FRAISE 2023-05-27.doc	NA	NA	NA	NA	NA	WARNING	DOCX_FILENAME_SPACES	filename contains a space: please replace with _ or -	labels[ ]-[ ]30[ ]up[ ]-[ ]Confiture[ ]de[ ]FRAISE[ ]2023-05-27.doc	NA
 NA	3	NA	new proposal.xls	NA	NA	NA	NA	WARNING	XLSX_FILENAME_SPACES	filename contains a space: please replace with _ or -	new[ ]proposal.xls	NA
+NA	4	MISSING	variable_name_mapping.xlsx	NA				ERROR	XLSX_NOT_PROPOSAL	XLS file does not match proposals template	A worksheet name matching 'proposals* template' was not found, only: 'Sheet1'	NA

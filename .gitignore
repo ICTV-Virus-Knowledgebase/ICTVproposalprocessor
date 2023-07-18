@@ -45,4 +45,7 @@ QC.pretty_summary.all.xlsx
 *.diff.*
 *.dwdiff.*
 *.dwdiff
+msl.tsv
+msl_load.sql
+QC.docx_summary.tsv
 
