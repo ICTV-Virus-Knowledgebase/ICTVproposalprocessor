@@ -2303,8 +2303,8 @@ apply_changes = function(code,proposalBasename,changeDf) {
 
     # action mappings - externalize or move up
   actionCV = c(
-    "create" = "create"
-    ,"create new" = "create"
+    "create" = "new"
+    ,"create new" = "new"
     ,"rename" = "rename"
     ,"abolish" = "abolish"
     # types of moves
@@ -2478,7 +2478,7 @@ apply_changes = function(code,proposalBasename,changeDf) {
     #   curMSL$.split_kept = T means the MOVE code saw a srcName = destName split
     #   curMSL$.split = T means this code saw a srcName!=destName split
     #  -------------------------------------------------------------------------
-    if(    actionClean %in% c("create")
+    if(    actionClean %in% c("new")
        || (actionClean %in% c("split") && srcTaxonName != destTaxonName) 
        ) {
 
@@ -2489,7 +2489,7 @@ apply_changes = function(code,proposalBasename,changeDf) {
       #
       # check SRC taxon
       #
-      if(actionClean == "create" ) {
+      if(actionClean == "new" ) {
         # should have NO source taxon
         if( !is.na(srcTaxonName)) {
           # if srcTaxon was specified in xlsx (shouldn't be for NEW)
@@ -2795,7 +2795,7 @@ apply_changes = function(code,proposalBasename,changeDf) {
         .GlobalEnv$newMSL <- rbindlist(list(.GlobalEnv$newMSL,newTaxon),fill=TRUE)
         
         # SUCCESS message
-        errorCodeCreateMap=c("create"="CREATE.OK","split"="SPLIT.OK")
+        errorCodeCreateMap=c("new"="CREATE.OK","split"="SPLIT.OK")
         errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
                          "SUCCESS", errorCodeCreateMap[actionClean], 
                          paste0("Change=",toupper(actionClean),", applied successfully"), 
@@ -3787,6 +3787,9 @@ if(params$export_msl) {
               #,"notes" 
               #"lineage"  # computed by trigger in db
               )
+  # get MSL num
+  sql_msl_num = .GlobalEnv$newMSL$msl_release_num[1]
+  
   newSqlFilename = file.path(params$out_dir,params$sql_load_filename)
   sqlout=file(newSqlFilename,"wt",encoding = "UTF-8")
   cat("Writing ",newSqlFilename,"\n")
@@ -3803,7 +3806,7 @@ if(params$export_msl) {
   cat("insert into [taxonomy_toc] ([tree_id],[msl_release_num],[comments]) ",
       "values (", paste(
        sort(levels(as.factor(newMSL$tree_id)),decreasing = T)[1],
-        params$next_msl,
+        sql_msl_num,
         "NULL",
       sep=","),
       ")\n",
@@ -3882,7 +3885,7 @@ if(params$export_msl) {
     	null_ct=count(case when in_change is null then 1 end),
     	total_ct=count(*)
   from taxonomy_node
-  where msl_release_num = ",params$next_msl,"
+  where msl_release_num = ",sql_msl_num,"
   group by level_id
   order by level_id
   "), file=sqlout)
@@ -3892,7 +3895,7 @@ if(params$export_msl) {
   select 
        level_id,in_change, ct=count(*)
   from taxonomy_node
-  where msl_release_num = ",params$next_msl,"
+  where msl_release_num = ",sql_msl_num,"
   group by level_id,in_change
   order by level_id,in_change
   
@@ -3967,11 +3970,11 @@ if(params$export_msl) {
   cat(paste("
   -- NOW check if all newMSL have delta in, and prevMSL have delta out
   select 'prevMSL w/o delta to new', count(*) from taxonomy_node
-  where msl_release_num = ",params$next_msl-1,"
+  where msl_release_num = ",sql_msl_num-1,"
   and taxnode_id not in (select prev_taxid from taxonomy_node_delta)
   union all
   select  'newMSL w/o delta to prev',  count(*) from taxonomy_node
-  where msl_release_num = ",params$next_msl,"
+  where msl_release_num = ",sql_msl_num,"
   and taxnode_id not in (select new_taxid from taxonomy_node_delta)
   "),
   file=sqlout)
@@ -3981,7 +3984,7 @@ if(params$export_msl) {
   select 
        level_id,out_change, ct=count(*)
   from taxonomy_node
-  where msl_release_num = ",params$next_msl-1,"
+  where msl_release_num = ",sql_msl_num-1,"
   group by level_id,out_change
   order by level_id,out_change
   
