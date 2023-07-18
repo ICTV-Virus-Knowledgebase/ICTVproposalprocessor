@@ -117,12 +117,12 @@ if( interactive() ) {
   params$verbose = T
   params$tmi = T
   params$debug_on_error = T
-  #params$mode = 'draft'
+  params$mode = 'draft'
   params$export_msl = T
-  params$proposals_dir = "./testData/proposalsTest7_pleaseSelect"
-  params$out_dir       = "./testResults/proposalsTest7_pleaseSelect"
-  #params$proposals_dir = "EC55"
-  #params$out_dir       = "EC55_results"
+  #params$proposals_dir = "./testData/proposalsTest7_pleaseSelect"
+  #params$out_dir       = "./testResults/proposalsTest7_pleaseSelect"
+  params$proposals_dir = "EC55"
+  params$out_dir       = "EC55_results"
   params$qc_regression_tsv_fname = "QC.regression.new.tsv"
 }
 #
@@ -1985,7 +1985,11 @@ qc_proposal = function(code, proposalDf) {
   # convert "please select" to NA
   #
   isPleaseSelect = regexpr(text=changeDf, pattern=".*please.*select.*", ignore.case = T)>0
-  changeDf[isPleaseSelect]=NA
+  isPleaseSelect[is.na(isPleaseSelect)]=FALSE
+  if(sum(isPleaseSelect,na.rm=T)>0) {
+    # replace "[Please Select]" with NA
+    changeDf[isPleaseSelect]=NA
+  }
   
   #
   # check that all the terms are legal
