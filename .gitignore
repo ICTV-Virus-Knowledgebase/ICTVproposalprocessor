@@ -48,4 +48,4 @@ QC.pretty_summary.all.xlsx
 msl.tsv
 msl_load.sql
 QC.docx_summary.tsv
-
+QC.pretty_summary.?_*.xlsx

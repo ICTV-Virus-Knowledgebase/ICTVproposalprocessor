@@ -106,6 +106,8 @@ option_list <- list(
 # get command line options, if help option encountered print help and exit,
 # otherwise if options not found on command line then set defaults, 
 params <- parse_args(OptionParser(option_list=option_list))
+#debuggingState(FALSE)
+#cat("# DebuggingState()=",debuggingState(),"\n")
 
 ##### debug overrides #####
 if( interactive() ) {
@@ -114,16 +116,21 @@ if( interactive() ) {
   print("!!!!||||||||||||||||||||||||!!!!")
   # defeat auto-caching when debugging
   #rm(docxList,xlsxList,changeList)
-  params$verbose = T
-  params$tmi = T
-  params$debug_on_error = T
+  params$verbose = F
+  params$tmi = F
+  params$debug_on_error = F
   params$mode = 'draft'
   params$export_msl = T
-  #params$proposals_dir = "./testData/proposalsTest7_pleaseSelect"
-  #params$out_dir       = "./testResults/proposalsTest7_pleaseSelect"
+  #params$proposals_dir = "./testData/proposalsTest6_split"
+  #params$out_dir       = "./testResults/proposalsTest6_split"
   params$proposals_dir = "EC55"
   params$out_dir       = "EC55_results"
   params$qc_regression_tsv_fname = "QC.regression.new.tsv"
+  cat("!! VERBOSE: ",params$versbose, "\n")
+  cat("!! TMI:     ",params$tmi, "\n")
+  cat("!! MODE:    ",params$mode, "\n")
+  cat("!! SRC_DIR: ",params$proposals_dir, "\n")
+  cat("!! OUT_DIR: ",params$out_dir, "\n")
 }
 #
 # args trickery - TMI implies verbose
@@ -475,7 +482,10 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
                    colClasses=as.character(taxonomy_node_names),
                    stringsAsFactors=FALSE,na.strings=c("","NULL"))
   cat("Previous taxa:",dim(taxonomyDt), " from ",dbTaxonomyNodeFilename,"\n")
-  
+  if( !("host_source" %in% names(taxonomyDt)) ) {
+    cat("WARNING: no host_source column in taxonomy_node dump!!! (Adding)\n")
+    taxonomyDt[,"host_source"] = NA_character_
+  }
   
   # ```
   # 
@@ -1388,6 +1398,28 @@ getTaxonRank = function(realmSpecies) {
   }
 }
 
+#
+# error formating functions
+#
+
+diffLineageStrings=function(lin1, lin2) {
+  lin1ex=unlist(strsplit(as.character(lin1),";"))
+  lin2ex=unlist(strsplit(as.character(lin2),";"))
+  
+  # match lengths - would be better if we knew the actual ranks, and could align them
+  if(length(lin1ex) < length(lin2ex)) {
+    lin1ex=c(lin1ex,rep("",length(lin2ex)-length(lin1ex)))
+  } else if( length(lin1ex) > length(lin2ex)) {
+    lin2ex=c(lin2ex,rep("",length(lin1ex)-length(lin2ex)))
+  }
+ 
+  diffs=lin1ex==lin2ex
+  tups=ifelse(diffs,lin1ex,paste0('[',lin1ex,'//',lin2ex,']'))
+
+  return(paste0(
+    ifelse(sum(!diffs)==0,"[identical]",""),
+    paste0(tups,collapse=";")))
+}
 # 
 # # QC functions
 # 
@@ -2506,7 +2538,8 @@ apply_changes = function(code,proposalBasename,changeDf) {
           # if srcTaxon was specified in xlsx (shouldn't be for NEW)
           errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.destTaxon,
                            "WARNING", "CREATE.W_SRC", "Change=CREATE, but 'current taxonomy' is not empty; perhaps you meant SPLIT", 
-                           paste0("currentTaxonomy=", change$.srcLineage,
+                           paste0("currentVsProposed=", diffLineageStrings(change$.srcLineage,change$.destLineage),
+                                  ", currentTaxonomy=", change$.srcLineage,
                                   ", proposedTaxonomy=",change$.destLineage)
           )
         }
@@ -2554,7 +2587,8 @@ apply_changes = function(code,proposalBasename,changeDf) {
       if(is.na(destTaxonName)) {
         errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.destTaxon,
                          "ERROR", "CREATE.NO_DEST", paste0("Change=",toupper(actionClean),", but 'proposed taxonomy' columns are empty"), 
-                         paste0("currentTaxonomy=", change$.srcLineage,
+                         paste0("currentVsProposed=", diffLineageStrings(change$.srcLineage, change$.destLineage),
+                                ",currentTaxonomy=", change$.srcLineage,
                                 ", proposedTaxonomy=",change$.destLineage)
         )
         next;
@@ -2736,7 +2770,8 @@ apply_changes = function(code,proposalBasename,changeDf) {
           errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.destTaxon,
                            "WARNING", "CREATE.PARENT_LINEAGE", 
                            paste0("Change=",toupper(actionClean),", proposed parent taxon exists, but not with expected lineage, using observed lineage"), 
-                           paste0("proposedParentLineage=", destParentLineage,
+                           paste0("proposedVsObserved=", diffLineageStrings(destParentLineage, newTaxon$lineage),
+                                  ", proposedParentLineage=", destParentLineage,
                                   ", observedParentLineage=",newTaxon$lineage,
                                   ", otherProposals=",newTaxon$prev_proposals)
           )
@@ -2835,7 +2870,8 @@ apply_changes = function(code,proposalBasename,changeDf) {
       if(srcTaxonName == destTaxonName) {
         errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
                          "WARNING", "RENAME.SAME_NAME", "Change=RENAME, but new name is the same; might this be a move?", 
-                         paste0("currentTaxonomy=", srcLineage, ", destTaxonomy=", destLineage)
+                         paste0("currentVsProposed=",diffLineageStrings(srcLineage, destLineage),
+                                ", currentTaxonomy=", srcLineage, ", destTaxonomy=", destLineage)
         )
       }
       
@@ -2981,7 +3017,7 @@ apply_changes = function(code,proposalBasename,changeDf) {
       if(is.na(srcTaxonName)) {
         errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
                          "ERROR", "ABOLISH.WO_SRC", "Change=ABOLISH, but 'current taxonomy' columns are empty", 
-                         paste0("currentTaxonomy=", srcLineage, ", destTaxonomy=", destLineage)
+                         paste0("destTaxonomy=", destLineage)
         )
         next;
       }
@@ -3116,7 +3152,8 @@ apply_changes = function(code,proposalBasename,changeDf) {
         errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
                          "ERROR", "MOVE.DIFF_RANK", 
                          "Change=MOVE, but 'current taxonomy' and 'proposed taxonomy' ranks differ; use promote or demote, not move, to change rank", 
-                         paste0("srcTaxonomy=[", srcTaxonRank,"]",srcLineage,
+                         paste0("srcVsDest=[",srcTaxonRank,"//",destTaxonRank,"] ", diffLineageStrings(srcLineage,destLineage),
+                                ", srcTaxonomy=[", srcTaxonRank,"]",srcLineage,
                                 ", destTaxonomy=[", destTaxonRank,"]", destLineage)
         )
         next;
@@ -3126,6 +3163,7 @@ apply_changes = function(code,proposalBasename,changeDf) {
                          "ERROR", "CHANGE_RANK.SAME_RANK", 
                          paste0("Change=",toupper(actionClean),", but 'current taxonomy' and 'proposed taxonomy' ranks are the same; use MOVE"), 
                          paste0("rank=", rankClean, 
+                                ", srcVsDest=",diffLineageStrings(srcLineage,destLineage),
                                 ", srcTaxonomy=[", srcTaxonRank,"]", srcLineage,
                                 ", destTaxonomy=[", destTaxonRank,"]", destLineage)
         )
@@ -3147,7 +3185,8 @@ apply_changes = function(code,proposalBasename,changeDf) {
           # no previous record, just doesn't exist
           errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
                             "ERROR", "MOVE.NO_EXIST", paste0("Change=",toupper(actionClean),", but taxon does not exist"), 
-                           paste0("taxon=", srcTaxonName, ", lineage=",srcLineage,", proposedLineage=", destLineage))
+                           paste0("taxon=", srcTaxonName, ",srcVsDest=",diffLineageStrings(srcLineage,destLineage),
+                                  ", lineage=",srcLineage,", proposedLineage=", destLineage))
           next;
         } else {
           # previous record - must have been modified already this MSL
@@ -3245,13 +3284,14 @@ apply_changes = function(code,proposalBasename,changeDf) {
       
       # get new parent
       destParentTaxon = .GlobalEnv$newMSL[parentDestNewMatches,]
-      
+
       # WARN if PARENT_LINEAGE is not expected
       if( !is.na(destParentLineage) && (destParentTaxon$lineage != destParentLineage) ) {
         errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
                          "WARNING", "MOVE.PARENT_LINEAGE", 
                          paste0("Change=",toupper(actionClean),", proposed parent taxon exists, but not with expected lineage"), 
-                         paste0("proposedParentLineage=", destParentLineage,
+                         paste0(",proposedVsObserved=",diffLineageStrings(destParentLineage,destParentTaxon$lineage),
+                                ", proposedParentLineage=", destParentLineage,
                                 ", observedParentLineage=",destParentTaxon$lineage,
                                 ", otherProposals=",destParentTaxon$prev_proposals)
         )
@@ -3348,14 +3388,10 @@ apply_changes = function(code,proposalBasename,changeDf) {
         if(!is.na(change[1,"genomeCoverage"])) {
           .GlobalEnv$newMSL[srcNewTarget,xlsx2dbMap["genomeCoverage"]]= change[1,"genomeCoverage"] 
         }
-      } else {
-        # 
-        # NON-species
-        #
-        #  RECURSE TO SET LINEAGE OF destPARENT's KIDS
-        #if( 202203764==taxnode_id) {browser()} # Luteovirus
-        update_lineage(destParentTaxon$taxnode_id,destParentTaxon$lineage)
       }
+      
+      #  RECURSE TO SET LINEAGE OF destPARENT's KIDS
+      update_lineage(destParentTaxon$taxnode_id,destParentTaxon$lineage)
       
       #
       # update curMSL [out_*] (for non-splits)
@@ -3395,8 +3431,9 @@ apply_changes = function(code,proposalBasename,changeDf) {
                        paste0(toupper(actionClean)," ",
                               .GlobalEnv$curMSL$rank[srcPrevTarget], " named '", .GlobalEnv$curMSL[srcPrevTarget,"name"],    "'", 
                               " to ", .GlobalEnv$newMSL$rank[srcNewTarget], " named '", .GlobalEnv$newMSL[srcNewTarget,"name"],    "'", 
-                              " from '",  .GlobalEnv$curMSL[srcPrevTarget,"lineage"], "'", 
-                              " to '",    .GlobalEnv$newMSL[srcNewTarget, "lineage"], "'")
+                              " change=",  diffLineageStrings(.GlobalEnv$curMSL[srcPrevTarget,"lineage"],.GlobalEnv$newMSL[srcNewTarget, "lineage"])
+                              
+                       )
       )
     } else {
       #  -------------------------------------------------------------------------
@@ -3407,7 +3444,7 @@ apply_changes = function(code,proposalBasename,changeDf) {
       errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
                        "ERROR", "CHANGE.UNIMP", 
                        paste0("Change=",toupper(action)," is NOT (yet) implemented"), 
-                         paste0("taxon=", srcTaxonName, ", lineage=",srcLineage,", proposedTaxon=", destTaxonName)
+                       paste0("lineageChange=", diffLineageString(srcLineage,destLineage))
                        )
       next;
   
@@ -3484,13 +3521,30 @@ apply_changes = function(code,proposalBasename,changeDf) {
                      paste0("removed ",.GlobalEnv$newMSL$rank[splitDeleteIdx]," ",.GlobalEnv$newMSL$name[splitDeleteIdx],
                             " from ",.GlobalEnv$newMSL$lineage[splitDeleteIdx] )
     )
-       
-    # remove the rows from newMSL
-    .GlobalEnv$newMSL = .GlobalEnv$newMSL[!splitDeleteIdx,]
-    # and from the keep list
-    splitKeepIdx=splitKeepIdx[!splitDeleteIdx]
+    
+    # check for kids - work back to front for rowIdx stability across row deletions
+    for(rowIdx in rev(which(splitDeleteIdx)) ) {
+      srcKids=(.GlobalEnv$newMSL$parent_id==.GlobalEnv$newMSL$taxnode_id[rowIdx])
+      
+      if(sum(srcKids,na.rm=TRUE)>0) {
+        # error: can't abolish something with kids
+        errorDf=addError(errorDf,.GlobalEnv$newMSL[row,]$.split_code,.GlobalEnv$newMSL[row,]$.split_linenum, 
+                         "split_abolish",as.character(.GlobalEnv$newMSL[row,]$rank),.GlobalEnv$newMSL[row,]$name,
+                         "ERROR", "SPLIT.IMPLICIT_ABOLISH_WITH_KIDS", "Change=ABOLISH, taxon still has un-abolished/moved children", 
+                         paste0("taxon=", .GlobalEnv$newMSL[row,]$name, ", lineage=",.GlobalEnv$newMSL[row,]$lineage,", kids: N=",sum(srcKids,na.rm=TRUE),
+                                ", NAMES=[", join(.GlobalEnv$newMSL[srcKids,"rank"],.GlobalEnv$newMSL[srcKids,"name"],sep=":") 
+                         ) 
+        )
+      } else {
+        # no kids, nuke it
+        # remove the rows from newMSL
+        .GlobalEnv$newMSL = .GlobalEnv$newMSL[-rowIdx,]
+        # and from the keep list
+        splitKeepIdx=splitKeepIdx[-rowIdx]
+      }
+    } # for taxon to split_abolish (implicit)
   }
-
+    
   if( sum(splitKeepIdx) > 0 && params$verbose ) {
     # log that we're NOT removing them
     # function(errorDf,code,row,change,rank,taxon,levelStr,errorCode,errorStr,notes
@@ -3640,7 +3694,7 @@ if(params$export_msl) {
     #"out_updated",
     #"prev_taxnode_id",
     #"prev_proposals",
-    "host_source",
+    "host_source", 
     "exemplar_name",
     "genome_coverage",
     "notes" 
