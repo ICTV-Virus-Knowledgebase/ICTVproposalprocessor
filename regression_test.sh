@@ -132,8 +132,8 @@ for TEST in $TESTS; do
     #
     # use "tail -n +3" to skip date/version/etc in first 2 lines
     #
-    echo "diff -yw -W 200 \<(tail -n +3 $LOG) \<(tail -n +3 $LOGBASE) \> $LOGDIFF" | tee $LOGDIFF
-    diff -yw -W 200 <(tail -n +3 $LOG) <(tail -n +3 $LOGBASE) 2>&1 >> $LOGDIFF; RC=$?
+    echo "diff -yw -W 200 \<(tail -n +3 $LOG|sed -e 's/\[?25h//g') \<(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g') \> $LOGDIFF" | tee $LOGDIFF
+    diff -yw -W 200 <(tail -n +3 $LOG|sed -e 's/\[?25h//g') <(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g') 2>&1 >> $LOGDIFF; RC=$?
     if [ $RC -eq "0" ]; then
 	echo "LOG_PASS  $TEST" | tee -a $REPORT
     else

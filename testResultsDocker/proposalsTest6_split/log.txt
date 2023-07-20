@@ -1,0 +1,1 @@
+../../testResults/proposalsTest6_split/log.txt
