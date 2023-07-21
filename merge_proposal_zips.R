@@ -121,10 +121,10 @@ if( interactive() ) {
   params$debug_on_error = F
   params$mode = 'draft'
   params$export_msl = T
-  #params$proposals_dir = "./testData/proposalsTest6_split"
-  #params$out_dir       = "./testResults/proposalsTest6_split"
-  params$proposals_dir = "EC55"
-  params$out_dir       = "EC55_results"
+  params$proposals_dir = "./testData/proposalsTest8_renameThenCreate"
+  params$out_dir       = "./testResults/proposalsTest8_renameThenCreate"
+  #params$proposals_dir = "EC55"
+  #params$out_dir       = "EC55_results"
   params$qc_regression_tsv_fname = "QC.regression.new.tsv"
   cat("!! VERBOSE: ",params$versbose, "\n")
   cat("!! TMI:     ",params$tmi, "\n")
@@ -2676,11 +2676,22 @@ apply_changes = function(code,proposalBasename,changeDf) {
         } else {
           # someone already modified it - tell me who!
           errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
-                           "ERROR", "CREATE.PARENT_ALREADY_CHANGED", paste0("Change=",toupper(actionClean),", but parent taxon already modified"), 
-                           paste0("proposal(s)=", prevDestParent$out_filename, " also did a '",prevDestParent$out_change,"' to '", prevDestParent$out_target,"'")
+                           "WARNING", "CREATE.PARENT_ALREADY_CHANGED", paste0("Change=",toupper(actionClean),", but parent taxon already modified"), 
+                           paste0("proposal(s)=", prevDestParent$out_filename, " did a '",prevDestParent$out_change,"' ",
+                                  "of '",prevDestParent$name, "' to '", prevDestParent$out_target,"'")
           )
-          next;
-        }
+          # find what it became
+          parentDestNewMatches=(.GlobalEnv$newMSL$lineage==as.character(prevDestParent$out_target)|.GlobalEnv$newMSL$name==as.character(prevDestParent$out_target))
+          if(sum(parentDestNewMatches) != 1) {
+            # couldn't find new version, what the heck?!!?
+            errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
+                             "ERROR", "CREATE.PARENT_CHANGED_BUT_MISSING", paste0("Change=",toupper(actionClean),", but parent taxon already modified"), 
+                             paste0("can't find  '", prevDestParent$out_target,"' in new MSL: did someone else further change it?")
+            )
+            next;
+          }
+          
+                 }
       } else if(sum(parentDestNewMatches)>1) {
          # this should never happen
          errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.destTaxon,
@@ -2688,167 +2699,166 @@ apply_changes = function(code,proposalBasename,changeDf) {
                           paste0("parentTaxon=", destParentName, ", proposedTaxonomy=", destLineage)
          )
          next;
-      } else {
-        # WARN: check if taxon rank matches change rank
-        if ( tolower(destTaxonRank) != tolower(change$rank) ) {
+      }
+      # WARN: check if taxon rank matches change rank
+      if ( tolower(destTaxonRank) != tolower(change$rank) ) {
+        errorDf=addError(errorDf,code,linenum,change$change,change$rank,change$.destTaxon,
+                         "WARNING", "CREATE.RANK_MISMATCH", 
+                         paste0("Change=",toupper(actionClean),", but proposed taxon rank does not match [rank] column"), 
+                         paste0("ankColumn=", change$rank,
+                                ", proposedTaxonRank=",destTaxonRank,
+                                ", proposedTaxonomy=", destLineage)
+        )
+      }
+      
+      #### binomial check ####
+      # if new SPECIES, check binomial prefix matches parent genus
+      #
+      if( destTaxonRank=="species" ) {
+        
+        # 
+        # check hostSource
+        #
+        if( is.na(change$hostSource) || grepl("please.*select",change$hostSource, ignore.case=T) ) {
           errorDf=addError(errorDf,code,linenum,change$change,change$rank,change$.destTaxon,
-                           "WARNING", "CREATE.RANK_MISMATCH", 
-                           paste0("Change=",toupper(actionClean),", but proposed taxon rank does not match [rank] column"), 
-                           paste0("ankColumn=", change$rank,
-                                  ", proposedTaxonRank=",destTaxonRank,
-                                  ", proposedTaxonomy=", destLineage)
+                           "WARNING", "CREATE.SPECIES_NO_HOST_SOURCE", 
+                           paste0("Change=",toupper(actionClean),", but proposed species must have a host/source value"), 
+                           ""
           )
         }
-
-        #### binomial check ####
-        # if new SPECIES, check binomial prefix matches parent genus
-        #
-        if( destTaxonRank=="species" ) {
-
-          # 
-          # check hostSource
-          #
-          if( is.na(change$hostSource) || grepl("please.*select",change$hostSource, ignore.case=T) ) {
-            errorDf=addError(errorDf,code,linenum,change$change,change$rank,change$.destTaxon,
-                             "WARNING", "CREATE.SPECIES_NO_HOST_SOURCE", 
-                             paste0("Change=",toupper(actionClean),", but proposed species must have a host/source value"), 
-                             ""
-            )
-          }
-          
-          # check if parent is a genus
-          destParentTaxon = .GlobalEnv$newMSL[parentDestNewMatches,]
-          if(destParentTaxon$rank=="genus") {
-            destParentGenusTaxon = destParentTaxon
-          } else {
-            if(destParentTaxon$rank == "subgenus" ) {
-              # check up one rank
-              destParentGenusTaxon = .GlobalEnv$newMSL %>% filter(taxnode_id == destParentTaxon$parent_id)
-              if(destParentGenusTaxon$rank != "genus") {
-                # can't find genus parent
-                errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.destTaxon,
-                                 "ERROR", "CREATE.SPECIES_SUBGENUS_NO_GENUS", 
-                                 paste0("Change=",toupper(actionClean),", can not find parent genus"), 
-                                 paste0("subgenus '",destParentTaxon$name,"' is not in a genus;",
-                                        " it's parent '",destParentGenusTaxon$name,"' is a ",destParentGenusTaxon$rank )
-                )
-                next;
-              }
-            } else {
-              # parent isn't subgenus or genus
+        
+        # check if parent is a genus
+        destParentTaxon = .GlobalEnv$newMSL[parentDestNewMatches,]
+        if(destParentTaxon$rank=="genus") {
+          destParentGenusTaxon = destParentTaxon
+        } else {
+          if(destParentTaxon$rank == "subgenus" ) {
+            # check up one rank
+            destParentGenusTaxon = .GlobalEnv$newMSL %>% filter(taxnode_id == destParentTaxon$parent_id)
+            if(destParentGenusTaxon$rank != "genus") {
+              # can't find genus parent
               errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.destTaxon,
-                               "ERROR", "CREATE.SPECIES_NO_GENUS", 
+                               "ERROR", "CREATE.SPECIES_SUBGENUS_NO_GENUS", 
                                paste0("Change=",toupper(actionClean),", can not find parent genus"), 
-                               paste0("parent '",destParentTaxon$name,"' is a ",destParentTaxon$rank )
+                               paste0("subgenus '",destParentTaxon$name,"' is not in a genus;",
+                                      " it's parent '",destParentGenusTaxon$name,"' is a ",destParentGenusTaxon$rank )
               )
               next;
             }
-          } 
-          # have genus (parent or grandparent)
-          # check binomial naming
-          if( str_detect(destTaxonName,paste0(destParentGenusTaxon$name," ")) != TRUE ) {
-            errorDf=addError(errorDf,code,linenum,change$change,change$rank,change$.destTaxon,
-                             "ERROR", "CREATE.SPECIES_BINOMIAL_MISMATCH", 
-                             paste0("Change=",toupper(actionClean),", but proposed species names does not start with 'genus[space]' per binomial naming convention"), 
-                             paste0("parent genus name =", destParentGenusTaxon$name)
+          } else {
+            # parent isn't subgenus or genus
+            errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.destTaxon,
+                             "ERROR", "CREATE.SPECIES_NO_GENUS", 
+                             paste0("Change=",toupper(actionClean),", can not find parent genus"), 
+                             paste0("parent '",destParentTaxon$name,"' is a ",destParentTaxon$rank )
             )
             next;
           }
-          
-        }
-        
-        # 
-        #####  create new taxon  ##### 
-        #
-        
-        
-        # get parent
-        newTaxon = .GlobalEnv$newMSL[parentDestNewMatches,]
-        
-        # WARN if PARENT_LINEAGE is not expected, AND USE PARENT LINEAGE
-        if( !is.na(destParentLineage) && (newTaxon$lineage != destParentLineage) ) {
-          errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.destTaxon,
-                           "WARNING", "CREATE.PARENT_LINEAGE", 
-                           paste0("Change=",toupper(actionClean),", proposed parent taxon exists, but not with expected lineage, using observed lineage"), 
-                           paste0("proposedVsObserved=", diffLineageStrings(destParentLineage, newTaxon$lineage),
-                                  ", proposedParentLineage=", destParentLineage,
-                                  ", observedParentLineage=",newTaxon$lineage,
-                                  ", otherProposals=",newTaxon$prev_proposals)
+        } 
+        # have genus (parent or grandparent)
+        # check binomial naming
+        if( str_detect(destTaxonName,paste0(destParentGenusTaxon$name," ")) != TRUE ) {
+          errorDf=addError(errorDf,code,linenum,change$change,change$rank,change$.destTaxon,
+                           "ERROR", "CREATE.SPECIES_BINOMIAL_MISMATCH", 
+                           paste0("Change=",toupper(actionClean),", but proposed species names does not start with 'genus[space]' per binomial naming convention"), 
+                           paste0("parent genus name =", destParentGenusTaxon$name)
           )
-          destLineage=destParentLineage
+          next;
         }
         
-        # add new info - primary columns
-        newTaxon[1,"in_change"]   = actionClean
-        newTaxon[1,"in_filename"] = proposalZip
-        newTaxon[1,"in_notes"]    = paste0("xlsx_row=",linenum)
-        newTaxon[1,"in_target"]   = destLineage
-        
-        newTaxon[1,"name"]        = destTaxonName
-        newTaxon[1,"cleaned_name"]= destTaxonName
-        newTaxon[1,"level_id"]    = rankCV$id[rankCV$name==destTaxonRank]
-        newTaxon[1,"rank"]        = destTaxonRank
-        newTaxon[1,"parent_id"]   = newTaxon[1,"taxnode_id"]
-        newTaxon[1,"taxnode_id"]  = max(.GlobalEnv$newMSL$taxnode_id)+1
-        newTaxon[1,"ictv_id"]     = newTaxon$taxnode_id
-        
-        # genomeComposition = molecule_id 
-        newTaxon[1,xlsx2dbMap["molecule"]] = ifelse(is.na(change$molecule),NA,dbCvMapList[["molecule"]][change$molecule])
-        
-        # NOTE: column does not (yet) exist in [taxonomy_node], only in [load_next_msl##]
-        newTaxon[1,xlsx2dbMap["hostSource"]] = change[1,"hostSource"] 
-        
-        # comments
-        newTaxon[1,xlsx2dbMap["comments"]]= change[1,"comments"]
-        
-        
-        #
-        #### CREATE.SPECIES ####  
-        #
-        if( destTaxonRank == "species" ) {
-          #
-          ## for species only
-          #
-          
-          # "genbank_accession_csv"
-          newTaxon[1,xlsx2dbMap["exemplarAccession"]] = change[1,"exemplarAccession"] 
-          # exemplar_name
-          # NOTE: column does not (yet) exist in [taxonomy_node], only in [load_next_msl##]
-          newTaxon[1,xlsx2dbMap["exemplarName"]] = change[1,"exemplarName"] 
-          # "abbrev_csv"
-          newTaxon[1,xlsx2dbMap["Abbrev"]] = change[1,"Abbrev"] 
-          # "isolate_csv"
-          newTaxon[1,xlsx2dbMap["exemplarIsolate"]] = change[1,"exemplarIsolate"] 
-          # genome_coverage
-          # NOTE: column does not (yet) exist in [taxonomy_node], only in [load_next_msl##]
-          newTaxon[1,xlsx2dbMap["genomeCoverage"]]= change[1,"genomeCoverage"] 
-          # genome_coverage
-          # NOTE: column does not (yet) exist in [taxonomy_node], only in [load_next_msl##]
-          newTaxon[1,xlsx2dbMap["genomeCoverage"]]= change[1,"genomeCoverage"] 
-          # molecule_id is above (not species-specific)
-        }
-        
-        # info-only columns - wont be saved to DB
-        newTaxon[1,"rank"]       = destTaxonRank
-        newTaxon[1,"lineage"]    = destLineage
-        
-        # clear some columns inherited from parent
-        newTaxon[1,"prev_taxnode_id"] = NA
-        newTaxon[1,"prev_proposals"] = paste0(code,":",linenum) 
-        
-        # add new taxon to newMSL
-        if(params$verbose) {print(paste0("rbindlist(newMSL,",newTaxon[1,"taxnode_id"],":",destLineage,")"))}
-        .GlobalEnv$newMSL <- rbindlist(list(.GlobalEnv$newMSL,newTaxon),fill=TRUE)
-        
-        # SUCCESS message
-        errorCodeCreateMap=c("new"="CREATE.OK","split"="SPLIT.OK")
-        errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
-                         "SUCCESS", errorCodeCreateMap[actionClean], 
-                         paste0("Change=",toupper(actionClean),", applied successfully"), 
-                         paste0("Create ", newTaxon$rank," of '",newTaxon$lineage,"'")
+      }
+      
+      # 
+      #####  create new taxon  ##### 
+      #
+      
+      
+      # get parent
+      newTaxon = .GlobalEnv$newMSL[parentDestNewMatches,]
+      
+      # WARN if PARENT_LINEAGE is not expected, AND USE PARENT LINEAGE
+      if( !is.na(destParentLineage) && (newTaxon$lineage != destParentLineage) ) {
+        errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.destTaxon,
+                         "WARNING", "CREATE.PARENT_LINEAGE", 
+                         paste0("Change=",toupper(actionClean),", proposed parent taxon exists, but not with expected lineage, using observed lineage"), 
+                         paste0("proposedVsObserved=", diffLineageStrings(destParentLineage, newTaxon$lineage),
+                                ", proposedParentLineage=", destParentLineage,
+                                ", observedParentLineage=",newTaxon$lineage,
+                                ", otherProposals=",newTaxon$prev_proposals)
         )
-      } # create new taxon
-    } 
+        destLineage=destParentLineage
+      }
+      
+      # add new info - primary columns
+      newTaxon[1,"in_change"]   = actionClean
+      newTaxon[1,"in_filename"] = proposalZip
+      newTaxon[1,"in_notes"]    = paste0("xlsx_row=",linenum)
+      newTaxon[1,"in_target"]   = destLineage
+      
+      newTaxon[1,"name"]        = destTaxonName
+      newTaxon[1,"cleaned_name"]= destTaxonName
+      newTaxon[1,"level_id"]    = rankCV$id[rankCV$name==destTaxonRank]
+      newTaxon[1,"rank"]        = destTaxonRank
+      newTaxon[1,"parent_id"]   = newTaxon[1,"taxnode_id"]
+      newTaxon[1,"taxnode_id"]  = max(.GlobalEnv$newMSL$taxnode_id)+1
+      newTaxon[1,"ictv_id"]     = newTaxon$taxnode_id
+      
+      # genomeComposition = molecule_id 
+      newTaxon[1,xlsx2dbMap["molecule"]] = ifelse(is.na(change$molecule),NA,dbCvMapList[["molecule"]][change$molecule])
+      
+      # NOTE: column does not (yet) exist in [taxonomy_node], only in [load_next_msl##]
+      newTaxon[1,xlsx2dbMap["hostSource"]] = change[1,"hostSource"] 
+      
+      # comments
+      newTaxon[1,xlsx2dbMap["comments"]]= change[1,"comments"]
+      
+      
+      #
+      #### CREATE.SPECIES ####  
+      #
+      if( destTaxonRank == "species" ) {
+        #
+        ## for species only
+        #
+        
+        # "genbank_accession_csv"
+        newTaxon[1,xlsx2dbMap["exemplarAccession"]] = change[1,"exemplarAccession"] 
+        # exemplar_name
+        # NOTE: column does not (yet) exist in [taxonomy_node], only in [load_next_msl##]
+        newTaxon[1,xlsx2dbMap["exemplarName"]] = change[1,"exemplarName"] 
+        # "abbrev_csv"
+        newTaxon[1,xlsx2dbMap["Abbrev"]] = change[1,"Abbrev"] 
+        # "isolate_csv"
+        newTaxon[1,xlsx2dbMap["exemplarIsolate"]] = change[1,"exemplarIsolate"] 
+        # genome_coverage
+        # NOTE: column does not (yet) exist in [taxonomy_node], only in [load_next_msl##]
+        newTaxon[1,xlsx2dbMap["genomeCoverage"]]= change[1,"genomeCoverage"] 
+        # genome_coverage
+        # NOTE: column does not (yet) exist in [taxonomy_node], only in [load_next_msl##]
+        newTaxon[1,xlsx2dbMap["genomeCoverage"]]= change[1,"genomeCoverage"] 
+        # molecule_id is above (not species-specific)
+      }
+      
+      # info-only columns - wont be saved to DB
+      newTaxon[1,"rank"]       = destTaxonRank
+      newTaxon[1,"lineage"]    = destLineage
+      
+      # clear some columns inherited from parent
+      newTaxon[1,"prev_taxnode_id"] = NA
+      newTaxon[1,"prev_proposals"] = paste0(code,":",linenum) 
+      
+      # add new taxon to newMSL
+      if(params$verbose) {print(paste0("rbindlist(newMSL,",newTaxon[1,"taxnode_id"],":",destLineage,")"))}
+      .GlobalEnv$newMSL <- rbindlist(list(.GlobalEnv$newMSL,newTaxon),fill=TRUE)
+      
+      # SUCCESS message
+      errorCodeCreateMap=c("new"="CREATE.OK","split"="SPLIT.OK")
+      errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
+                       "SUCCESS", errorCodeCreateMap[actionClean], 
+                       paste0("Change=",toupper(actionClean),", applied successfully"), 
+                       paste0("Create ", newTaxon$rank," of '",newTaxon$lineage,"'")
+      )
+    } # create new taxon
     else  if(actionClean %in% c("rename") ) {
     
       #  -------------------------------------------------------------------------
