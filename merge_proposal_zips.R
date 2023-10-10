@@ -116,13 +116,13 @@ if( interactive() ) {
   print("!!!!||||||||||||||||||||||||!!!!")
   # defeat auto-caching when debugging
   #rm(docxList,xlsxList,changeList)
-  params$verbose = F
-  params$tmi = F
+  params$verbose = T
+  params$tmi = T
   params$debug_on_error = F
   params$mode = 'draft'
   params$export_msl = T
-  params$proposals_dir = "./testData/proposalsTest8_renameThenCreate"
-  params$out_dir       = "./testResults/proposalsTest8_renameThenCreate"
+  params$proposals_dir = "./MSL39v2"
+  params$out_dir       = "./MSL39v2_results"
   #params$proposals_dir = "EC55"
   #params$out_dir       = "EC55_results"
   params$qc_regression_tsv_fname = "QC.regression.new.tsv"
@@ -769,7 +769,21 @@ if( length(filtered) ) {
   if(params$tmi) { cat(paste0("# Suppl files filtered out: N=",length(filtered),"\n"))}
 }
 inputFiles = inputFiles[grep(inputFiles$file,pattern=params$infile_suppl_pat, invert=T),]
-if(params$tmi) { cat("# xls|doc(x) files after Suppl removal: N=",nrow(inputFiles),"\n")}
+if(params$tmi) { cat("# xls|doc(x) files after Suppl/appendix removal: N=",nrow(inputFiles),"\n")}
+
+# ignore "appendix" files 
+filtered = grep(inputFiles$file,pattern="appendix",ignore.case = T)
+if( length(filtered) ) {
+  errorDf = inputFiles[filtered,]
+  errorDf$level = "INFO"
+  errorDf$error = "IGNORE_FNAME_APPENDIXL"
+  errorDf$message = paste0("All files with '","appendix","' in filename are ignored")
+  .GlobalEnv$loadErrorDf = rbindlist(list(.GlobalEnv$loadErrorDf, errorDf),fill=TRUE)
+  write_error_summary(.GlobalEnv$loadErrorDf)
+  if(params$tmi) { cat(paste0("# Appendix files filtered out: N=",length(filtered),"\n"))}
+}
+inputFiles = inputFiles[grep(inputFiles$file,pattern="appendix",ignore.case = T, invert=T),]
+if(params$tmi) { cat("# xls|doc(x) files after appendix removal: N=",nrow(inputFiles),"\n")}
 
 ##### SECTION scan DOCX #####
 #
@@ -4036,7 +4050,7 @@ if(params$export_msl) {
   }
   # QC SQL
   cat("\n-- build deltas (~7min) \n
-  EXEC rebuild_delta_nodes NULL
+  EXEC rebuild_delta_nodes_2 NULL
   
   -- rebuild merge/split (seconds) \n
   EXEC [dbo].[rebuild_node_merge_split] 
