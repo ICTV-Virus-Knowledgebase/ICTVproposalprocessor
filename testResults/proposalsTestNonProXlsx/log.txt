@@ -1,12 +1,11 @@
 # Rscript merge_proposal_zips.R --proposalsDir=testData/proposalsTestNonProXlsx --outDir=testResults/proposalsTestNonProXlsx --qcTsvRegression=QC.regression.new.tsv
-VERSION: v1.12.efaec37
+VERSION: v1.13.85eb46c
 Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # LOAD_PROPOSAL_DOCX( 1 )
 # LOADED:  1  DOCX with  0  errors/warnings
 # LOAD_PROPOSAL( 1 )
-code 1: A worksheet name matching 'proposals* template' was not foundlogging error
-code 1: A worksheet name matching 'proposals* template' was not foundreturning NA
+code 1: A worksheet name matching 'proposal*' was not found: logging error
 # LOADED:  1  XLS with  1  errors/warnings
 Wrote: OUTDIR/QC.summary.tsv (1 rows)
 # LOADED:  1 

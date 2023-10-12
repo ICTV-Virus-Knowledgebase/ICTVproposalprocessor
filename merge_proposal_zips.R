@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-#
+#A worksheet name matching 'proposal*' was not foundlogging error
 # TODO: 
 #  1. add arg parsing
 #  2. move from params to opt? or keep params for Rmd compatibility?
@@ -1488,7 +1488,7 @@ load_proposal = function(code) {
   proposalsSheetNames = grep(proposalsSheetNameRegex,sheetNames,ignore.case = T, value=T)
   if( is.na(proposalsSheetNames[1]) ) {
     # ERROR if can't find it. 
-    cat(paste0("code ", code, ": A worksheet name matching '",proposalsSheetNameRegex,"' was not found","logging error","\n"))
+    cat(paste0("code ", code, ": A worksheet name matching '",proposalsSheetNameRegex,"' was not found: ","logging error","\n"))
     errorDf=addError(errorDf,
                      code,"","","","",
                      "ERROR","XLSX_NOT_PROPOSAL",
@@ -1504,7 +1504,7 @@ load_proposal = function(code) {
                      code,"","","","",
                      "ERROR","XLSX_MULTI_PROPOSAL", 
                      "XLS file has more than one sheet named 'proposal'",
-                     paste0("More than 1 worksheet named  '",proposalsSheetNameRegex,"' were found: '",paste0(proposalsSheetNames,collapse="','"),"'")
+                     paste0("More than 1 worksheet named '",proposalsSheetNameRegex,"' were found: '",paste0(proposalsSheetNames,collapse="','"),"'")
 
     )
   } else {
