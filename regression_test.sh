@@ -28,6 +28,14 @@ if [ "$(uname)" == "Linux" ]; then
 fi
 
 #
+# make sure version_git.txt is built
+#
+if [ ! -e "version_git.txt" ]; then
+    echo "# BUILD version_git.txt"
+    ./version_git.sh
+fi
+
+#
 # test cases location
 # 
 TEST_DIR=testData
