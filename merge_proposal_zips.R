@@ -118,11 +118,11 @@ if( interactive() ) {
   #rm(docxList,xlsxList,changeList)
   params$verbose = T
   params$tmi = T
-  params$debug_on_error = F
+  params$debug_on_error = T
   params$mode = 'draft'
   params$export_msl = T
-  params$proposals_dir = "./MSL39v2"
-  params$out_dir       = "./MSL39v2_results"
+  params$proposals_dir = "./MSL39dbg"
+  params$out_dir       = "./MSL39dbg_results"
   #params$proposals_dir = "EC55"
   #params$out_dir       = "EC55_results"
   params$qc_regression_tsv_fname = "QC.regression.new.tsv"
@@ -707,10 +707,12 @@ dir.create(params$out_dir,recursive=T,showWarnings = F)
 #
 #
 inputFiles = data.frame(docpath=list.files(path=params$proposals_dir,
-                                        pattern="^[^~.].*\\.(doc|xls)x*$", 
-                                        #pattern="^[^~.].*\\.(doc|xls)x*$", 
+                                           pattern="^[^~.].*\\.(doc|xls)x*$", 
                                         recursive=T, full.names=TRUE)
 )
+# debugging - only process the regex-matching files
+#inputFiles = inputFiles[grep(inputFiles$docpath,pattern="2023.013P"),,drop=FALSE]
+
 # list files found, if in TMI mode
 if(params$tmi) { 
   cat("# xls|doc(x) files found: N=",nrow(inputFiles),"\n")
@@ -1454,24 +1456,59 @@ load_proposal = function(code) {
   proposalDf = NULL
   
   # get worksheet names
-  proposalsSheetNameRegex = "proposals* template"
+  proposalsSheetNameRegex = "proposal*"
   sheetNames = suppressMessages(
     excel_sheets(proposals[code,"xlsxpath"])
   )
-  # it changes from year to year, find one that works.
-  proposalsSheetName = grep("proposals* template",sheetNames,ignore.case = T, value=T)[1]
-  if( is.na(proposalsSheetName) ) {
+  #
+  # comapre to expected sets of sheet names, warn if they added extra sheets
+  #
+  sheets2022=c("Proposals Template","Menu Items (Do not change)")
+  sheets2023=c("Instructions","Proposal Template","Menu Items (Do not change)")
+  extraSheets=c()
+  templateSheets=c()
+  if( sum(sheets2022 %in% sheetNames) == length(sheets2022) ) {
+    templateSheets = sheets2022
+    extraSheets = setdiff(sheetNames,sheets2022)
+  } else if( sum(sheets2023 %in% sheetNames) == length(sheets2023) ) {
+    templateSheets = sheets2023
+    extraSheets = setdiff(sheetNames,sheets2023)
+  } 
+  if( length(extraSheets > 1) ) {
+    cat(paste0("code ", code, ": Extra worksheets found in xlsx: '",paste0(extraSheets,collapse="','"),"'\n"))
+    errorDf=addError(errorDf,
+                     code,"","","","",
+                     "WARNING","XLSX_EXTRA_SHEETS",
+                     "XLS file has additional sheets not present in template",
+                     paste0("Worksheet(s) named '",paste0(extraSheets,collapse="','"),"' were added ")
+    )
+  }
+  
+  # Try and find the one sheet that contains the proposal data
+  proposalsSheetNames = grep(proposalsSheetNameRegex,sheetNames,ignore.case = T, value=T)
+  if( is.na(proposalsSheetNames[1]) ) {
+    # ERROR if can't find it. 
     cat(paste0("code ", code, ": A worksheet name matching '",proposalsSheetNameRegex,"' was not found","logging error","\n"))
     errorDf=addError(errorDf,
                      code,"","","","",
                      "ERROR","XLSX_NOT_PROPOSAL",
-                     "XLS file does not match proposals template",
+                     "XLS does not an appropriately named 'proposal' sheet",
                      paste0("A worksheet name matching '",proposalsSheetNameRegex,"' was not found, only: ",
                             "'",paste0(sheetNames,collapse="','"),"'"
                             )
                      )
-    cat(paste0("code ", code, ": A worksheet name matching '",proposalsSheetNameRegex,"' was not found","returning NA","\n"))
+  } else if( length(proposalsSheetNames) > 1 ) {
+    # ERROR if find more than one
+    cat(paste0("code ", code, ": ERROR: More than 1 worksheet named like '",proposalsSheetNameRegex,"' found: '",paste0(proposalsSheetNames,collapse="','"),"'\n"))
+    errorDf=addError(errorDf,
+                     code,"","","","",
+                     "ERROR","XLSX_MULTI_PROPOSAL", 
+                     "XLS file has more than one sheet named 'proposal'",
+                     paste0("More than 1 worksheet named  '",proposalsSheetNameRegex,"' were found: '",paste0(proposalsSheetNames,collapse="','"),"'")
+
+    )
   } else {
+    # fOK: ound one and only one proposal sheet - read that one
     
     # read XLSX file, no column names
     proposalDf = data.frame(
@@ -1480,7 +1517,7 @@ load_proposal = function(code) {
       suppressMessages(
         read_excel(
           proposals[code,"xlsxpath"],
-          sheet=proposalsSheetName,
+          sheet=proposalsSheetNames[1],
           trim_ws = TRUE,
           na = c("Please select","[Please select]","[Please\u00A0select]"),
           skip = 2,
@@ -2644,22 +2681,26 @@ apply_changes = function(code,proposalBasename,changeDf) {
         } # acc re-use in split
         else {
           # not in a split
-
+          
+          # Pending/dup is hard error in FINAL mode, otherwise WARNING
+          errLevel = ifelse(params$processing_mode=="final","ERROR","WARNING")
+          
           # this is a warning/error depending on mode
-          if( params$processing_mode == "validate" && change$exemplarAccession=="pending") { 
-            errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.destTaxon,
-                             "WARNING", "CREATE.PENDING_ACC", paste0("Change=",toupper(actionClean),", accession number is 'pending'"), 
+          if(  change$exemplarAccession %in% c("pending","Pending") ) { 
+             errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.destTaxon,
+                             errLevel, "CREATE.PENDING_ACC", paste0("Change=",toupper(actionClean),", accession number is 'pending'"), 
                              paste0("accession=", change$exemplarAccession)
             )
           } else {
             # hard error for each other species with this accession
             ## QQQ what proposal created this? (from this round? historically? Need a function: last_modified())
             errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.destTaxon,
-                             "ERROR", "CREATE.DUP_ACC", paste0("Change=",toupper(actionClean),", a species with this accession number already exists"), 
+                             errLevel, "CREATE.DUP_ACC", paste0("Change=",toupper(actionClean),", a species with this accession number already exists"), 
                              paste0("accession=", change$exemplarAccession, ", existingSpecies=",.GlobalEnv$newMSL[isDupAccession,]$lineage)
             )
-            next
           }     
+          # hard error in FINAL mode
+          if(params$processing_mode=="final") { next }
         } # acc re-use not in split
          
       } # acc re-use

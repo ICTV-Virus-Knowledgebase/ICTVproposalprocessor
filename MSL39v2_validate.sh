@@ -13,7 +13,7 @@ TEST_PAT="Pending_Proposals"
 echo TEST_PAT=$TEST_PAT
 
 # pass-through args
-MSL_NOTES="DRAFT EC55 MSL. EC Use Only DRAFT (to-be MSL 39)"
+MSL_NOTES="DRAFT EC55 v3 MSL. EC Use Only DRAFT (to-be MSL 39); Updated 2023-10-10.1355"
 SCRIPT_ARGS='--msl --mode=draft --newMslName=2023 '
 #SCRIPT_ARGS='--msl --mode=draft --newMslName=2023 --newMslNotes="EC55 Draft 2023-07-18 (MSL 39-draft)" '
 if [ ! -z "$1" ]; then SCRIPT_ARGS="$SCRIPT_ARGS $*"; fi
@@ -38,7 +38,7 @@ fi
 # 
 TEST_DIR=MSL39v2
 echo TEST_DIR=$TEST_DIR
-RESULTS_DIR=MSL39v2_results
+RESULTS_DIR=MSL39v3_results
 if [ ! -z "$CONTAINER" ]; then RESULTS_DIR=testResultsDocker; fi
 echo RESULTS_DIR=$RESULTS_DIR
 
