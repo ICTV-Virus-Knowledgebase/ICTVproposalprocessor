@@ -95,11 +95,11 @@ for TEST in $TESTS; do
 		    --outDir=$DEST_DIR \
 		    --qcTsvRegression=$(basename $RESULTS) \
 		    2>&1 | tee $LOG
-	    Rscript merge_proposal_zips.R \
+	    (Rscript merge_proposal_zips.R \
 		    --proposalsDir=$SRC_DIR \
 		    --outDir=$DEST_DIR \
 		    --qcTsvRegression=$(basename $RESULTS) \
-		    2>&1 >> $LOG
+		    ) 2>&1 >> $LOG
     else
 	    echo "#" \
 		sudo docker run -it \
@@ -111,7 +111,7 @@ for TEST in $TESTS; do
 		    --outDir="testResults/$TEST" \
 		    --qcTsvRegression=$(basename $RESULTS) \
 		    2>&1 | tee $LOG
-	    sudo docker run -it \
+	    (sudo docker run -it \
 		    -v "$(pwd)/$TEST_DIR:/testData":ro \
 		    -v "$(pwd)/$RESULTS_DIR:/testResults":rw \
 	            $CONTAINER  \
@@ -119,7 +119,7 @@ for TEST in $TESTS; do
 		    --proposalsDir=$SRC_DIR \
 		    --outDir="testResults/$TEST" \
 		    --qcTsvRegression=$(basename $RESULTS) \
-		    2>&1 >> $LOG
+		    )2>&1 >> $LOG
     fi	
 
     #
@@ -130,9 +130,9 @@ for TEST in $TESTS; do
     echo "diff -yw -W 200 \<(cut -f 5- $RESULTS) \<(cut -f 5- $RESULTSBASE) \> $RESULTSDIFF" | tee $RESULTSDIFF
     diff -yw -W 200 <(cut -f 5- $RESULTS) <(cut -f 5- $RESULTSBASE) 2>&1 >> $RESULTSDIFF; RC=$?
     if [ $RC -eq "0" ]; then
-	echo "PASS  $TEST" | tee -a $REPORT
+	echo "ok     OUT  $TEST" | tee -a $REPORT
     else
-	echo "FAIL$RC $TEST" | tee -a $REPORT
+	echo "*FAIL  OUT  $TEST" | tee -a $REPORT
     fi	
 
     #
@@ -143,9 +143,9 @@ for TEST in $TESTS; do
     echo "diff -yw -W 200 \<(tail -n +3 $LOG|sed -e 's/\[?25h//g') \<(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g') \> $LOGDIFF" | tee $LOGDIFF
     diff -yw -W 200 <(tail -n +3 $LOG|sed -e 's/\[?25h//g') <(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g') 2>&1 >> $LOGDIFF; RC=$?
     if [ $RC -eq "0" ]; then
-	echo "LOG_PASS  $TEST" | tee -a $REPORT
+	echo "ok     LOG  $TEST" | tee -a $REPORT
     else
-	echo "LOG_FAIL$RC $TEST" | tee -a $REPORT
+	echo "*FAIL  LOG  $TEST" | tee -a $REPORT
     fi
     echo "#-------------------------" | tee -a $REPORT
 	
