@@ -1,5 +1,5 @@
 # Rscript merge_proposal_zips.R --proposalsDir=testData/proposalsTest3_binomial --outDir=testResults/proposalsTest3_binomial --qcTsvRegression=QC.regression.new.tsv
-VERSION: v1.12.efaec37
+VERSION: v1.13.9ef9ce0
 Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # LOAD_PROPOSAL_DOCX( 2023.002A )
@@ -11,7 +11,8 @@ WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # QCed:      2023.002A  with  0  errors/warnings
 changeList:  2023.002A 
 Wrote: OUTDIR/QC.summary.tsv (0 rows)
-# START PROC: 2023.002A with 8 changes  (1 out of 1)
-# PROCCESSED: 2023.002A with ERROR:17 WARNING:2 SUCCESS:6 
-# DONE. Found 1 proposals; Processed 1 , skipped 0 
+# MERGE PROC: 2023.002A with 8 changes  (1 out of 1)
+# DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 8 
+# APPLIED:   8 changes from 2023.002A.N.v4.create_subgenus_move_sp_create_sp  with ERROR:17 WARNING:2 SUCCESS:6 
+# TOTAL  :   8 changes from 1 proposals with ERROR:17 WARNING:2 SUCCESS:6 
 Wrote: OUTDIR/QC.summary.tsv (25 rows)

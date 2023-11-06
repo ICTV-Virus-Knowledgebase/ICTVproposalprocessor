@@ -1,2 +1,2 @@
-subcommittee	code	docx	xlsx	row	change	rank	taxon	level	error	message	notes	scAbbrev
-Archaeal viruses (A) proposals	2023.001A	MISSING	2023.001A.N.v1.create_genus_demote_genus_move_sp.xlsx	3	NA	NA	NA	ERROR	XLSX.TEMPLATE_UNK	XLSX template version	ROW2 is unrecognized (), ROW3 is unrecognized ()	NA
+subcommittee	code	docx	xlsx	row	change	rank	taxon	level	error	message	notes	scAbbrev	order
+Archaeal viruses (A) proposals	2023.001A	MISSING	2023.001A.N.v1.create_genus_demote_genus_move_sp.xlsx	3	NA	NA	NA	ERROR	XLSX.TEMPLATE_UNK	XLSX template version	ROW2 is unrecognized (), ROW3 is unrecognized ()	NA	0
