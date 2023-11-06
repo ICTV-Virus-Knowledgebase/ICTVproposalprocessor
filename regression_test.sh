@@ -94,12 +94,12 @@ for TEST in $TESTS; do
 		    --proposalsDir=$SRC_DIR \
 		    --outDir=$DEST_DIR \
 		    --qcTsvRegression=$(basename $RESULTS) \
-		    2>&1 | tee $LOG
-	    (Rscript merge_proposal_zips.R \
+		    '2>&1' | tee $LOG
+	    Rscript merge_proposal_zips.R \
 		    --proposalsDir=$SRC_DIR \
 		    --outDir=$DEST_DIR \
 		    --qcTsvRegression=$(basename $RESULTS) \
-		    ) 2>&1 >> $LOG
+		    1>> $LOG 2>&1
     else
 	    echo "#" \
 		sudo docker run -it \
@@ -119,7 +119,7 @@ for TEST in $TESTS; do
 		    --proposalsDir=$SRC_DIR \
 		    --outDir="testResults/$TEST" \
 		    --qcTsvRegression=$(basename $RESULTS) \
-		    )2>&1 >> $LOG
+		    ) 2>&1 >> $LOG
     fi	
 
     #

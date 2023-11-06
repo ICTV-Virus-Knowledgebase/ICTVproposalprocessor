@@ -124,7 +124,7 @@ if( interactive() ) {
 #  params$proposals_dir = "./MSL39dbg"
 #  params$test_case_dir = "proposalsMultiFileLinking"
 #  params$test_case_dir = "proposalsTest3_binomial"
-  params$test_case_dir = "proposalsTest_createNew"
+  params$test_case_dir = "proposalsTest_renameSheet"
   params$proposals_dir = paste0("testData/",params$test_case_dir)
   params$out_dir       = paste0("testResults/",params$test_case_dir)
 #  params$proposals_dir = "./MSL39v2"
@@ -3962,49 +3962,49 @@ allChangeDf$.subRankOrder = actionOrderDf[allChangeDf$.action,"subRankOrder"]
 # rank sort - opposite directions depending on actionOrder
 rankMap = dbCvList[["rank"]]$id
 names(rankMap) = dbCvList[["rank"]]$name
-allChangeDf[,".rankOrder"] = dbCvMapList[["rank"]][allChangeDf$rank] * sign(allChangeDf$.actionOrder)
+if( !is.null(nrow(allChangeDf)) && nrow(allChangeDf) > 0 ) {
+  allChangeDf[,".rankOrder"] = dbCvMapList[["rank"]][allChangeDf$rank] * sign(allChangeDf$.actionOrder)
 
-# final sort
-allChangeDfOrder = NULL
-if( nrow(allChangeDf) > 0 ) {
+  # final sort
+  allChangeDfOrder = NULL
   allChangeDfOrder = order(
     allChangeDf$.actionOrder, 
     allChangeDf$.rankOrder, 
     allChangeDf$.subRankOrder)
-}
 
-#
-##### iterate through changes, apply #####
-#
-
+  #
+  ##### iterate through changes, apply #####
+  #
+  
+  
+  # Apply the Change
+  results=apply_changes(allChangeDf[allChangeDfOrder,])
+  
+  # Internal sanity check
+  if(!(20070000 %in% .GlobalEnv$newMSL$ictv_id)) { 
+    cat("!!!!!!!!!!!!!!!! LOST ROOT NODE in ",code," !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+    if(interactive()) {browser()}
+  }
+  #
+  # report on error counts
+  #
+  errorDf = results[["errorDf"]]
+  # per proposal
+  for( code in levels(as.factor(allChangeDf$.code)) ) {
+    changeMatches = allChangeDf$.code == code
+    errorMatches  = errorDf$code == code
+    levelSummary = summary(errorDf[errorMatches,]$level)
+    levelSummary = levelSummary[levelSummary>0]
+    cat("# APPLIED:", sprintf("%3d",sum(changeMatches)),"changes from",proposals[code,"basename"]," with",paste(names(levelSummary),levelSummary,sep=":"),"\n")
     
-# Apply the Change
-results=apply_changes(allChangeDf[allChangeDfOrder,])
-    
-# Internal sanity check
-if(!(20070000 %in% .GlobalEnv$newMSL$ictv_id)) { 
-  cat("!!!!!!!!!!!!!!!! LOST ROOT NODE in ",code," !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-  if(interactive()) {browser()}
-}
-#
-# report on error counts
-#
-errorDf = results[["errorDf"]]
-# per proposal
-for( code in levels(as.factor(allChangeDf$.code)) ) {
-  changeMatches = allChangeDf$.code == code
-  errorMatches  = errorDf$code == code
-  levelSummary = summary(errorDf[errorMatches,]$level)
+  }
+  # global summary
+  levelSummary = summary(errorDf$level)
   levelSummary = levelSummary[levelSummary>0]
-  cat("# APPLIED:", sprintf("%3d",sum(changeMatches)),"changes from",proposals[code,"basename"]," with",paste(names(levelSummary),levelSummary,sep=":"),"\n")
-
-}
-# global summary
-levelSummary = summary(errorDf$level)
-levelSummary = levelSummary[levelSummary>0]
-cat("# TOTAL  :", sprintf("%3d",nrow(allChangeDf)),"changes from",length(levels(as.factor(allChangeDf$.code))),"proposals with",paste(names(levelSummary),levelSummary,sep=":"),"\n")
-if(nrow(errorDf)>0){.GlobalEnv$allErrorDf=rbindlist(list(.GlobalEnv$allErrorDf,errorDf),fill=TRUE)}
-
+  cat("# TOTAL  :", sprintf("%3d",nrow(allChangeDf)),"changes from",length(levels(as.factor(allChangeDf$.code))),"proposals with",paste(names(levelSummary),levelSummary,sep=":"),"\n")
+  if(nrow(errorDf)>0){.GlobalEnv$allErrorDf=rbindlist(list(.GlobalEnv$allErrorDf,errorDf),fill=TRUE)}
+  
+} # > 0 proposals to process
 
 #### SECTION write error list #####
 #
