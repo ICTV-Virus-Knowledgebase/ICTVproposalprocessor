@@ -1,0 +1,1 @@
+../../testResults/proposalsMultiFileLinking/log.txt
