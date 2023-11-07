@@ -1,5 +1,5 @@
 # Rscript merge_proposal_zips.R --proposalsDir=testData/proposalsTest8_renameThenCreate --outDir=testResults/proposalsTest8_renameThenCreate --qcTsvRegression=QC.regression.new.tsv
-VERSION: v1.12.b288855
+VERSION: v1.14.85eb46c
 Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # LOAD_PROPOSAL_DOCX( 2023.024M )

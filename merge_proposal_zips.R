@@ -1863,6 +1863,7 @@ qc_proposal = function(code, proposalDf) {
   changeDf$.destRank =          apply(changeDf[,xlsx_change_destCols],1,getTaxonRank)
   changeDf$.destLineage =       apply(changeDf[,xlsx_change_destCols], 1,getLineage)
   changeDf$.destParentName =    apply(changeDf[,xlsx_change_destCols], 1,getParentTaxon)
+  changeDf$.destParentRank =    apply(changeDf[,xlsx_change_destCols], 1,function(x) {names(getParentTaxon(x)[1])})
   changeDf$.destParentLineage = apply(changeDf[,xlsx_change_destCols], 1,getParentLineage)
   
   # active taxon: src, or, if missing, dest
@@ -3041,12 +3042,12 @@ apply_changes = function(code,proposalBasename,changeDf) {
           errorDf=addError(errorDf,code,linenum, change$change,change$rank,change$.changeTaxon,
                            "WARNING", "RENAME.PARENT_NAME", 
                            "parent name not as expected; was this meant to be a move? Is there a typo?", 
-                           paste0("parent ", parentRank, " in this proposal: '", change$.destParentName,"', ",
-                                  "but MSL parent is ", parentRank, " '",.GlobalEnv$newMSL[srcNewParent,"name"],"'; ",
+                           paste0("parent in this proposal: '", change$.destParentName,"'[", change$.destParentRank, "], ",
+                                  "but MSL parent is '",.GlobalEnv$newMSL[srcNewParent,"name"],"'[", .GlobalEnv$newMSL[srcNewParent,]$rank, "]; ",
                                   "other new proposals: ",.GlobalEnv$newMSL[srcNewTarget,"prev_proposals"])
           )
-         }
- 
+        }
+        
         # append proposal
         .GlobalEnv$newMSL[srcNewTarget,"prev_proposals"] = paste0(
           ifelse(is.na(.GlobalEnv$newMSL[srcNewTarget,"prev_proposals"]),"",paste0(.GlobalEnv$newMSL[srcNewTarget,"prev_proposals"],",")),
