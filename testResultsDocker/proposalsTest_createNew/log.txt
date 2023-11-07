@@ -1,8 +1,8 @@
 # sudo docker run -it -v /var/www/drupal/apps/proposal_validator/MSL_merge/testData:/testData:ro -v /var/www/drupal/apps/proposal_validator/MSL_merge/testResultsDocker:/testResults:rw ictv_proposal_processor /merge_proposal_zips.R --proposalsDir=testData/proposalsTest_createNew --outDir=testResults/proposalsTest_createNew --qcTsvRegression=QC.regression.new.tsv
-[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25hVERSION: v1.12.ced0a03
+[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25hVERSION: v1.14.9c13521
 Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
-[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h# LOAD_PROPOSAL_DOCX( 2022.002G )
+[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h# LOAD_PROPOSAL_DOCX( 2022.002G )
 # LOADED:  2022.002G  DOCX with  0  errors/warnings
 # LOAD_PROPOSAL( 2022.002G )
 # LOADED:  2022.002G  XLS with  0  errors/warnings
@@ -11,8 +11,9 @@ WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # QCed:      2022.002G  with  3  errors/warnings
 [?25hchangeList:  2022.002G 
 [?25hWrote: OUTDIR/QC.summary.tsv (3 rows)
-[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h# START PROC: 2022.002G with 22 changes  (1 out of 1)
-# PROCCESSED: 2022.002G with WARNING:30 SUCCESS:22 
-[?25h# DONE. Found 1 proposals; Processed 1 , skipped 0 
+[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h# MERGE PROC: 2022.002G with 22 changes  (1 out of 1)
+[?25h# DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 22 
+[?25h[?25h[?25h[?25h[?25h[?25h# APPLIED:  22 changes from 2022.002G.Ud.v1.Orthornavirae_4nphy_9nsp  with WARNING:30 SUCCESS:22 
+# TOTAL  :  22 changes from 1 proposals with WARNING:30 SUCCESS:22 
 [?25hWrote: OUTDIR/QC.summary.tsv (55 rows)
 [?25h[?25h[?25h[?25h[?25h

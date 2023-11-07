@@ -21,6 +21,7 @@ nohup.out
 # ----------------------------------------------------------------------
 # testResults & testResultsDocker
 # ----------------------------------------------------------------------
+QC.regression_test.summary.txt
 #
 # only store "regresion.tsv" output file, which is stripped of version numbers
 # Don't store end-user XLSX output report, nor machine-readable output (with version) used by web app
