@@ -124,7 +124,7 @@ if( interactive() ) {
 #  params$proposals_dir = "./MSL39dbg"
 #  params$test_case_dir = "proposalsMultiFileLinking"
 #  params$test_case_dir = "proposalsTest3_binomial"
-  params$test_case_dir = "proposalsTest_renameSheet"
+  params$test_case_dir = "proposalsMultiFileLinking"
   params$proposals_dir = paste0("testData/",params$test_case_dir)
   params$out_dir       = paste0("testResults/",params$test_case_dir)
 #  params$proposals_dir = "./MSL39v2"
@@ -2839,14 +2839,13 @@ apply_changes = function(changeDf) {
             changedParent = changeDf %>% filter(.srcTaxon==as.character(destParentName))
             if(nrow(changedParent)==1) {
               # get what that older name became
-              parentDestNewMatches = (.GlobalEnv$newMSL$taxnode_id==changedParent$.destTaxon)
-              destParentNameAlias = paste0(" [AKA ",changedParent$.destTaxon,"]")
-
+              parentDestNewTaxon  = (.GlobalEnv$newMSL %>% filter(name==changedParent$.destTaxon))
+ 
               # INFO message
               errorDf=addError(errorDf,change$.code,change$.linenum,change$.order,change$change,change$rank,change$.changeTaxon,
-                               "INFO", "CREATE.PARENT_CHANGING", paste0("Change=",toupper(changedParent$.action),":",changedParent$.srcRank), 
-                               paste0("proposal(s)=", changedParent$.code, " did a '",changedParent$change,"' ",
-                                      "of '",changedParent$.srcTaxon, "' to '", changedParent$.destTaxon,"'")
+                               "INFO", "CREATE.PARENT_ALREADY_CHANGED_2",
+                               "PROPOSED parent taxon already modified", 
+                               paste0("proposal(s)=", parentDestNewTaxon$.otherLineageProposal, " did a '", parentDestNewTaxon$.otherLineageAction,"' ")
               )
             } else if(sum(parentDestNewMatches)>1) {
                 errorDf=addError(errorDf,change$.code,change$.linenum,change$.order,change$change,change$rank,change$.changeTaxon,
@@ -3065,7 +3064,7 @@ apply_changes = function(changeDf) {
       
       # clear some columns inherited from parent
       newTaxon[1,"prev_taxnode_id"] = NA
-      newTaxon[1,"prev_proposals"] = paste0(code,":",linenum) 
+      newTaxon[1,"prev_proposals"] = paste0( proposals[code,"basename"],".zip:",linenum) 
       
       # add new taxon to newMSL
       if(params$tmi) {print(paste0("rbindlist(newMSL,",newTaxon[1,"taxnode_id"],":",destLineage,")"))}
@@ -3750,6 +3749,7 @@ apply_changes = function(changeDf) {
   #### POST-QC #### 
   #
   #  -------------------------------------------------------------------------
+  actionOrder = actionOrder+1
   
   #
   ##### empty taxa #####
@@ -3761,13 +3761,34 @@ apply_changes = function(changeDf) {
   # scan for taxa with no kids, not species, not yet reported.
   emptyTaxa = .GlobalEnv$newMSL[kidCounts == 0,]%>% filter(level_id != 600) %>% filter(is.na(.emptyReported))
   if( nrow(emptyTaxa) > 0 ) {
-    errLinNum=ifelse(is.na(emptyTaxa$.split_linenum),NA,emptyTaxa$.split_linenum)
-    errActionOrder = ifelse(is.na(emptyTaxa$.split_actionOrder),actionOrder,emptyTaxa$.split_actionOrder) 
-    errChange = ifelse(is.na(emptyTaxa$.split_code),NA,"split")
-    errorDf=addError(errorDf,code,emptyTaxa$.split_linenum,emptyTaxa$.split_actionOrder,errChange,emptyTaxa$rank,emptyTaxa$name,
+    errLineNum     = ""
+    errActionOrder = actionOrder
+    errChange      = ""
+    errText        = ""
+    # split
+    if ( !is.na(emptyTaxa$.split_linenum) ) { 
+      errLineNum=emptyTaxa$.split_linenum
+      errChange = "split"
+    } else if( !is.na(emptyTaxa$prev_proposals) ) {
+      #errLineNum=""
+      errChange="previous"
+      errText = emptyTaxa$prev_proposals
+    } else if( !is.na(emptyTaxa$.otherLineageProposal) ) {
+      #errLineNum=emptyTaxa$.otherLineageLineNum
+      #errActionOrder =emptyTaxa$.otherLineageOrder
+      errChange ="previous"
+      errText = paste0(emptyTaxa$.otherLineageProposal," ",emptyTaxa$.otherLineageAction)
+    }
+    # mostly from create - ops we need code, not filename :-( )
+    #if( !is.na(emptyTaxa$in_filename) ) {
+    #  errLinenum = emptyTaxa$in_notes
+    #  err
+    #}
+    errorDf=addError(errorDf,code,errLineNum,errActionOrder,errChange,emptyTaxa$rank,emptyTaxa$name,
                      "ERROR", "PROPOSAL.EMPTY_TAXA", 
                      paste0("Proposal created empty (non-species) taxa"), 
-                     paste0("the ",emptyTaxa$rank," '",emptyTaxa$name,"' is empty - it does not contain any lower rank taxons")
+                     paste0("the ",emptyTaxa$rank," '",emptyTaxa$name,"' is empty - it does not contain any lower rank taxons; ", 
+                            errText)
     )
     # mark empty taxa so we don't re-report them
     .GlobalEnv$newMSL[.GlobalEnv$newMSL$name %in% emptyTaxa$name,".emptyReported"] = xlsxs[code,"xlsx"]
