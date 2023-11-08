@@ -1,5 +1,5 @@
-# Rscript merge_proposal_zips.R --proposalsDir=testData/proposalsTest8_renameThenCreate2 --outDir=testResults/proposalsTest8_renameThenCreate2 --qcTsvRegression=QC.regression.new.tsv
-VERSION: v1.13.9ef9ce0
+# Rscript merge_proposal_zips.R --proposalsDir=testData/proposalsTest8_renameThenCreate2 --outDir=testResults/proposalsTest8_renameThenCreate2 --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v1.14.76b39e0
 Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # LOAD_PROPOSAL_DOCX( 2023.024M )
@@ -16,3 +16,4 @@ Wrote: OUTDIR/QC.summary.tsv (1 rows)
 # APPLIED:  22 changes from 2023.024M.A.v1.Bunyaviricetes  with ERROR:1 INFO:27 SUCCESS:21 
 # TOTAL  :  22 changes from 1 proposals with ERROR:1 INFO:27 SUCCESS:21 
 Wrote: OUTDIR/QC.summary.tsv (50 rows)
+# COMPLETED.

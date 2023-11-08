@@ -1,5 +1,5 @@
-# Rscript merge_proposal_zips.R --proposalsDir=testData/proposalsTest37 --outDir=testResults/proposalsTest37 --qcTsvRegression=QC.regression.new.tsv
-VERSION: v1.13.9ef9ce0
+# Rscript merge_proposal_zips.R --proposalsDir=testData/proposalsTest37 --outDir=testResults/proposalsTest37 --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v1.14.76b39e0
 Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # LOAD_PROPOSAL_DOCX( 2023.003A )
@@ -16,3 +16,4 @@ Wrote: OUTDIR/QC.summary.tsv (0 rows)
 # APPLIED:   4 changes from 2023.003A.N.v1.test_xls  with ERROR:3 WARNING:1 SUCCESS:2 
 # TOTAL  :   4 changes from 1 proposals with ERROR:3 WARNING:1 SUCCESS:2 
 Wrote: OUTDIR/QC.summary.tsv (6 rows)
+# COMPLETED.

@@ -1,5 +1,5 @@
-# Rscript merge_proposal_zips.R --proposalsDir=testData/proposalsMultiFileLinking --outDir=testResults/proposalsMultiFileLinking --qcTsvRegression=QC.regression.new.tsv
-VERSION: v1.13.9ef9ce0
+# Rscript merge_proposal_zips.R --proposalsDir=testData/proposalsMultiFileLinking --outDir=testResults/proposalsMultiFileLinking --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v1.14.76b39e0
 Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # LOAD_PROPOSAL_DOCX( 1 )
@@ -34,3 +34,4 @@ Wrote: OUTDIR/QC.summary.tsv (0 rows)
 # APPLIED:   3 changes from 2023.30M.N.v1.RenameFutureGenus  with ERROR:1 SUCCESS:3 
 # TOTAL  :  15 changes from 3 proposals with ERROR:2 INFO:2 SUCCESS:12 
 Wrote: OUTDIR/QC.summary.tsv (16 rows)
+# COMPLETED.

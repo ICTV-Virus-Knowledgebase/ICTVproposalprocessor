@@ -123,8 +123,8 @@ if( interactive() ) {
   params$export_msl = T
 #  params$proposals_dir = "./MSL39dbg"
 #  params$test_case_dir = "proposalsMultiFileLinking"
+  params$test_case_dir = "proposalsEC55.1"
 #  params$test_case_dir = "proposalsTest3_binomial"
-  params$test_case_dir = "proposalsMultiFileLinking"
   params$proposals_dir = paste0("testData/",params$test_case_dir)
   params$out_dir       = paste0("testResults/",params$test_case_dir)
 #  params$proposals_dir = "./MSL39v2"
@@ -3760,43 +3760,54 @@ apply_changes = function(changeDf) {
                     MSL=.GlobalEnv$newMSL)
   # scan for taxa with no kids, not species, not yet reported.
   emptyTaxa = .GlobalEnv$newMSL[kidCounts == 0,]%>% filter(level_id != 600) %>% filter(is.na(.emptyReported))
-  if( nrow(emptyTaxa) > 0 ) {
+  for( emptyTaxaRow in as.integer(rownames(emptyTaxa)) ) {
+    # get a single taxon
+    emptyTaxon = emptyTaxa[emptyTaxaRow,]
+    
+    # default error report
+    # (need to improve change tracking to do better!)
+    # NOTE we don't even try to track species moved out of genera
     errLineNum     = ""
     errActionOrder = actionOrder
     errChange      = ""
-    errText        = ""
+    errText        = "check if lower rank taxa were moved elsewhere?"
     # split
-    if ( !is.na(emptyTaxa$.split_linenum) ) { 
-      errLineNum=emptyTaxa$.split_linenum
+    if ( !is.na(emptyTaxon$.split_linenum) ) { 
+      errLineNum=emptyTaxon$.split_linenum
       errChange = "split"
-    } else if( !is.na(emptyTaxa$prev_proposals) ) {
+      errText = paste0(proposals[emptyTaxon$.split_code,]$basename,":",emptyTaxon$.split_linenum," did a split")
+    } else if( !is.na(emptyTaxon$prev_proposals) ) {
       #errLineNum=""
       errChange="previous"
-      errText = emptyTaxa$prev_proposals
-    } else if( !is.na(emptyTaxa$.otherLineageProposal) ) {
-      #errLineNum=emptyTaxa$.otherLineageLineNum
-      #errActionOrder =emptyTaxa$.otherLineageOrder
+      errText = emptyTaxon$prev_proposals
+    } else if( !is.na(emptyTaxon$.otherLineageProposal) ) {
+      #errLineNum=emptyTaxon$.otherLineageLineNum
+      #errActionOrder =emptyTaxon$.otherLineageOrder
       errChange ="previous"
-      errText = paste0(emptyTaxa$.otherLineageProposal," ",emptyTaxa$.otherLineageAction)
+      errText = paste0(emptyTaxon$.otherLineageProposal," ",emptyTaxon$.otherLineageAction)
     }
     # mostly from create - ops we need code, not filename :-( )
-    #if( !is.na(emptyTaxa$in_filename) ) {
-    #  errLinenum = emptyTaxa$in_notes
+    #if( !is.na(emptyTaxon$in_filename) ) {
+    #  errLinenum = emptyTaxon$in_notes
     #  err
     #}
-    errorDf=addError(errorDf,code,errLineNum,errActionOrder,errChange,emptyTaxa$rank,emptyTaxa$name,
+    errorDf=addError(errorDf,code,errLineNum,errActionOrder,errChange,emptyTaxon$rank,emptyTaxon$name,
                      "ERROR", "PROPOSAL.EMPTY_TAXA", 
                      paste0("Proposal created empty (non-species) taxa"), 
-                     paste0("the ",emptyTaxa$rank," '",emptyTaxa$name,"' is empty - it does not contain any lower rank taxons; ", 
+                     paste0("the ",emptyTaxon$rank," '",emptyTaxon$name,"' is empty - it does not contain any lower rank taxons; ", 
                             errText)
     )
     # mark empty taxa so we don't re-report them
-    .GlobalEnv$newMSL[.GlobalEnv$newMSL$name %in% emptyTaxa$name,".emptyReported"] = xlsxs[code,"xlsx"]
+    .GlobalEnv$newMSL[.GlobalEnv$newMSL$name %in% emptyTaxon$name,".emptyReported"] = xlsxs[code,"xlsx"]
   }
   
   ##### renamed genera - binomial #####
   # skip initial row - just a placeholder for dataframe structure
   for(  genusCheckRow in rownames(renamedGenera[-1,]) )  {
+    # count these as actions
+    actionOrder = actionOrder+1
+    
+    # get genus 
     renamedGenusTaxon = .GlobalEnv$newMSL %>% filter(name == renamedGenera[genusCheckRow,"name"] )
     # subgenera
     renamedGeneraSubgeneraTaxons = .GlobalEnv$newMSL %>% 
@@ -3830,7 +3841,10 @@ apply_changes = function(changeDf) {
   splitDeleteIdx = .GlobalEnv$newMSL$.split & !.GlobalEnv$newMSL$.split_kept
   splitKeepIdx   = .GlobalEnv$newMSL$.split & .GlobalEnv$newMSL$.split_kept
   if( sum(splitDeleteIdx) > 0 ) {
-    # log that we're removing them
+    # count these as actions
+    actionOrder = actionOrder+1
+
+        # log that we're removing them
     # function(errorDf,code,row,change,rank,taxon,levelStr,errorCode,errorStr,notes
     errorDf=addError(errorDf,.GlobalEnv$newMSL$.split_code[splitDeleteIdx],.GlobalEnv$newMSL$.split_linenum[splitDeleteIdx],actionOrder,
                      "split_abolish",as.character(.GlobalEnv$newMSL$rank[splitDeleteIdx]), .GlobalEnv$newMSL$name[splitDeleteIdx],
@@ -3842,6 +3856,10 @@ apply_changes = function(changeDf) {
     
     # check for kids - work back to front for rowIdx stability across row deletions
     for(rowIdx in rev(which(splitDeleteIdx)) ) {
+      # count these as actions
+      actionOrder = actionOrder+1
+      
+      # get kid count for that taxon
       srcKids=(.GlobalEnv$newMSL$parent_id==.GlobalEnv$newMSL$taxnode_id[rowIdx])
       
       if(sum(srcKids,na.rm=TRUE)>0) {
@@ -4476,3 +4494,4 @@ if( FALSE ) {
   cat("WROTE",rdataFilename,"\n")
 }
 
+cat("# COMPLETED.\n")

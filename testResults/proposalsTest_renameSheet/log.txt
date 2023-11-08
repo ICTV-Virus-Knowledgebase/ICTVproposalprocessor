@@ -15,3 +15,4 @@ changeList:
 Wrote: OUTDIR/QC.summary.tsv (2 rows)
 # DONE. MERGED 0  proposal(s), skipped 1 ; total changes: 
 Wrote: OUTDIR/QC.summary.tsv (2 rows)
+# COMPLETED.
