@@ -123,8 +123,8 @@ if( interactive() ) {
   params$export_msl = T
 #  params$proposals_dir = "./MSL39dbg"
 #  params$test_case_dir = "proposalsMultiFileLinking"
-  params$test_case_dir = "proposalsEC55.1"
-#  params$test_case_dir = "proposalsTest3_binomial"
+#  params$test_case_dir = "proposalsEC55.1"
+  params$test_case_dir = "proposalsTest3_binomial"
   params$proposals_dir = paste0("testData/",params$test_case_dir)
   params$out_dir       = paste0("testResults/",params$test_case_dir)
 #  params$proposals_dir = "./MSL39v2"
@@ -3759,8 +3759,14 @@ apply_changes = function(changeDf) {
                     function(parent_id,MSL) { sum(MSL$parent_id==parent_id)},
                     MSL=.GlobalEnv$newMSL)
   # scan for taxa with no kids, not species, not yet reported.
-  emptyTaxa = .GlobalEnv$newMSL[kidCounts == 0,]%>% filter(level_id != 600) %>% filter(is.na(.emptyReported))
-  for( emptyTaxaRow in as.integer(rownames(emptyTaxa)) ) {
+  # convert to data.frame, as the loop will work nicely
+  # which is not true of the default, un-key'ed data.table.
+  emptyTaxa = as.data.frame(
+      .GlobalEnv$newMSL[kidCounts == 0,] 
+      %>% filter(level_id != 600) 
+      %>% filter(is.na(.emptyReported))
+      )
+  for( emptyTaxaRow in rownames(emptyTaxa) ) {
     # get a single taxon
     emptyTaxon = emptyTaxa[emptyTaxaRow,]
     
