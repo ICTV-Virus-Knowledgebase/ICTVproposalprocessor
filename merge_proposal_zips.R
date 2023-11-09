@@ -737,10 +737,10 @@ dir.create(params$out_dir,recursive=T,showWarnings = F)
 #### SECTION scan for files ####
 #
 #
-inputFiles = data.frame(docpath=list.files(path=params$proposals_dir,
-                                           pattern="^[^~.].*\\.(doc|xls)x*$", 
-                                        recursive=T, full.names=TRUE)
-)
+  inputFiles = data.frame(docpath=list.files(path=params$proposals_dir,
+                                             pattern="^[^~.].*\\.(doc|xls)x*$", 
+                                             recursive=T, full.names=TRUE)
+  )
 # debugging - only process the regex-matching files
 #inputFiles = inputFiles[grep(inputFiles$docpath,pattern="2023.013P"),,drop=FALSE]
 
@@ -2251,7 +2251,8 @@ qc_proposal = function(code, proposalDf) {
     errorDf=addError(errorDf,code,rownames(badRows),actionOrder,
                      badRows$change,badRows$rank, badRows$.changeTaxon,
                      "ERROR","ACTION.UNK",paste("XLSX incorrect term in column","Change"),
-                     paste("XLSX incorrect value [",badRows[,"Change"],"]. Valid terms: [",paste0(names(actionCV),collapse=","),"]")) 
+                     paste("XLSX incorrect value [",badRows[,"change"],"]. Valid terms: [",paste0(names(actionCV),collapse=","),"]")
+    ) 
   }
   
   # return warnings, if any
@@ -3723,7 +3724,10 @@ apply_changes = function(changeDf) {
                        paste0(toupper(change$.action)," ",
                               .GlobalEnv$curMSL$rank[srcPrevTarget], " named '", .GlobalEnv$curMSL[srcPrevTarget,"name"],    "'", 
                               " to ", .GlobalEnv$newMSL$rank[srcNewTarget], " named '", .GlobalEnv$newMSL[srcNewTarget,"name"],    "'", 
-                              " PROPOSED//CUR=",  diffLineageStrings(.GlobalEnv$newMSL[srcNewTarget, "lineage"],.GlobalEnv$curMSL[srcPrevTarget,"lineage"])
+                              " PROPOSED//CUR=",  diffLineageStrings(
+                                .GlobalEnv$newMSL[srcNewTarget, "lineage"],
+                                .GlobalEnv$curMSL[srcPrevTarget,"lineage"]
+                              )
                               
                        )
       )
@@ -3952,10 +3956,12 @@ for( code in codes) {
     skipped = skipped+1
     if(params$verbose>1) {cat("SKIP ",code,": no changeDf loaded\n")}
   } else {
+    # remove error lines
+    cleanChangeDf = changeDf[changeDf$.noErrors == TRUE,]
     #
     # iterate over changes
     #
-    cat(paste0("# MERGE PROC: ",code," with ", nrow(changeDf), " changes ",
+    cat(paste0("# MERGE PROC: ",code," with ", nrow(cleanChangeDf), " changes ",
                " (",which(codes==code)," out of ",length(codes),")\n"))
     
     # debug if code of intereif( code %in% c("2022.001S") ) { cat("DEBUG ",code,"\n"); if(interactive()) {browser() }}
@@ -3963,10 +3969,10 @@ for( code in codes) {
     
     # append 
     if( is.null(allChangeDf) ) {
-        allChangeDf = changeDf
+        allChangeDf = cleanChangeDf
     } else {
        # append 
-      allChangeDf = rbind(allChangeDf, changeDf)
+      allChangeDf = rbind(allChangeDf, cleanChangeDf)
     }
     
     merged=merged+1
