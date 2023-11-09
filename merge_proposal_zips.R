@@ -124,11 +124,11 @@ if( interactive() ) {
 #  params$proposals_dir = "./MSL39dbg"
 #  params$test_case_dir = "proposalsMultiFileLinking"
 #  params$test_case_dir = "proposalsEC55.1"
-  params$test_case_dir = "proposalsTest3_binomial"
+  params$test_case_dir = "proposalsMergeSpecies"
   params$proposals_dir = paste0("testData/",params$test_case_dir)
   params$out_dir       = paste0("testResults/",params$test_case_dir)
-#  params$proposals_dir = "./MSL39v2"
-#  params$out_dir       = "./MSL39v3_results"
+  params$proposals_dir = "./MSL39v2/Pending_Proposals/Plant virus (P) proposals/Proposals to be considered for EC55/2023.017P.N.v1.Caulimoviridae_6nsp.xlsx"
+  params$out_dir       = "./MSL39v3_results"
   #params$proposals_dir = "EC55"
   #params$out_dir       = "EC55_results"
   params$qc_regression_tsv_fname = "QC.regression.new.tsv"
@@ -737,10 +737,25 @@ dir.create(params$out_dir,recursive=T,showWarnings = F)
 #### SECTION scan for files ####
 #
 #
+if( file_test("-d",params$proposals_dir) ) {
+  # recursively scqan directory for .doc/.xls files 
   inputFiles = data.frame(docpath=list.files(path=params$proposals_dir,
                                              pattern="^[^~.].*\\.(doc|xls)x*$", 
                                              recursive=T, full.names=TRUE)
   )
+} else if( file_test("-f",params$proposals_dir) ) {
+  # the "path" is actually a file
+  inputFiles = data.frame(docpath=c(params$proposals_dir))
+} else {
+  errorDf = data.frame(notes=paste0("Input folder='",params$proposals_dir,"/'"))
+  errorDf$level = "ERROR"
+  errorDf$error = "PROPOSAL_DIR_NO_EXIST"
+  errorDf$message = "path not found"
+  .GlobalEnv$loadErrorDf = rbindlist(list(.GlobalEnv$loadErrorDf, errorDf),fill=TRUE)
+  write_error_summary(.GlobalEnv$loadErrorDf)
+  cat("# ERROR: ",errorDf$error, ":", params$proposals_dir, "\n")
+  quit(save="no", status=1)
+}
 # debugging - only process the regex-matching files
 #inputFiles = inputFiles[grep(inputFiles$docpath,pattern="2023.013P"),,drop=FALSE]
 

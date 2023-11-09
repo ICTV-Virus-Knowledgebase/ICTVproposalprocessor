@@ -10,6 +10,7 @@
 
 # whcih tests to run 
 TEST_PAT="Pending_Proposals"
+TEST_PAT="2023.017P*.xlsx"
 echo TEST_PAT=$TEST_PAT
 
 # pass-through args
@@ -49,9 +50,11 @@ echo REPORT=$REPORT
 #
 # scan for test directories
 #
-echo "#$ find $TEST_DIR -type d -name "$TEST_PAT" -exec basename {} \;"
-TESTS=$(find $TEST_DIR -type d -name "$TEST_PAT" -exec basename {} \;)
-echo TESTS=$TESTS
+#echo "#$ find $TEST_DIR -type d -name "$TEST_PAT" -exec basename {} \;"
+#TESTS=$(find $TEST_DIR -type d -name "$TEST_PAT" -exec basename {} \;)
+echo "#$ find $TEST_DIR  -name \"$TEST_PAT\" -exec basename {} \;"
+TESTS=$(find $TEST_DIR -name "$TEST_PAT" -exec basename {} \;)
+echo TESTS=$TEST
 
 #
 # iterate
