@@ -3569,7 +3569,7 @@ apply_changes = function(changeDf) {
                                   "; OBSERVED//PROPOSED=", diffLineageStrings(destParentTaxon$lineage, destParentLineage)
                            )
           )
-        } else if( prevDestParent$lineage != destParentLineage ) {
+        } else if( exists("prevDestParent") && prevDestParent$lineage != destParentLineage ) {
           # lineage mismatch not explained by curMSL lineage
           errorDf=addError(errorDf,change$.code,change$.linenum,change$.order,change$change,change$rank,change$.changeTaxon,
                            "WARNING", "MOVE.PARENT_LINEAGE", 
@@ -3987,7 +3987,7 @@ for( code in codes) {
         allChangeDf = cleanChangeDf
     } else {
        # append 
-      allChangeDf = rbind(allChangeDf, cleanChangeDf)
+      allChangeDf = as.data.frame(rbindlist(list(allChangeDf, cleanChangeDf), fill=T))
     }
     
     merged=merged+1
