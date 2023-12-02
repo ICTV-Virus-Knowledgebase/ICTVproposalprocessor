@@ -1,5 +1,5 @@
 # Rscript merge_proposal_zips.R --proposalsDir=testData/proposalsTest_createNew --outDir=testResults/proposalsTest_createNew --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v1.14.76b39e0
+VERSION: v1.14.dc3348c
 Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # LOAD_PROPOSAL_DOCX( 2022.002G )
@@ -13,7 +13,7 @@ changeList:  2022.002G
 Wrote: OUTDIR/QC.summary.tsv (1 rows)
 # MERGE PROC: 2022.002G with 22 changes  (1 out of 1)
 # DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 22 
-# APPLIED:  22 changes from 2022.002G.Ud.v1.Orthornavirae_4nphy_9nsp  with WARNING:30 SUCCESS:22 
-# TOTAL  :  22 changes from 1 proposals with WARNING:30 SUCCESS:22 
+# APPLIED:  22 changes from 2022.002G.Ud.v1.Orthornavirae_4nphy_9nsp  with WARNING:30 INFO:1 SUCCESS:22 
+# TOTAL  :  22 changes  from 1 proposals  with WARNING:30 INFO:1 SUCCESS:22 
 Wrote: OUTDIR/QC.summary.tsv (53 rows)
 # COMPLETED.
