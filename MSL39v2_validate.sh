@@ -10,7 +10,7 @@
 
 # whcih tests to run 
 TEST_PAT="Pending_Proposals"
-TEST_PAT="2023.017P*.xlsx"
+#TEST_PAT="2023.017P*.xlsx"
 echo TEST_PAT=$TEST_PAT
 
 # pass-through args

@@ -11,19 +11,23 @@
 #
 #### TO DO ####
 #
-# in the middle of changeing errorDf=log_error(errorDf,...) to log_error(...)
+# IMPLEMENT MERGE 
 #
 #### CODE OVERVIEW ####
 #
-# scan for files (docx, xlsx) & merge -> proposalsDf
-# for(code) {
-#   load docx 
-#   load xlsx
-#   qc_xlsx
-#   merge ->  allChangesDf
-# }
+# load_proposal_cache() 
+# or 
+#   scan_for_proposals
+#     scan for files (docx, xlsx) & merge -> proposalsDf
+#   load & qc proposals
+#     for(code) {
+#       load docx 
+#       load xlsx
+#       qc_xlsx
+#     }
+# merge ->  allChangesDf
+# find and link "chained" changes
 # order allChangesDf
-#   merge "chained" changes
 #
 # for(change) {
 #   apply_change
@@ -221,22 +225,24 @@ if( interactive() ) {
   print("!!!!||||||||||||||||||||||||!!!!")
   print("!!!! DEBUG OVERIDES ENGAGED !!!!")
   print("!!!!||||||||||||||||||||||||!!!!")
+  params$debug=T
   # WARNING - this will store all the other debug settings into the proposalDir/.RData file!
-  params$save_proposal_cache =F
-  params$load_proposal_cache = F
+  params$load_proposal_cache = T
+  params$save_proposal_cache = F
   # defeat auto-caching when debugging
   #rm(docxList,xlsxList,changeList)
-  params$verbose = F
-  params$tmi = F
+  params$verbose = T
+  params$tmi = T
   params$debug_on_error = F
   params$mode = 'draft'
   params$export_msl = T
-#  params$proposals_dir = "./MSL39dbg"
-  params$test_case_dir = "proposalsMixedTest"
+  params$proposals_dir = "./MSL39v2/Pending_Proposals"
+  params$out_dir       = "./MSL39v3_results/Pending_Proposals"
+#  params$test_case_dir = "crash"
 #  params$test_case_dir = "proposalsEC55.1"
 #  params$test_case_dir = "proposalsMergeSpecies"
-  params$proposals_dir = paste0("testData/",params$test_case_dir)
-  params$out_dir       = paste0("testResults/",params$test_case_dir)
+#  params$proposals_dir = paste0("testData/",params$test_case_dir)
+#  params$out_dir       = paste0("testResults/",params$test_case_dir)
   # MERGE
   #  params$proposals_dir = "./MSL39v2/Pending_Proposals/Plant virus (P) proposals/Proposals to be considered for EC55/2023.017P.N.v1.Caulimoviridae_6nsp.xlsx"
   #params$proposals_dir = "./MSL39v2"
@@ -798,366 +804,360 @@ if( params$update_cache ) {
 
 #### SCAN FOR PROPOSALS ####
 
-# 
-##### filename regex #####
-#
-if( params$processing_mode == "final") {
-  filenameFormatRegex="^[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9][A-Z]\\.[A-Za-z]+\\.[^ ]*"
-  filenameFormatMsg="####[A-Z].###[A-Z].[A-Z]+.____"
-} else if( params$processing_mode == "draft") {
-  filenameFormatRegex="^[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9][A-Z]\\.[A-Za-z]+\\.v[0-9]+\\.[^ ]*"
-  filenameFormatMsg="####[A-Z].###[A-Z].[A-Z]+.v#.____"
-} else if( params$processing_mode == "validate") {
-  # allow any doc/xls file
-  filenameFormatRegex="^.*"
-  filenameFormatMsg="*.____"
-} else {
-  # unsupported format
-  cat(paste0("ERROR: --mode='",params$processing_mode,"' is not a valid option: validate, draft, or final\n"))
-  quit(save="no", status=1)
-}
-if(params$verbose){ cat("(PROCESSING) MODE      :",params$processing_mode,"\n") }
-
-##### scan proposal_dir ##### 
-
-if( file_test("-d",params$proposals_dir) ) {
-  # recursively scqan directory for .doc/.xls files 
-  inputFiles = data.frame(docpath=list.files(path=params$proposals_dir,
-                                             pattern="^[^~.].*\\.(doc|xls)x*$", 
-                                             recursive=T, full.names=TRUE)
-  )
-} else if( file_test("-f",params$proposals_dir) ) {
-  # the "path" is actually a file
-  inputFiles = data.frame(docpath=c(params$proposals_dir))
-} else {
-  errorDf = data.frame(notes=paste0("Input folder='",params$proposals_dir,"/'"))
-  errorDf$level = "ERROR"
-  errorDf$error = "PROPOSAL_DIR_NO_EXIST"
-  errorDf$message = "path not found"
-  .GlobalEnv$allErrorDf = rbindlist(list(.GlobalEnv$allErrorDf, errorDf),fill=TRUE)
-  write_error_summary(.GlobalEnv$allErrorDf)
-  cat("# ERROR: ",errorDf$error, ":", params$proposals_dir, "\n")
-  quit(save="no", status=1)
-}
-# debugging - only process the regex-matching files
-#inputFiles = inputFiles[grep(inputFiles$docpath,pattern="2023.013P"),,drop=FALSE]
-
-# list files found, if in TMI mode
-if(params$tmi) { 
-  cat("# xls|doc(x) files found: N=",nrow(inputFiles),"\n")
-  for( f in inputFiles$docpath ) {
-    cat("\t",f,"\n")
+scan_for_proposals = function() {
+  if( params$debug ) {cat("SCAN_FOR_PROPOSALS(",params$proposals_dir,")\n")}
+    # 
+  ##### filename regex #####
+  #
+  if( params$processing_mode == "final") {
+    filenameFormatRegex="^[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9][A-Z]\\.[A-Za-z]+\\.[^ ]*"
+    filenameFormatMsg="####[A-Z].###[A-Z].[A-Z]+.____"
+  } else if( params$processing_mode == "draft") {
+    filenameFormatRegex="^[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9][A-Z]\\.[A-Za-z]+\\.v[0-9]+\\.[^ ]*"
+    filenameFormatMsg="####[A-Z].###[A-Z].[A-Z]+.v#.____"
+  } else if( params$processing_mode == "validate") {
+    # allow any doc/xls file
+    filenameFormatRegex="^.*"
+    filenameFormatMsg="*.____"
+  } else {
+    # unsupported format
+    cat(paste0("ERROR: --mode='",params$processing_mode,"' is not a valid option: validate, draft, or final\n"))
+    quit(save="no", status=1)
   }
-}
-
-# check if we found any files at all
-if( nrow(inputFiles) == 0 ) {
-  errorDf = data.frame(notes=paste0("Input folder='",params$proposals_dir,"/'"))
-  errorDf$level = "ERROR"
-  errorDf$error = "NO_INPUT_FILES"
-  errorDf$message = "found no .xls[x] or .doc[x] files"
-  .GlobalEnv$allErrorDf = rbindlist(list(.GlobalEnv$allErrorDf, errorDf),fill=TRUE)
-  write_error_summary(.GlobalEnv$allErrorDf)
-  cat("# ERROR: NO_INPUT_FILES found in ",params$proposals_dir, "\n")
-  quit(save="no", status=1)
-}
-
-##### parse file paths/names #####
-inputFiles$path         = dirname(inputFiles$docpath)
-inputFiles$file         = basename(inputFiles$docpath)
-inputFiles$basename     = gsub("(.*).(doc|xls)x*$","\\1",inputFiles$file)
-# code may not be in early versions of filenames
-parseableFilenames = grep(inputFiles$basename,pattern="^[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9][A-Z]\\.")
-inputFiles[parseableFilenames,"code"]          = sub("^([0-9]+\\.[0-9]+[A-Z]).*","\\1",inputFiles[parseableFilenames,]$basename)
-inputFiles[parseableFilenames,"scAbbrev"]      = sub("^[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9]([A-Z])\\.","\\1",inputFiles[parseableFilenames,"code"] )
-
-##### filter filenames #####
-# remove all *.Ud.* files, when in draft/final modes
-if( params$processing_mode %in% c("draft","final") ) {
-  filtered = grep(inputFiles$file, pattern=".*\\.Ud\\..*")
-  if( length(filtered)) {
-    errorDf = inputFiles[filtered,]
-    errorDf$level = "INFO"
-    errorDf$error = "IGNORE_FNAME_.Ud."
-    errorDf$message = "All files with '.Ud.' in filename are ignored"
+  if(params$verbose){ cat("(PROCESSING) MODE      :",params$processing_mode,"\n") }
+  
+  ##### scan proposal_dir ##### 
+  
+  if( file_test("-d",params$proposals_dir) ) {
+    # recursively scqan directory for .doc/.xls files 
+    inputFiles = data.frame(docpath=list.files(path=params$proposals_dir,
+                                               pattern="^[^~.].*\\.(doc|xls)x*$", 
+                                               recursive=T, full.names=TRUE)
+    )
+  } else if( file_test("-f",params$proposals_dir) ) {
+    # the "path" is actually a file
+    inputFiles = data.frame(docpath=c(params$proposals_dir))
+  } else {
+    errorDf = data.frame(notes=paste0("Input folder='",params$proposals_dir,"/'"))
+    errorDf$level = "ERROR"
+    errorDf$error = "PROPOSAL_DIR_NO_EXIST"
+    errorDf$message = "path not found"
     .GlobalEnv$allErrorDf = rbindlist(list(.GlobalEnv$allErrorDf, errorDf),fill=TRUE)
     write_error_summary(.GlobalEnv$allErrorDf)
-    if(params$tmi) { cat(paste0("# .Ud. files filtered out: N=",length(filtered),"\n"))}
+    cat("# ERROR: ",errorDf$error, ":", params$proposals_dir, "\n")
+    quit(save="no", status=1)
   }
-  inputFiles = inputFiles[grep(inputFiles$file, pattern=".*\\.Ud\\..*", invert=T),]
-  if(params$tmi) { cat("# xls|doc(x) files after .Ud. removal: N=",nrow(inputFiles),"\n")}
-}
-
-# ignore "Suppl" files 
-filtered = grep(inputFiles$file,pattern=params$infile_suppl_pat)
-if( length(filtered) ) {
-  errorDf = inputFiles[filtered,]
-  errorDf$level = "INFO"
-  errorDf$error = "IGNORE_FNAME_SUPPL"
-  errorDf$message = paste0("All files with '",params$infile_suppl_pat,"' in filename are ignored")
-  .GlobalEnv$allErrorDf = rbindlist(list(.GlobalEnv$allErrorDf, errorDf),fill=TRUE)
-  write_error_summary(.GlobalEnv$allErrorDf)
-  if(params$tmi) { cat(paste0("# Suppl files filtered out: N=",length(filtered),"\n"))}
-}
-inputFiles = inputFiles[grep(inputFiles$file,pattern=params$infile_suppl_pat, invert=T),]
-if(params$tmi) { cat("# xls|doc(x) files after Suppl/appendix removal: N=",nrow(inputFiles),"\n")}
-
-# ignore "appendix" files 
-filtered = grep(inputFiles$file,pattern="appendix",ignore.case = T)
-if( length(filtered) ) {
-  errorDf = inputFiles[filtered,]
-  errorDf$level = "INFO"
-  errorDf$error = "IGNORE_FNAME_APPENDIXL"
-  errorDf$message = paste0("All files with '","appendix","' in filename are ignored")
-  .GlobalEnv$allErrorDf = rbindlist(list(.GlobalEnv$allErrorDf, errorDf),fill=TRUE)
-  write_error_summary(.GlobalEnv$allErrorDf)
-  if(params$tmi) { cat(paste0("# Appendix files filtered out: N=",length(filtered),"\n"))}
-}
-inputFiles = inputFiles[grep(inputFiles$file,pattern="appendix",ignore.case = T, invert=T),]
-if(params$tmi) { cat("# xls|doc(x) files after appendix removal: N=",nrow(inputFiles),"\n")}
-
-##### SECTION scan DOCX #####
-#
-# break filename into proposal code, filename and basename
-#
-docxs          = inputFiles[grep(inputFiles$file,pattern="\\.docx*$"),,drop=FALSE]
-names(docxs)   = c("docxpath","path","docx","basename","code","scAbbrev")
-
-if(params$tmi) { cat("# doc(x) files found: N=",nrow(docxs),"\n")}
-
-# QQQ use log_error()!!!
-
-# check for duplicate Proposal IDs
-dups = duplicated(docxs$code)
-allDups =docxs$code %in% docxs$code[dups]
-if(sum(dups) > 0) {
-  errorDf = docxs[allDups, c("scAbbrev", "code", "docx")]
-  errorDf$level = "ERROR"
-  errorDf$error = "DUPCODE.DOCX"
-  errorDf$message = "duplicate proposal ID"
-  .GlobalEnv$allErrorDf = rbindlist(list(.GlobalEnv$allErrorDf, errorDf),fill=TRUE)
-  # output: @DD make this web-app friedly
-  #kable(errorDf,caption = paste0("QC01: ERRORS: dupliate docx proposal IDs"))
-  write_xlsx(x=errorDf,path=file.path(params$out_dir,"QC01.docx_duplicate_ids.xlsx"))
-  write_error_summary(.GlobalEnv$allErrorDf)
-}
-# use codes for row names, but fall back to ordinals, if no code in filename
-rownames(docxs)=ifelse(is.na(docxs$code),rownames(docxs),docxs$code)
-docxs[,"code"] = rownames(docxs)
-
-# spaces in filenames
-spacedOut = grep(pattern=" ",docxs$docx)
-if(sum(spacedOut) > 0) {
-  errorDf = docxs[spacedOut, c("scAbbrev", "code", "docx")]
-  errorDf$level = "WARNING"
-  errorDf$error = "DOCX_FILENAME_SPACES"
-  errorDf$message = "filename contains a space: please replace with _ or -"
-  errorDf$notes = gsub("( )","[\\1]",docxs[spacedOut,]$docx)
-  .GlobalEnv$allErrorDf = rbindlist(list(.GlobalEnv$allErrorDf, errorDf),fill=TRUE)
-}
-
-docxBadFnameFormats = grep(docxs$docx, pattern=paste0(filenameFormatRegex,".docx$"), invert=T)
-if( length(docxBadFnameFormats) > 0 ) {
-  if( params$processing_mode %in% c("draft","final") ) {
-    # supress picky error message
-    errorDf= docxs[docxBadFnameFormats,c("scAbbrev","code","docx")]
-    errorDf$level= "WARNING"
-    errorDf$error = "DOCX.BAD_FILENAME_FORMAT"
-    errorDf$message = paste0("Should be '",filenameFormatMsg,".docx'")
-    errorDf$notes= "####[A-Z]=year/study_section, ###[A-Z]=index/type, [A-Z]+=status, v#=version"
-    .GlobalEnv$allErrorDf = rbindlist(list(.GlobalEnv$allErrorDf, errorDf),fill=TRUE)
-  }
-}
-#
-##### SECTION: scan XLSX ##### 
-#
-
-xlsxs          = inputFiles[grep(inputFiles$file,pattern="\\.xlsx*$"),,drop=FALSE]
-names(xlsxs)   = c("xlsxpath","path","xlsx","basename","code","scAbbrev")
-
-if(params$tmi) { cat("# xls(x) files found: N=",nrow(xlsxs),"\n")}
-
-# QC for duplicate codes
-dups = duplicated(xlsxs$code) & !is.na(xlsxs$code)
-allDups =xlsxs$code %in% xlsxs$code[dups]
-if( sum(dups) > 0 ) {
-  # error details
-  errorDf = xlsxs[allDups, c("scAbbrev", "code", "xlsx")]
-  errorDf$level = "ERROR"
-  errorDf$error = "XLSX_DUPCODE"
-  for( code in xlsxs$code[dups] ) {
-    # build list of all xlsxs using duplicate codes
-    errorDf[errorDf$code==code,"message"] = 
-      paste0("duplicate proposal ID: ",
-             paste(xlsxs$xlsx[xlsxs$code==code],collapse=","))
-    
-  }
-  # append to global list
-  .GlobalEnv$allErrorDf = rbindlist(list(.GlobalEnv$allErrorDf, errorDf),fill=TRUE)
-  # output
-  write_error_summary(.GlobalEnv$allErrorDf)
+  # debugging - only process the regex-matching files
+  #inputFiles = inputFiles[grep(inputFiles$docpath,pattern="2023.013P"),,drop=FALSE]
   
-  # terminate
-  cat("ERROR: can not proceed with duplicated proposal IDs:", paste(levels(as.factor(xlsxs[dups,"code"])),collapse=","),"\n")
-  stop(1)
-}
-rownames(xlsxs) = ifelse(is.na(xlsxs$code),rownames(xlsxs),xlsxs$code)
-xlsxs[,"code"] = rownames(xlsxs)
-#
-# check that xlsx names match format
-#
-# production format (no version)
-xlsxBadFnameFormats = grep(xlsxs$xlsx, pattern=paste0(filenameFormatRegex,".xlsx*$"), invert=T)
-if( length(xlsxBadFnameFormats) > 0 ) {
-  if( params$processing_mode %in% c("draft","final") ) {
-    # supress picky error message
-    errorDf= xlsxs[xlsxBadFnameFormats,c("scAbbrev","code","xlsx")]
-    errorDf$level= "WARNING"
-    errorDf$error = "XLSX.BAD_FILENAME_FORMAT"
-    errorDf$message = paste0("Should be '",filenameFormatMsg,".xlsx'")
-    errorDf$notes= "####[A-Z]=year/study_section, ###[A-Z]=index/type, [A-Z]+=status, v#=version"
-    .GlobalEnv$allErrorDf = rbindlist(list(.GlobalEnv$allErrorDf, errorDf),fill=TRUE)
-  }
-  write_error_summary(.GlobalEnv$allErrorDf)  
-}
-# spaces in XLSX filenames
-spacedOut = grep(pattern=" ",xlsxs$xlsx)
-if(sum(spacedOut) > 0) {
-  errorDf = xlsxs[spacedOut, c("scAbbrev", "code", "xlsx")]
-  errorDf$level = "WARNING"
-  errorDf$error = "XLSX_FILENAME_SPACES"
-  errorDf$message = "filename contains a space: please replace with _ or -"
-  errorDf$notes = gsub("( )","[\\1]",xlsxs[spacedOut,]$xlsx)
-  .GlobalEnv$allErrorDf = rbindlist(list(.GlobalEnv$allErrorDf, errorDf),fill=TRUE)
-  write_error_summary(.GlobalEnv$allErrorDf)  
-}
-#
-# check if any filenames passed QC
-#
-# check if we found any files at all
-if( nrow(xlsxs) == 0 ) {
-  errorDf = data.frame(notes=paste0("Input folder='",params$proposals_dir,"/'"))
-  errorDf$level = "ERROR"
-  errorDf$error = "NO_INPUT_FILES"
-  errorDf$message = "found no .xls[x] files that passed filename QC"
-  .GlobalEnv$allErrorDf = rbindlist(list(.GlobalEnv$allErrorDf, errorDf),fill=TRUE)
-  write_error_summary(.GlobalEnv$allErrorDf)
-  cat("# ERROR: NO_INPUT_FILES found in ",params$proposals_dir, "\n")
-  quit(save="no", status=1)
-}
-
-#
-##### merge XLSX list into DOCX list #####
-#
-
-proposalsDf = data.frame(
-  row.names=c(union(rownames(xlsxs),rownames(docxs)))
-  )
-proposalsDf$code = ifelse(is.na(xlsxs[rownames(proposalsDf),"code"]),rownames(proposalsDf),xlsxs[rownames(proposalsDf),"code"])
-# XLSX only fields
-proposalsDf$xlsx     = xlsxs[rownames(proposalsDf),"xlsx"]
-proposalsDf$xlsxpath = xlsxs[rownames(proposalsDf),"xlsxpath"]
-# DOCS only fields
-proposalsDf$docx = docxs[rownames(proposalsDf),"docx"]
-proposalsDf$docxpath = docxs[rownames(proposalsDf),"docxpath"]
-# MERGE 
-proposalsDf$basename = ifelse(!is.na(xlsxs[proposalsDf$code,"basename"]),
-                            xlsxs[proposalsDf$code,"basename"],
-                            docxs[proposalsDf$code,"basename"])
-proposalsDf$scAbbrev = ifelse(!is.na(xlsxs[proposalsDf$code,"scAbbrev"]),
-                            xlsxs[proposalsDf$code,"scAbbrev"],
-                            docxs[proposalsDf$code,"scAbbrev"])
-# strip off version, workflow status and .fix, to get final, production filename
-proposalsDf$cleanbase= gsub("^([0-9]+\\.[0-9]+[A-Z])(\\.[A-Z]+)(\\.v[0-9]+)*(\\.fix)*(\\..*)$","\\1\\5",proposalsDf$basename)
-
-# QC  - missing xlsx file
-missing= is.na(proposalsDf$xlsx)
-if( sum(missing) > 0 ) {
-  errorDf= proposalsDf[missing,c("code","docx")]
-  # suggest possible matches based on ID
-  errorDf$xlsx= NA 
-  errorDf$row = NA
-  errorDf$level= "ERROR"
-  errorDf$error = "XLSX.MISSING"
-  errorDf$message = "DOCX has no matching XLSX"
-  errorDf$notes= "Suggestions: contact corresponding author"
-  for(row in rownames(errorDf) ) {
-    guesses = sum(xlsxs$code==errorDf[row,"code"],na.rm=TRUE)
-    if( guesses == 1 ) { 
-      # if we have a unique guess, then make it a WARNING, and use that guess
-      proposalsDf[row,"xlsx"]=xlsxs[xlsxs$code==errorDf[row,"code"],"xlsx"]
-      proposalsDf[row,"xlsxpath"]=xlsxs[xlsxs$code==errorDf[row,"code"],"xlsxpath"]
-      errorDf[row,]$xlsx = proposalsDf[row,"xlsx"]
-      errorDf[row,]$row = NA
-      errorDf[row,]$level = "WARNING"
-      errorDf[row,]$error = "XSLX.TYPO"
-      errorDf[row,]$notes = paste("Using best guess:",proposalsDf[row,"xlsx"])
-    } else if( guesses > 1 ) {
-      # just list all the options we found
-      errorDf[row,]$error = "XSLX.MULTIPLE"
-      errorDf[row,]$error = paste0("Multiple .xlsx files start with code '",errorDf[row,"code"],"', and aren't marked '",params$infile_suppl_pat,"'")
-      errorDf[row,"notes"] = paste("SUGGESTIONS:",paste(paste0(xlsxs[xlsxs$xlsxID==errorDf[row,"docxID"],"basename"],".xslx"),collapse=", "))
-    } else {
-      # 
-      # can't find the xlsx
-      #
-      # let the error pass through
-      proposalsDf[]
+  # list files found, if in TMI mode
+  if(params$tmi) { 
+    cat("# xls|doc(x) files found: N=",nrow(inputFiles),"\n")
+    for( f in inputFiles$docpath ) {
+      cat("\t",f,"\n")
     }
   }
-  # suppress name-mismatch warnings
-  loadErrorDfFilt = errorDf
-  if( params$processing_mode == "validate" ) {
-      # filter out some errors
-      loadErrorDfFilt = errorDf %>% filter(error != "XSLX.TYPO")
+  
+  # check if we found any files at all
+  if( nrow(inputFiles) == 0 ) {
+    errorDf = data.frame(notes=paste0("Input folder='",params$proposals_dir,"/'"))
+    errorDf$level = "ERROR"
+    errorDf$error = "NO_INPUT_FILES"
+    errorDf$message = "found no .xls[x] or .doc[x] files"
+    .GlobalEnv$allErrorDf = rbindlist(list(.GlobalEnv$allErrorDf, errorDf),fill=TRUE)
+    write_error_summary(.GlobalEnv$allErrorDf)
+    cat("# ERROR: NO_INPUT_FILES found in ",params$proposals_dir, "\n")
+    quit(save="no", status=1)
   }
-  if(nrow(loadErrorDfFilt) > 0) {
+  
+  ##### parse file paths/names #####
+  inputFiles$path         = dirname(inputFiles$docpath)
+  inputFiles$file         = basename(inputFiles$docpath)
+  inputFiles$basename     = gsub("(.*).(doc|xls)x*$","\\1",inputFiles$file)
+  # code may not be in early versions of filenames
+  parseableFilenames = grep(inputFiles$basename,pattern="^[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9][A-Z]\\.")
+  inputFiles[parseableFilenames,"code"]          = sub("^([0-9]+\\.[0-9]+[A-Z]).*","\\1",inputFiles[parseableFilenames,]$basename)
+  inputFiles[parseableFilenames,"scAbbrev"]      = sub("^[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9]([A-Z])\\.","\\1",inputFiles[parseableFilenames,"code"] )
+  
+  ##### filter filenames #####
+  # remove all *.Ud.* files, when in draft/final modes
+  if( params$processing_mode %in% c("draft","final") ) {
+    filtered = grep(inputFiles$file, pattern=".*\\.Ud\\..*")
+    if( length(filtered)) {
+      errorDf = inputFiles[filtered,]
+      errorDf$level = "INFO"
+      errorDf$error = "IGNORE_FNAME_.Ud."
+      errorDf$message = "All files with '.Ud.' in filename are ignored"
+      .GlobalEnv$allErrorDf = rbindlist(list(.GlobalEnv$allErrorDf, errorDf),fill=TRUE)
+      write_error_summary(.GlobalEnv$allErrorDf)
+      if(params$tmi) { cat(paste0("# .Ud. files filtered out: N=",length(filtered),"\n"))}
+    }
+    inputFiles = inputFiles[grep(inputFiles$file, pattern=".*\\.Ud\\..*", invert=T),]
+    if(params$tmi) { cat("# xls|doc(x) files after .Ud. removal: N=",nrow(inputFiles),"\n")}
+  }
+  
+  # ignore "Suppl" files 
+  filtered = grep(inputFiles$file,pattern=params$infile_suppl_pat)
+  if( length(filtered) ) {
+    errorDf = inputFiles[filtered,]
+    errorDf$level = "INFO"
+    errorDf$error = "IGNORE_FNAME_SUPPL"
+    errorDf$message = paste0("All files with '",params$infile_suppl_pat,"' in filename are ignored")
+    .GlobalEnv$allErrorDf = rbindlist(list(.GlobalEnv$allErrorDf, errorDf),fill=TRUE)
+    write_error_summary(.GlobalEnv$allErrorDf)
+    if(params$tmi) { cat(paste0("# Suppl files filtered out: N=",length(filtered),"\n"))}
+  }
+  inputFiles = inputFiles[grep(inputFiles$file,pattern=params$infile_suppl_pat, invert=T),]
+  if(params$tmi) { cat("# xls|doc(x) files after Suppl/appendix removal: N=",nrow(inputFiles),"\n")}
+  
+  # ignore "appendix" files 
+  filtered = grep(inputFiles$file,pattern="appendix",ignore.case = T)
+  if( length(filtered) ) {
+    errorDf = inputFiles[filtered,]
+    errorDf$level = "INFO"
+    errorDf$error = "IGNORE_FNAME_APPENDIXL"
+    errorDf$message = paste0("All files with '","appendix","' in filename are ignored")
+    .GlobalEnv$allErrorDf = rbindlist(list(.GlobalEnv$allErrorDf, errorDf),fill=TRUE)
+    write_error_summary(.GlobalEnv$allErrorDf)
+    if(params$tmi) { cat(paste0("# Appendix files filtered out: N=",length(filtered),"\n"))}
+  }
+  inputFiles = inputFiles[grep(inputFiles$file,pattern="appendix",ignore.case = T, invert=T),]
+  if(params$tmi) { cat("# xls|doc(x) files after appendix removal: N=",nrow(inputFiles),"\n")}
+  
+  ##### SECTION scan DOCX #####
+  #
+  # break filename into proposal code, filename and basename
+  #
+  docxs          = inputFiles[grep(inputFiles$file,pattern="\\.docx*$"),,drop=FALSE]
+  names(docxs)   = c("docxpath","path","docx","basename","code","scAbbrev")
+  
+  if(params$tmi) { cat("# doc(x) files found: N=",nrow(docxs),"\n")}
+  
+  # QQQ use log_error()!!!
+  
+  # check for duplicate Proposal IDs
+  dups = duplicated(docxs$code)
+  allDups =docxs$code %in% docxs$code[dups]
+  if(sum(dups) > 0) {
+    errorDf = docxs[allDups, c("scAbbrev", "code", "docx")]
+    errorDf$level = "ERROR"
+    errorDf$error = "DUPCODE.DOCX"
+    errorDf$message = "duplicate proposal ID"
+    .GlobalEnv$allErrorDf = rbindlist(list(.GlobalEnv$allErrorDf, errorDf),fill=TRUE)
+    # output: @DD make this web-app friedly
+    #kable(errorDf,caption = paste0("QC01: ERRORS: dupliate docx proposal IDs"))
+    write_xlsx(x=errorDf,path=file.path(params$out_dir,"QC01.docx_duplicate_ids.xlsx"))
+    write_error_summary(.GlobalEnv$allErrorDf)
+  }
+  # use codes for row names, but fall back to ordinals, if no code in filename
+  rownames(docxs)=ifelse(is.na(docxs$code),rownames(docxs),docxs$code)
+  docxs[,"code"] = rownames(docxs)
+  
+  # spaces in filenames
+  spacedOut = grep(pattern=" ",docxs$docx)
+  if(sum(spacedOut) > 0) {
+    errorDf = docxs[spacedOut, c("scAbbrev", "code", "docx")]
+    errorDf$level = "WARNING"
+    errorDf$error = "DOCX_FILENAME_SPACES"
+    errorDf$message = "filename contains a space: please replace with _ or -"
+    errorDf$notes = gsub("( )","[\\1]",docxs[spacedOut,]$docx)
+    .GlobalEnv$allErrorDf = rbindlist(list(.GlobalEnv$allErrorDf, errorDf),fill=TRUE)
+  }
+  
+  docxBadFnameFormats = grep(docxs$docx, pattern=paste0(filenameFormatRegex,".docx$"), invert=T)
+  if( length(docxBadFnameFormats) > 0 ) {
+    if( params$processing_mode %in% c("draft","final") ) {
+      # supress picky error message
+      errorDf= docxs[docxBadFnameFormats,c("scAbbrev","code","docx")]
+      errorDf$level= "WARNING"
+      errorDf$error = "DOCX.BAD_FILENAME_FORMAT"
+      errorDf$message = paste0("Should be '",filenameFormatMsg,".docx'")
+      errorDf$notes= "####[A-Z]=year/study_section, ###[A-Z]=index/type, [A-Z]+=status, v#=version"
+      .GlobalEnv$allErrorDf = rbindlist(list(.GlobalEnv$allErrorDf, errorDf),fill=TRUE)
+    }
+  }
+  #
+  ##### SECTION: scan XLSX ##### 
+  #
+  
+  xlsxs          = inputFiles[grep(inputFiles$file,pattern="\\.xlsx*$"),,drop=FALSE]
+  names(xlsxs)   = c("xlsxpath","path","xlsx","basename","code","scAbbrev")
+  
+  if(params$tmi) { cat("# xls(x) files found: N=",nrow(xlsxs),"\n")}
+  
+  # QC for duplicate codes
+  dups = duplicated(xlsxs$code) & !is.na(xlsxs$code)
+  allDups =xlsxs$code %in% xlsxs$code[dups]
+  if( sum(dups) > 0 ) {
+    # error details
+    errorDf = xlsxs[allDups, c("scAbbrev", "code", "xlsx")]
+    errorDf$level = "ERROR"
+    errorDf$error = "XLSX_DUPCODE"
+    for( code in xlsxs$code[dups] ) {
+      # build list of all xlsxs using duplicate codes
+      errorDf[errorDf$code==code,"message"] = 
+        paste0("duplicate proposal ID: ",
+               paste(xlsxs$xlsx[xlsxs$code==code],collapse=","))
+      
+    }
     # append to global list
     .GlobalEnv$allErrorDf = rbindlist(list(.GlobalEnv$allErrorDf, errorDf),fill=TRUE)
-   }
-  write_error_summary(.GlobalEnv$allErrorDf)  
-}
-# QQQ don't check for missing docx files? 
-
-#
-# get SC names from last letter of code
-#
-proposalsDf$scAbbrev = NA
-parsableCode = grep(proposalsDf$code, pattern="[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9]([A-Z])" )
-if( length(parsableCode) >0 ) {
-  proposalsDf[parsableCode,"scAbbrev"] =  gsub("[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9]([A-Z])","\\1",proposalsDf$code[parsableCode])
-}
-# QC
-badProposalAbbrevs = !(proposalsDf$scAbbrev %in% names(scAbbrevNameMap))
-if(sum(badProposalAbbrevs)>0) {
-  if( params$processing_mode %in% c("draft","final") ) {
-    # supress picky error message
-    errorDf = proposalsDf[badProposalAbbrevs, c("scAbbrev", "code", "xlsx", "docx")]
-    errorDf$level = "WARNING"
-    errorDf$error = "CODE_BAD_SC_ABBREV"
-    errorDf$message = "Last letter of CODE not a valid ICTV Subcommittee letter"
-    errorDf$notes = paste0("'",proposalsDf[badProposalAbbrevs,"scAbbrev"],"' not in [",
-                           paste0(names(scAbbrevNameMap),collapse=","),"]")
-    .GlobalEnv$allErrorDf = rbindlist(list(.GlobalEnv$allErrorDf, errorDf),fill=TRUE)
+    # output
+    write_error_summary(.GlobalEnv$allErrorDf)
+    
+    # terminate
+    cat("ERROR: can not proceed with duplicated proposal IDs:", paste(levels(as.factor(xlsxs[dups,"code"])),collapse=","),"\n")
+    stop(1)
   }
-  write_error_summary(.GlobalEnv$allErrorDf)  
-}
-proposalsDf$subcommittee = ifelse(badProposalAbbrevs,
-                          ifelse(is.na(proposalsDf$scAbbrev),"unspecified",paste0("unknown-",proposalsDf$scAbbrev)),
-                          scAbbrevNameMap[proposalsDf$scAbbrev])
+  rownames(xlsxs) = ifelse(is.na(xlsxs$code),rownames(xlsxs),xlsxs$code)
+  xlsxs[,"code"] = rownames(xlsxs)
+  #
+  # check that xlsx names match format
+  #
+  # production format (no version)
+  xlsxBadFnameFormats = grep(xlsxs$xlsx, pattern=paste0(filenameFormatRegex,".xlsx*$"), invert=T)
+  if( length(xlsxBadFnameFormats) > 0 ) {
+    if( params$processing_mode %in% c("draft","final") ) {
+      # supress picky error message
+      errorDf= xlsxs[xlsxBadFnameFormats,c("scAbbrev","code","xlsx")]
+      errorDf$level= "WARNING"
+      errorDf$error = "XLSX.BAD_FILENAME_FORMAT"
+      errorDf$message = paste0("Should be '",filenameFormatMsg,".xlsx'")
+      errorDf$notes= "####[A-Z]=year/study_section, ###[A-Z]=index/type, [A-Z]+=status, v#=version"
+      .GlobalEnv$allErrorDf = rbindlist(list(.GlobalEnv$allErrorDf, errorDf),fill=TRUE)
+    }
+    write_error_summary(.GlobalEnv$allErrorDf)  
+  }
+  # spaces in XLSX filenames
+  spacedOut = grep(pattern=" ",xlsxs$xlsx)
+  if(sum(spacedOut) > 0) {
+    errorDf = xlsxs[spacedOut, c("scAbbrev", "code", "xlsx")]
+    errorDf$level = "WARNING"
+    errorDf$error = "XLSX_FILENAME_SPACES"
+    errorDf$message = "filename contains a space: please replace with _ or -"
+    errorDf$notes = gsub("( )","[\\1]",xlsxs[spacedOut,]$xlsx)
+    .GlobalEnv$allErrorDf = rbindlist(list(.GlobalEnv$allErrorDf, errorDf),fill=TRUE)
+    write_error_summary(.GlobalEnv$allErrorDf)  
+  }
+  #
+  # check if any filenames passed QC
+  #
+  # check if we found any files at all
+  if( nrow(xlsxs) == 0 ) {
+    errorDf = data.frame(notes=paste0("Input folder='",params$proposals_dir,"/'"))
+    errorDf$level = "ERROR"
+    errorDf$error = "NO_INPUT_FILES"
+    errorDf$message = "found no .xls[x] files that passed filename QC"
+    .GlobalEnv$allErrorDf = rbindlist(list(.GlobalEnv$allErrorDf, errorDf),fill=TRUE)
+    write_error_summary(.GlobalEnv$allErrorDf)
+    cat("# ERROR: NO_INPUT_FILES found in ",params$proposals_dir, "\n")
+    quit(save="no", status=1)
+  }
+  
+  #
+  ##### merge XLSX list into DOCX list #####
+  #
+  
+  proposalsDf = data.frame(
+    row.names=c(union(rownames(xlsxs),rownames(docxs)))
+  )
+  proposalsDf$code = ifelse(is.na(xlsxs[rownames(proposalsDf),"code"]),rownames(proposalsDf),xlsxs[rownames(proposalsDf),"code"])
+  # XLSX only fields
+  proposalsDf$xlsx     = xlsxs[rownames(proposalsDf),"xlsx"]
+  proposalsDf$xlsxpath = xlsxs[rownames(proposalsDf),"xlsxpath"]
+  # DOCS only fields
+  proposalsDf$docx = docxs[rownames(proposalsDf),"docx"]
+  proposalsDf$docxpath = docxs[rownames(proposalsDf),"docxpath"]
+  # MERGE 
+  proposalsDf$basename = ifelse(!is.na(xlsxs[proposalsDf$code,"basename"]),
+                                xlsxs[proposalsDf$code,"basename"],
+                                docxs[proposalsDf$code,"basename"])
+  proposalsDf$scAbbrev = ifelse(!is.na(xlsxs[proposalsDf$code,"scAbbrev"]),
+                                xlsxs[proposalsDf$code,"scAbbrev"],
+                                docxs[proposalsDf$code,"scAbbrev"])
+  # strip off version, workflow status and .fix, to get final, production filename
+  proposalsDf$cleanbase= gsub("^([0-9]+\\.[0-9]+[A-Z])(\\.[A-Z]+)(\\.v[0-9]+)*(\\.fix)*(\\..*)$","\\1\\5",proposalsDf$basename)
+  
+  # QC  - missing xlsx file
+  missing= is.na(proposalsDf$xlsx)
+  if( sum(missing) > 0 ) {
+    errorDf= proposalsDf[missing,c("code","docx")]
+    # suggest possible matches based on ID
+    errorDf$xlsx= NA 
+    errorDf$row = NA
+    errorDf$level= "ERROR"
+    errorDf$error = "XLSX.MISSING"
+    errorDf$message = "DOCX has no matching XLSX"
+    errorDf$notes= "Suggestions: contact corresponding author"
+    for(row in rownames(errorDf) ) {
+      guesses = sum(xlsxs$code==errorDf[row,"code"],na.rm=TRUE)
+      if( guesses == 1 ) { 
+        # if we have a unique guess, then make it a WARNING, and use that guess
+        proposalsDf[row,"xlsx"]=xlsxs[xlsxs$code==errorDf[row,"code"],"xlsx"]
+        proposalsDf[row,"xlsxpath"]=xlsxs[xlsxs$code==errorDf[row,"code"],"xlsxpath"]
+        errorDf[row,]$xlsx = proposalsDf[row,"xlsx"]
+        errorDf[row,]$row = NA
+        errorDf[row,]$level = "WARNING"
+        errorDf[row,]$error = "XSLX.TYPO"
+        errorDf[row,]$notes = paste("Using best guess:",proposalsDf[row,"xlsx"])
+      } else if( guesses > 1 ) {
+        # just list all the options we found
+        errorDf[row,]$error = "XSLX.MULTIPLE"
+        errorDf[row,]$error = paste0("Multiple .xlsx files start with code '",errorDf[row,"code"],"', and aren't marked '",params$infile_suppl_pat,"'")
+        errorDf[row,"notes"] = paste("SUGGESTIONS:",paste(paste0(xlsxs[xlsxs$xlsxID==errorDf[row,"docxID"],"basename"],".xslx"),collapse=", "))
+      } else {
+        # 
+        # can't find the xlsx
+        #
+        # let the error pass through
+        proposalsDf[]
+      }
+    }
+    # suppress name-mismatch warnings
+    loadErrorDfFilt = errorDf
+    if( params$processing_mode == "validate" ) {
+      # filter out some errors
+      loadErrorDfFilt = errorDf %>% filter(error != "XSLX.TYPO")
+    }
+    if(nrow(loadErrorDfFilt) > 0) {
+      # append to global list
+      .GlobalEnv$allErrorDf = rbindlist(list(.GlobalEnv$allErrorDf, errorDf),fill=TRUE)
+    }
+    write_error_summary(.GlobalEnv$allErrorDf)  
+  }
+  # QQQ don't check for missing docx files? 
+  
+  #
+  # get SC names from last letter of code
+  #
+  proposalsDf$scAbbrev = NA
+  parsableCode = grep(proposalsDf$code, pattern="[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9]([A-Z])" )
+  if( length(parsableCode) >0 ) {
+    proposalsDf[parsableCode,"scAbbrev"] =  gsub("[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9]([A-Z])","\\1",proposalsDf$code[parsableCode])
+  }
+  # QC
+  badProposalAbbrevs = !(proposalsDf$scAbbrev %in% names(scAbbrevNameMap))
+  if(sum(badProposalAbbrevs)>0) {
+    if( params$processing_mode %in% c("draft","final") ) {
+      # supress picky error message
+      errorDf = proposalsDf[badProposalAbbrevs, c("scAbbrev", "code", "xlsx", "docx")]
+      errorDf$level = "WARNING"
+      errorDf$error = "CODE_BAD_SC_ABBREV"
+      errorDf$message = "Last letter of CODE not a valid ICTV Subcommittee letter"
+      errorDf$notes = paste0("'",proposalsDf[badProposalAbbrevs,"scAbbrev"],"' not in [",
+                             paste0(names(scAbbrevNameMap),collapse=","),"]")
+      .GlobalEnv$allErrorDf = rbindlist(list(.GlobalEnv$allErrorDf, errorDf),fill=TRUE)
+    }
+    write_error_summary(.GlobalEnv$allErrorDf)  
+  }
+  proposalsDf$subcommittee = ifelse(badProposalAbbrevs,
+                                    ifelse(is.na(proposalsDf$scAbbrev),"unspecified",paste0("unknown-",proposalsDf$scAbbrev)),
+                                    scAbbrevNameMap[proposalsDf$scAbbrev])
 
-
-# ```
-# 
-# # Load summary
-# 
-# ```{r load_summary,echo=FALSE}
-# kable(caption=paste0("SUMMARY: Proposal .xlsx file found in ",params$proposals_dir,"/"),
-#       x=data.frame(nProposals=summary(as.factor(proposalsDf$subcommittee))),)
-# ```
-# 
-# ## QC setup
-# ```{r qc_setup_template_versions, echo=TRUE}
+  # move results to global scope
+  .GlobalEnv$proposalsDf = proposalsDf
+  return(proposalsDf)
+} # scan_for_proposals()
 
 ####  LOAD/QC #### 
 
@@ -1168,29 +1168,29 @@ proposalsDf$subcommittee = ifelse(badProposalAbbrevs,
 
 # dput(unname(as.vector(df[1,])))
 xlsx_v1_row2=c(
-    "CURRENT TAXONOMY", NA_character_, NA_character_, NA_character_, NA_character_, 
-    NA_character_, NA_character_, NA_character_, NA_character_, NA_character_, 
-    NA_character_, NA_character_, NA_character_, NA_character_, NA_character_, 
-    NA_character_, "PROPOSED TAXONOMY", NA_character_, NA_character_, NA_character_, 
-    NA_character_, NA_character_, NA_character_, NA_character_, NA_character_, 
-    NA_character_, NA_character_, NA_character_, NA_character_, NA_character_, 
-    NA_character_, NA_character_, NA_character_, NA_character_, NA_character_, 
-    NA_character_, NA_character_, NA_character_, "SPECIFY PROPOSED CHANGE", NA_character_, 
-    "COMMENTS", NA, NA, NA, NA_character_, 
-    NA_character_, NA_character_, NA_character_, NA_character_
-    )
+  "CURRENT TAXONOMY", NA_character_, NA_character_, NA_character_, NA_character_, 
+  NA_character_, NA_character_, NA_character_, NA_character_, NA_character_, 
+  NA_character_, NA_character_, NA_character_, NA_character_, NA_character_, 
+  NA_character_, "PROPOSED TAXONOMY", NA_character_, NA_character_, NA_character_, 
+  NA_character_, NA_character_, NA_character_, NA_character_, NA_character_, 
+  NA_character_, NA_character_, NA_character_, NA_character_, NA_character_, 
+  NA_character_, NA_character_, NA_character_, NA_character_, NA_character_, 
+  NA_character_, NA_character_, NA_character_, "SPECIFY PROPOSED CHANGE", NA_character_, 
+  "COMMENTS", NA, NA, NA, NA_character_, 
+  NA_character_, NA_character_, NA_character_, NA_character_
+)
 
 xlsx_v2_row2=c(
-    "CURRENT TAXONOMY", NA_character_, NA_character_, NA_character_, NA_character_, 
-    NA_character_, NA_character_, NA_character_, NA_character_, NA_character_, 
-    NA_character_, NA_character_, NA_character_, NA_character_, NA_character_, 
-    "PROPOSED TAXONOMY", NA_character_, NA_character_, NA_character_, 
-    NA_character_, NA_character_, NA_character_, NA_character_, NA_character_, 
-    NA_character_, NA_character_, NA_character_, NA_character_, NA_character_, 
-    NA_character_, NA_character_, NA_character_, NA_character_, NA_character_, 
-    NA_character_, NA_character_, NA_character_, "SPECIFY PROPOSED CHANGE", NA_character_, 
-    "COMMENTS"
-    )
+  "CURRENT TAXONOMY", NA_character_, NA_character_, NA_character_, NA_character_, 
+  NA_character_, NA_character_, NA_character_, NA_character_, NA_character_, 
+  NA_character_, NA_character_, NA_character_, NA_character_, NA_character_, 
+  "PROPOSED TAXONOMY", NA_character_, NA_character_, NA_character_, 
+  NA_character_, NA_character_, NA_character_, NA_character_, NA_character_, 
+  NA_character_, NA_character_, NA_character_, NA_character_, NA_character_, 
+  NA_character_, NA_character_, NA_character_, NA_character_, NA_character_, 
+  NA_character_, NA_character_, NA_character_, "SPECIFY PROPOSED CHANGE", NA_character_, 
+  "COMMENTS"
+)
 
 xlsx_2023_row3 = c("CURRENT TAXONOMY" , NA_character_, NA_character_ , NA_character_, NA_character_,
                    NA_character_, NA_character_, NA_character_, NA_character_, NA_character_,
@@ -1244,22 +1244,22 @@ xlsx_v2_row3=c(
 )
 
 xlsx_2023_row4=c(
-    "Realm", "Subrealm", "Kingdom", "Subkingdom", 
-    "Phylum", "Subphylum", "Class", "Subclass", "Order", "Suborder", 
-    "Family", "Subfamily", "Genus", "Subgenus", "Species",
-    "Realm", "Subrealm", "Kingdom", "Subkingdom", "Phylum", "Subphylum", 
-    "Class", "Subclass", "Order", "Suborder", "Family", "Subfamily", 
-    "Genus", "Subgenus", "Species",
-    "Exemplar GenBank Accession Number", 
-    "Exemplar virus name",
-    "Virus name abbreviation", 
-    "Exemplar isolate designation", 
-    "Genome coverage", 
-    "Genome composition", 
-    "Host/Source", 
-    "Change", 
-    "Proposed Rank",
-    "Comments"
+  "Realm", "Subrealm", "Kingdom", "Subkingdom", 
+  "Phylum", "Subphylum", "Class", "Subclass", "Order", "Suborder", 
+  "Family", "Subfamily", "Genus", "Subgenus", "Species",
+  "Realm", "Subrealm", "Kingdom", "Subkingdom", "Phylum", "Subphylum", 
+  "Class", "Subclass", "Order", "Suborder", "Family", "Subfamily", 
+  "Genus", "Subgenus", "Species",
+  "Exemplar GenBank Accession Number", 
+  "Exemplar virus name",
+  "Virus name abbreviation", 
+  "Exemplar isolate designation", 
+  "Genome coverage", 
+  "Genome composition", 
+  "Host/Source", 
+  "Change", 
+  "Proposed Rank",
+  "Comments"
 )
 #
 # changeDf column names
@@ -1268,9 +1268,9 @@ xlsx_2023_row4=c(
 # normalized across XSLX template versions
 #
 xlsx_change_ranks=c("Realm", "Subrealm", "Kingdom", "Subkingdom", 
-    "Phylum", "Subphylum", "Class", "Subclass", "Order", "Suborder", 
-    "Family", "Subfamily", "Genus", "Subgenus", "Species"
-    )
+                    "Phylum", "Subphylum", "Class", "Subclass", "Order", "Suborder", 
+                    "Family", "Subfamily", "Genus", "Subgenus", "Species"
+)
 
 # record mapping of V2 column names to generic v1/v2 merged, cleaned names
 xlsx_change_other=c( 
@@ -1605,7 +1605,7 @@ diff_lineages=function(lin1, lin2) {
   } else if( length(lin1ex) > length(lin2ex)) {
     lin2ex=c(lin2ex,rep("",length(lin1ex)-length(lin2ex)))
   }
- 
+  
   diffs=lin1ex==lin2ex
   tups=c()
   for( i in 1:length(diffs)) {
@@ -1613,7 +1613,7 @@ diff_lineages=function(lin1, lin2) {
   }
   #tups=ifelse(diffs,lin1ex,paste0('[[',lin1ex,'//',lin2ex,']]'))
   #tups=ifelse(diffs,lin1ex,diff_strings(lin1ex,lin2ex))
-
+  
   return(paste0(
     ifelse(sum(!diffs)==0,"[identical]",""),
     paste0(tups,collapse=";")))
@@ -1630,7 +1630,7 @@ diff_lineages=function(lin1, lin2) {
 #
 load_proposal = function(code) {
   cat("# LOAD_PROPOSAL(",code,")\n")
-
+  
   # return data
   proposalDf = NULL
   
@@ -2026,7 +2026,7 @@ qc_proposal = function(code, proposalDf) {
   hasData = apply(changeDf[,xlsx_change_srcDest_colnames],1,function(row){return(sum(is.na(row))!=length(row))})
   changeDf=changeDf[hasData,]
   if( nrow(changeDf) == 0 ) {
-    log_error(code,linenum=firstDataRow,,action="OPEN_XLSX",actionOrder=actionOrder, 
+    log_error(code,linenum=firstDataRow,action="OPEN_XLSX",actionOrder=actionOrder, 
               rank="",taxon="",
               levelStr="ERROR", errorCode="XLSX.EMPTY",errorStr="XLSX no change rows found")
     return(list())
@@ -2161,7 +2161,7 @@ qc_proposal = function(code, proposalDf) {
       if(length(qc.matches)>0) { 
         if(params$verbose) { cat("INFO:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") }
         log_error(code,linenum=rownames(changeDf)[qc.matches],
-                  action=changeDf[qc.matches],actionOrder=actionOrder, 
+                  action=changeDf$change[qc.matches],actionOrder=actionOrder, 
                   rank=changeDf$rank[qc.matches],taxon=changeDf$.changeTaxon[qc.matches],
                   levelStr="INFO",errorCode="XLSX.QUOTES_REMOVED", errorStr=paste("XLSX has",pat_warn),
                   notes=paste0(paste(col,gsub(pattern,"[\\1]",changeDf[qc.matches,col]),sep=":")," (replacing with '",pat_replace,"')")
@@ -2376,105 +2376,140 @@ qc_proposal = function(code, proposalDf) {
 # ```{r load_and_qc}
 
 ##### LOAD XSLX/DOCX, QC ##### 
-#
-# this uses the PROPOSAL.XLSX schema (naming convention)
-#
 
-#
-# extracted changes
-#
 
-# make this re-entrant - only create/delete lists if they don't exist
-if(!exists("docxList"))   { docxList   = list() }
-if(!exists("xlsxList"))   { xlsxList   = list() }
-if(!exists("changeList")) { changeList = list() }
-codes = rownames(proposalsDf) # all proposals
-#codes = c("2022.003S","2022.002S")  # templates: V1, V2
-#codes = c(codes,"2022.007F", "2022.006P") # missing xlsx, typo in xlsx
-# codes = c("2022.085B") # MOVE
-for( code in codes ) {
-  # code = codes[1]; code
-  # code = codes[which(code==codes)+1]; code; # next
-  # code = "2022.003S" # V1
-  # code = "2022.002S" # V2
-  #  code =  "2022.016P" # space in docx filename
+load_and_qc_proposals = function(proposalsDf,changeList) {
   #
-  # load
+  # this uses the PROPOSAL.XLSX schema (naming convention)
   #
   
-  if(!is.null(changeList[[code]])) {
-    # already loaded
-  } else {
-    # LOAD
-    xlsx_fname=proposalsDf[code,"xlsx"]
-    if(is.na(xlsx_fname)) {
-      cat("# SKIPPED: ",code," (no .xlsx)\n")
+  #
+  # extracted changes
+  #
+  
+  # make this re-entrant - only create/delete lists if they don't exist
+  if(!exists("docxList"))   { docxList   = list() }
+  if(!exists("xlsxList"))   { xlsxList   = list() }
+  if(!exists("changeList")) { changeList = list() }
+  codes = rownames(proposalsDf) # all proposals
+  #codes = c("2022.003S","2022.002S")  # templates: V1, V2
+  #codes = c(codes,"2022.007F", "2022.006P") # missing xlsx, typo in xlsx
+  # codes = c("2022.085B") # MOVE
+  for( code in codes ) {
+    # code = codes[1]; code
+    # code = codes[which(code==codes)+1]; code; # next
+    # code = "2022.003S" # V1
+    # code = "2022.002S" # V2
+    #  code =  "2022.016P" # space in docx filename
+    #
+    # load
+    #
+    
+    if(!is.null(changeList[[code]])) {
+      # already loaded
     } else {
-      #
-      # try to load proposal metdata from DOCX
-      #
-      if(is.null(docxList[[code]])){
-        # load raw docx file
-        # results=list(metaDf,errorDf)
-        results= load_proposal_docx(code)
-        docxList[[code]] = results[["metaDf"]] 
-        errorDf = .GlobalEnv$allErrorDf %>% filter(code == code)
-        cat("# LOADED: ",code," DOCX with ",nrow(errorDf)," errors/warnings\n")
+      # LOAD
+      xlsx_fname=proposalsDf[code,"xlsx"]
+      if(is.na(xlsx_fname)) {
+        cat("# SKIPPED: ",code," (no .xlsx)\n")
       } else {
-        cat("#  DOCX FROM CACHE: ",code,"\n")
-      }
-      proposalsDf[code,names(docxList[[code]])] = docxList[[code]]
-      #
-      # try to load proposal from XLSX
-      #
-      if(is.null(xlsxList[[code]])){
-        # load raw xlsx file
-        results =  load_proposal(code)
-        changeDf = results[["proposalDf"]]
-        errorDf  =  .GlobalEnv$allErrorDf %>% filter(code == code)
-        cat("# LOADED: ",code," XLS with ",nrow(errorDf)," errors/warnings\n")
-        xlsxList[[code]] = results[["proposalDf"]]
-        
-        # if load had errors/warnings, update error file
-        if( nrow(errorDf)>0  ){
-          write_error_summary(.GlobalEnv$allErrorDf)          
+        #
+        # try to load proposal metdata from DOCX
+        #
+        if(is.null(docxList[[code]])){
+          # load raw docx file
+          # results=list(metaDf,errorDf)
+          results= load_proposal_docx(code)
+          docxList[[code]] = results[["metaDf"]] 
+          errorDf = .GlobalEnv$allErrorDf %>% filter(code == code)
+          cat("# LOADED: ",code," DOCX with ",nrow(errorDf)," errors/warnings\n")
+        } else {
+          cat("#  DOCX FROM CACHE: ",code,"\n")
         }
-        cat("# LOADED: ",code,"\n")
+        proposalsDf[code,names(docxList[[code]])] = docxList[[code]]
+        #
+        # try to load proposal from XLSX
+        #
+        if(is.null(xlsxList[[code]])){
+          # load raw xlsx file
+          results =  load_proposal(code)
+          changeDf = results[["proposalDf"]]
+          errorDf  =  .GlobalEnv$allErrorDf %>% filter(code == code)
+          cat("# LOADED: ",code," XLS with ",nrow(errorDf)," errors/warnings\n")
+          xlsxList[[code]] = results[["proposalDf"]]
+          
+          # if load had errors/warnings, update error file
+          if( nrow(errorDf)>0  ){
+            write_error_summary(.GlobalEnv$allErrorDf)          
+          }
+          cat("# LOADED: ",code,"\n")
+          
+        } else {
+          cat("# XLSX FROM CACHE: ",code,"\n")
+        }
+        proposalDf = xlsxList[[code]]
         
-      } else {
-        cat("# XLSX FROM CACHE: ",code,"\n")
-      }
-      proposalDf = xlsxList[[code]]
-      
-      #
-      # qc
-      #
-      if( is.null(proposalDf) ) {
-        # load failed, move on
-        cat("SKIP: ", code, ": proposal could not be loaded\n")
-      } else {
+        #
+        # qc
+        #
+        if( is.null(proposalDf) ) {
+          # load failed, move on
+          cat("SKIP: ", code, ": proposal could not be loaded\n")
+        } else {
           # successful load
-        cat(paste0("# QC start: ", code, ": proposal loaded",
-            " (",which(codes==code)," out of ",length(codes),")\n"))
+          cat(paste0("# QC start: ", code, ": proposal loaded",
+                     " (",which(codes==code)," out of ",length(codes),")\n"))
+          
+          results = qc_proposal(code,proposalDf)
+          errorDf = .GlobalEnv$allErrorDf %>% filter(code == code)
+          cat("# QCed:     ",code," with ",nrow(errorDf)," errors/warnings\n")
+          changeDf = results[["changeDf"]]
+          if(!is.null(changeDf)) {
+            changeList[[code]]=changeDf
+          }
+        } # loadable 
+      } # LOAD if exists(xlsx)
+    } # LOAD if not in changeList
+  }
+  # load summary
+  cat("changeList: ",paste(names(changeList)),"\n")
+  
+  # error summary
+  write_error_summary(.GlobalEnv$allErrorDf)
+  #kable(allErrorDf,caption = paste0("QC: Summary of ERRORs and WARNINGs"))
+  
+  return(changeList)
+} # load_and_qc_proposals()
 
-        results = qc_proposal(code,proposalDf)
-        errorDf = .GlobalEnv$allErrorDf %>% filter(code == code)
-        cat("# QCed:     ",code," with ",nrow(errorDf)," errors/warnings\n")
-        changeDf = results[["changeDf"]]
-        if(!is.null(changeDf)) {
-          changeList[[code]]=changeDf
-        }
-      } # loadable 
-    } # LOAD if exists(xlsx)
-  } # LOAD if not in changeList
+#####  PROPOSAL CACHE #####
+
+###### LOAD PROPOSAL CACHE #####
+
+# Save loaded proposals, so we can work on applying them
+loadCacheFilename = file.path(params$proposals_dir,".RData")
+
+if(!exists("changeList")) { changeList = list() }
+
+if( params$load_proposal_cache && file.exists(loadCacheFilename) ) {
+  cat("LOADing *PROPOSALS* from ", loadCacheFilename,"...\n")
+  load(file=loadCacheFilename,verbose = T)
+  cat("LOAD DONE","\n")
+} else { 
+  .GlobalEnv$proposalsDf = scan_for_proposals()
+  .GlobalEnv$changeList = load_and_qc_proposals(proposalsDf,changeList)
 }
-# load summary
-cat("changeList: ",paste(names(changeList)),"\n")
 
-# error summary
-write_error_summary(.GlobalEnv$allErrorDf)
-#kable(allErrorDf,caption = paste0("QC: Summary of ERRORs and WARNINGs"))
- 
+###### SAVE PROPOSAL CACHE #####
+
+if( params$save_proposal_cache ) {
+  save(file=loadCacheFilename,list=c(
+    "proposalsDf",
+    "changeList"
+  ))
+  cat("WROTE loaded and merged proposals to ",loadCacheFilename,"\n")
+}
+
+
 #
 #### PRE-PROCESS MERGED ACTIONS ####
 #
@@ -2633,26 +2668,6 @@ if( !is.null(nrow(allChangeDf)) && nrow(allChangeDf) > 0 ) {
   } else {
     if(params$verbose){cat("# CHAIN: NO chained changes found\n")}
   }
-}
-#### PROPOSAL LOAD CACHE ####
-
-## !!! NEED to move this after merging, but push apply_changes() below that, too! !!!
-
-# Save loaded proposals, so we can work on applying them
-loadCacheFilename = file.path(params$proposals_dir,".RData")
-if( params$save_proposal_cache ) {
-  save(file=loadCacheFilename,list=c(
-    "proposalsDf",
-    "changeList",
-    "allChangeDf",
-    "allChangeDfOrder"
-  ))
-  cat("WROTE loaded and merged proposals to ",loadCacheFilename,"\n")
-}
-if( params$load_proposal_cache ) {
-  cat("LOADing *PROPOSALS* from ", loadCacheFilename,"...\n")
-  load(file=loadCacheFilename,verbose = T)
-  cat("DONE","\n")
 }
 
 #### APPLY CHANGES functions ####
@@ -3102,7 +3117,7 @@ apply_changes = function(changesDf) {
             )
           } else {
             # changeDf: look for another proposal that already changed the name in newMSL?
-            changedParent = changeDf %>% filter(.srcTaxon==as.character(destParentName))
+            changedParent = .GlobalEnv$allChangeDf %>% filter(.srcTaxon==as.character(destParentName))
             if(nrow(changedParent)==1) {
               # get what that older name became
               parentDestNewTaxon  = (.GlobalEnv$newMSL %>% filter(name==changedParent$.destTaxon))
@@ -3130,6 +3145,9 @@ apply_changes = function(changesDf) {
       } # search newMSL
         
       if(params$verbose) {cat(paste0("CREATE: ",toupper(curChangeDf$rank)," code:",code," line:",linenum," '",destTaxonName, "' findParent(",destParentName,destParentNameAlias,")=",sum(parentDestNewMatches)),"\n")}
+
+      #### **DEBUG** ####
+      if( code == "2023.022D" && linenum==29 ) {browser()}
       
       # no parent found: skip record, otherwise, get parent
       if(sum(parentDestNewMatches)!=1) {
@@ -3666,7 +3684,7 @@ apply_changes = function(changesDf) {
       srcNewTarget =(.GlobalEnv$newMSL$name==as.character(srcTaxonName))
       srcPrevTarget=(.GlobalEnv$curMSL$taxnode_id==.GlobalEnv$newMSL[srcNewTarget,]$prev_taxnode_id)
 
-      if(params$verbose) {cat(paste0("MOVE: ",toupper(curChangeDf$rank)," code:",code," line:",linenum," '",srcTaxonName, "' findTarget(",srcTaxonName,")=",sum(srcNewTarget),"/",sum(srcPrevTarget)),"\n")}
+      if(params$verbose) {cat(paste0("MOVE:   ",toupper(curChangeDf$rank)," code:",code," line:",linenum," '",srcTaxonName, "' findTarget(",srcTaxonName,")=",sum(srcNewTarget),"/",sum(srcPrevTarget)),"\n")}
     
       if(sum(srcNewTarget,na.rm=TRUE)==0) {
         # check prevMSL, to see if something else already moved it
@@ -3724,7 +3742,7 @@ apply_changes = function(changesDf) {
         parentDestNewMatches=(.GlobalEnv$newMSL$name==as.character(destParentName))
       }
       
-      if(params$verbose) {cat(paste0("MOVE: ",code," line ",linenum," '",destTaxonName, "' findParent(",destParentName,")=",sum(parentDestNewMatches)),"\n")}
+      if(params$verbose) {cat(paste0("MOVE:   ",toupper(curChangeDf$rank)," code:",code," line ",linenum," '",destTaxonName, "' findParent(",destParentName,")=",sum(parentDestNewMatches)),"\n")}
     
       if(sum(parentDestNewMatches,na.rm=TRUE)==0) {
         # check if it used to exist
@@ -4041,7 +4059,7 @@ apply_changes = function(changesDf) {
                            errText)
     )
     # mark empty taxa so we don't re-report them
-    .GlobalEnv$newMSL[.GlobalEnv$newMSL$name %in% emptyTaxon$name,".emptyReported"] = xlsxs[code,"xlsx"]
+    .GlobalEnv$newMSL[.GlobalEnv$newMSL$name %in% emptyTaxon$name,".emptyReported"] = proposalsDf[code,"xlsx"]
   }
   
   ##### renamed genera - binomial #####
