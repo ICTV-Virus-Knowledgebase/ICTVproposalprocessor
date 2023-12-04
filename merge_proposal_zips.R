@@ -225,14 +225,14 @@ if( interactive() ) {
   print("!!!!||||||||||||||||||||||||!!!!")
   print("!!!! DEBUG OVERIDES ENGAGED !!!!")
   print("!!!!||||||||||||||||||||||||!!!!")
-  params$debug=T
+  params$debug=F
   # WARNING - this will store all the other debug settings into the proposalDir/.RData file!
   params$load_proposal_cache = T
   params$save_proposal_cache = F
   # defeat auto-caching when debugging
   #rm(docxList,xlsxList,changeList)
   params$verbose = T
-  params$tmi = T
+  params$tmi = F
   params$debug_on_error = F
   params$mode = 'draft'
   params$export_msl = T
@@ -279,7 +279,7 @@ if(params$verbose){ cat(paste0("REF_DIR:        ",params$ref_dir,"/\n"))}
 #
 # logs to global allErrorDf
 log_change_error = function(curChangeDf,levelStr, errorCode, errorStr, notes="") {
-  if( is.null(curChangeDf) ) {browser()}
+  if( is.null(curChangeDf) && interactive() ) {browser()}
   return(log_error(code=curChangeDf$.code, linenum=curChangeDf$.linenum, 
                    action=curChangeDf$change,   # original text from proposal.xlsx
                    #action=curChangeDf$.action, # processed internal verb
@@ -3146,9 +3146,6 @@ apply_changes = function(changesDf) {
         
       if(params$verbose) {cat(paste0("CREATE: ",toupper(curChangeDf$rank)," code:",code," line:",linenum," '",destTaxonName, "' findParent(",destParentName,destParentNameAlias,")=",sum(parentDestNewMatches)),"\n")}
 
-      #### **DEBUG** ####
-      if( code == "2023.022D" && linenum==29 ) {browser()}
-      
       # no parent found: skip record, otherwise, get parent
       if(sum(parentDestNewMatches)!=1) {
         next;
