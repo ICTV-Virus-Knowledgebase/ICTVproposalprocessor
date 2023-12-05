@@ -228,7 +228,7 @@ if( interactive() ) {
   params$debug=F
   # WARNING - this will store all the other debug settings into the proposalDir/.RData file!
   params$load_proposal_cache = T
-  params$save_proposal_cache = F
+  params$save_proposal_cache = T
   # defeat auto-caching when debugging
   #rm(docxList,xlsxList,changeList)
   params$verbose = T
@@ -240,9 +240,9 @@ if( interactive() ) {
   params$out_dir       = "./MSL39v3_results/Pending_Proposals"
 #  params$test_case_dir = "crash"
 #  params$test_case_dir = "proposalsEC55.1"
-#  params$test_case_dir = "proposalsMergeSpecies"
-#  params$proposals_dir = paste0("testData/",params$test_case_dir)
-#  params$out_dir       = paste0("testResults/",params$test_case_dir)
+  params$test_case_dir = "proposalsMergeSpecies"
+  params$proposals_dir = paste0("testData/",params$test_case_dir)
+  params$out_dir       = paste0("testResults/",params$test_case_dir)
   # MERGE
   #  params$proposals_dir = "./MSL39v2/Pending_Proposals/Plant virus (P) proposals/Proposals to be considered for EC55/2023.017P.N.v1.Caulimoviridae_6nsp.xlsx"
   #params$proposals_dir = "./MSL39v2"
@@ -367,6 +367,21 @@ write_error_summary = function(errorDf,final=FALSE) {
   }
   prettyCols = grep(names(prettyErrorDf),pattern="(code|docx|subcommittee)",invert=T,value=T)
   
+  #
+  # create change list report
+  finalChangesColumns = c(".actionOrder","taxnode_id.old","lineage.old","rank.old","name.old","change","name.new","rank.new","lineage.new","taxnode_id.new")
+  finalChangesDf=merge(.GlobalEnv$curMSL %>% filter(!is.na(.actionOrder)),
+                       .GlobalEnv$newMSL %>% filter(!is.na(.actionOrder)),
+                       by=c(".actionOrder"),
+                       suffixes=c(".old",".new"),
+                       all=TRUE)
+  # only one change should be !NA.
+  finalChangesDf$change = paste0(
+    na.omit(finalChangesDf$out_change.old), 
+    na.omit(finalChangesDf$in_change.new)
+  )
+  finalChangesOrder = order(finalChangesDf$.actionOrder)
+  
   if( final ) {
     # this should get chunked into files/worksheets by "subcommittee"
     for(committee in levels(as.factor(prettyErrorDf$subcommittee)) ) {
@@ -384,7 +399,10 @@ write_error_summary = function(errorDf,final=FALSE) {
   #..... WRITE FILES ....
   # XLS version (for end human user)
   fname = file.path(params$out_dir,params$qc_summary_fname)
-  write_xlsx( x=as.data.frame(prettyErrorDf)[,prettyCols][,prettyCols],path=fname)
+  write_xlsx( x=list(
+    "QC_Report"=as.data.frame(prettyErrorDf)[,prettyCols],
+    "Change_List"=as.data.frame(finalChangesDf)[finalChangesOrder,finalChangesColumns]
+  ),path=fname)
   if(params$verbose || params$tmi) {cat(paste0("Wrote: ", fname, " (",nrow(errorDf)," rows)\n"))}
   # TSV version for web app parsing
   fnameTsv = file.path(params$out_dir,params$qc_summary_tsv_fname)
@@ -3003,6 +3021,7 @@ apply_changes = function(changesDf) {
           .GlobalEnv$curMSL[srcCurTaxonIdx,".split_code"] = code
           .GlobalEnv$curMSL[srcCurTaxonIdx,".split_linenum"] = linenum
           .GlobalEnv$curMSL[srcCurTaxonIdx,".split_actionOrder"] = actionOrder
+          .GlobalEnv$curMSL[srcCurTaxonIdx,".actionOrder"] = actionOrder
           
           # mark the newMSL entry we may delete
           srcNewTaxonIdx=(.GlobalEnv$newMSL$name==as.character(srcTaxonName))
@@ -3280,6 +3299,8 @@ apply_changes = function(changesDf) {
       # comments
       newTaxon[1,xlsx2dbMap["comments"]]= curChangeDf[1,"comments"]
       
+      # change tracking
+      newTaxon[1,".changeOrder"] = changeOrder
       #
       # if split, do admin for split
       #
@@ -3460,7 +3481,8 @@ apply_changes = function(changesDf) {
         srcNewTargetOldLineage = .GlobalEnv$newMSL[srcNewTarget,"lineage"]
         .GlobalEnv$newMSL[srcNewTarget,"name"] = destTaxonName
         .GlobalEnv$newMSL[srcNewTarget,"lineage"] = paste(newMSL[srcNewParent,"lineage"],destTaxonName,sep=";") # should we do this? 
-
+        .GlobalEnv$newMSL[srcNewTarget,".actionOrder"] = actionOrder
+        
         # RECURSE TO SET LINEAGE OF dest's KIDS (RENAME)
         update_lineage(.GlobalEnv$newMSL$taxnode_id[srcNewTarget],.GlobalEnv$newMSL[srcNewTarget,"lineage"], 
                        # otherLineage
@@ -3506,7 +3528,8 @@ apply_changes = function(changesDf) {
         .GlobalEnv$curMSL[srcPrevTarget,"out_filename"] = proposalZip
         .GlobalEnv$curMSL[srcPrevTarget,"out_target"] = destTaxonName
         .GlobalEnv$curMSL[srcPrevTarget,"out_notes"] = paste0("linenum=",linenum)
-        .GlobalEnv$curMSL[srcPrevTarget,".out_taxnode_id"] = .GlobalEnv$newMSL[srcNewTarget,"taxnode_id"] 
+        .GlobalEnv$curMSL[srcPrevTarget,".out_taxnode_id"] = .GlobalEnv$newMSL[srcNewTarget,"taxnode_id"]
+        .GlobalEnv$curMSL[srcPrevTarget,".actionOrder"] = actionOrder
         
         # success note
         errorDf=log_change_error(curChangeDf, "SUCCESS", "RENAME.OK", "Change=RENAME, applied successfully", 
@@ -3591,6 +3614,7 @@ apply_changes = function(changesDf) {
       .GlobalEnv$curMSL[srcPrevTarget,"out_filename"] = proposalZip
       .GlobalEnv$curMSL[srcPrevTarget,"out_target"] = destTaxonName
       .GlobalEnv$curMSL[srcPrevTarget,"out_notes"] = paste0("linenum=",linenum) # add comments?
+      .GlobalEnv$curMSL[srcPrevTarget,".actionOrder"] = actionOrder
       
       # success note
       log_change_error(curChangeDf, "SUCCESS", "ABOLISH.OK", "Change=ABOLISH, applied successfully", 
@@ -3882,7 +3906,7 @@ apply_changes = function(changesDf) {
       .GlobalEnv$newMSL[srcNewTarget,"level_id"]   = dbCvList[["rank"]]$id[dbCvList[["rank"]]$name==destTaxonRank]
       .GlobalEnv$newMSL[srcNewTarget,"rank"]       = destTaxonRank
       .GlobalEnv$newMSL[srcNewTarget,"parent_id"]  = destParentTaxon[1,"taxnode_id"]
-      
+      .GlobalEnv$newMSL[srcNewTarget,".actionOrder"]  = actionOrder
       
       # genomeComposition = molecule_id 
       if(!is.na(curChangeDf[1,"molecule"])) {
@@ -3964,6 +3988,7 @@ apply_changes = function(changesDf) {
         .GlobalEnv$curMSL[srcPrevTarget,"out_target"] = destLineage
         .GlobalEnv$curMSL[srcPrevTarget,"out_notes"] = paste0("linenum=",linenum) # add comments?
         .GlobalEnv$curMSL[srcPrevTarget,".out_taxnode_id"] = .GlobalEnv$newMSL[srcNewTarget,"taxnode_id"] 
+        .GlobalEnv$curMSL[srcPrevTarget,".actionOrder"] = actionOrder
         
       }
       
