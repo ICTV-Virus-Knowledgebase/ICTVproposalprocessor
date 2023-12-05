@@ -140,6 +140,9 @@ option_list <- list(
               help="Save .RData cache in proposalDir [default \"%default\"]"),
   make_option(c("--msl"), action="store_true", default=FALSE, dest="export_msl", 
               help="Write resulting MSL to load_msl.sql and msl.tsv [default \"%default\"]"),
+  make_option(c("-D","--outputDeltas"), action="store_true", default=FALSE, dest="output_change_report", 
+              help="Write taxa change list to a 2nd sheet in QC report [default \"%default\"]"),
+  
   
   # in/out/ref directories
   make_option(c("-i","--proposalsDir"), 
@@ -157,6 +160,7 @@ option_list <- list(
               help = "Directory to write outputs to [default \"%default\"]"),
   make_option(c("-r","--refDir"), default="current_msl", dest="ref_dir", 
               help="Directory from which read current MSL and CV data from [default \"%default\"]"),
+  
   # out filenames
   make_option(c("--mslTsv"), default="msl.tsv", dest="msl_tsv",
               help="Output file, in outDir, for resulting MSL w/o IDs (for diff) [default \"%default\"]"),
@@ -225,6 +229,8 @@ if( interactive() ) {
   print("!!!!||||||||||||||||||||||||!!!!")
   print("!!!! DEBUG OVERIDES ENGAGED !!!!")
   print("!!!!||||||||||||||||||||||||!!!!")
+  options(error=recover)
+  #options(error=browser)
   params$debug=F
   # WARNING - this will store all the other debug settings into the proposalDir/.RData file!
   params$load_proposal_cache = T
@@ -232,15 +238,16 @@ if( interactive() ) {
   # defeat auto-caching when debugging
   #rm(docxList,xlsxList,changeList)
   params$verbose = T
-  params$tmi = F
+  params$tmi = T
   params$debug_on_error = F
   params$mode = 'draft'
+  #params$output_change_report = F
   params$export_msl = T
   params$proposals_dir = "./MSL39v2/Pending_Proposals"
   params$out_dir       = "./MSL39v3_results/Pending_Proposals"
 #  params$test_case_dir = "crash"
 #  params$test_case_dir = "proposalsEC55.1"
-  params$test_case_dir = "proposalsMergeSpecies"
+  params$test_case_dir = "proposalsTest6_split"
   params$proposals_dir = paste0("testData/",params$test_case_dir)
   params$out_dir       = paste0("testResults/",params$test_case_dir)
   # MERGE
@@ -318,6 +325,7 @@ log_error=function(code,linenum,action,rank,taxon,levelStr,errorCode,errorStr,no
 # in case we crash part way through
 #
 write_error_summary = function(errorDf,final=FALSE) {
+ 
   # make sure version is correct
   errorDf$validator_version = params[["version"]]
 
@@ -367,21 +375,32 @@ write_error_summary = function(errorDf,final=FALSE) {
   }
   prettyCols = grep(names(prettyErrorDf),pattern="(code|docx|subcommittee)",invert=T,value=T)
   
-  #
-  # create change list report
-  finalChangesColumns = c(".actionOrder","taxnode_id.old","lineage.old","rank.old","name.old","change","name.new","rank.new","lineage.new","taxnode_id.new")
-  finalChangesDf=merge(.GlobalEnv$curMSL %>% filter(!is.na(.actionOrder)),
-                       .GlobalEnv$newMSL %>% filter(!is.na(.actionOrder)),
-                       by=c(".actionOrder"),
-                       suffixes=c(".old",".new"),
-                       all=TRUE)
-  # only one change should be !NA.
-  finalChangesDf$change = paste0(
-    na.omit(finalChangesDf$out_change.old), 
-    na.omit(finalChangesDf$in_change.new)
-  )
-  finalChangesOrder = order(finalChangesDf$.actionOrder)
+  # if( params$output_change_list ) {
+  #   #
+  #   # create change list report
+  #   #
+  #   print(names(.GlobalEnv$curMSL %>% filter(!is.na(.actionOrder))))
+  #   print(names(.GlobalEnv$newMSL %>% filter(!is.na(.actionOrder))))
+  #   print(intersect( names(.GlobalEnv$newMSL %>% filter(!is.na(.actionOrder))),
+  #                    names(.GlobalEnv$curMSL %>% filter(!is.na(.actionOrder)))
+  #   ))
+  #   finalChangesColumns = c(".actionOrder","taxnode_id.old","lineage.old","rank.old","name.old","change","name.new","rank.new","lineage.new","taxnode_id.new")
+  #   finalChangesDf=merge(.GlobalEnv$curMSL %>% filter(!is.na(.actionOrder)),
+  #                        .GlobalEnv$newMSL %>% filter(!is.na(.actionOrder)),
+  #                        by=c(".actionOrder"),
+  #                        suffixes=c(".old",".new"),
+  #                        all=TRUE)
+  #   # only one change should be !NA.
+  #   finalChangesDf$change = paste0(
+  #     na.omit(finalChangesDf$out_change.old), 
+  #     na.omit(finalChangesDf$in_change.new)
+  #   )
+  #   finalChangesOrder = order(finalChangesDf$.actionOrder)
+  # }
   
+  #
+  # if final report, also save by SC
+  #
   if( final ) {
     # this should get chunked into files/worksheets by "subcommittee"
     for(committee in levels(as.factor(prettyErrorDf$subcommittee)) ) {
@@ -399,11 +418,18 @@ write_error_summary = function(errorDf,final=FALSE) {
   #..... WRITE FILES ....
   # XLS version (for end human user)
   fname = file.path(params$out_dir,params$qc_summary_fname)
-  write_xlsx( x=list(
-    "QC_Report"=as.data.frame(prettyErrorDf)[,prettyCols],
-    "Change_List"=as.data.frame(finalChangesDf)[finalChangesOrder,finalChangesColumns]
-  ),path=fname)
-  if(params$verbose || params$tmi) {cat(paste0("Wrote: ", fname, " (",nrow(errorDf)," rows)\n"))}
+  xlsxSheets = list("QC_Report"=as.data.frame(prettyErrorDf)[,prettyCols])
+#  if( params$output_change_report ) {
+#    xlsxSheets[["Change_List"]] = as.data.frame(finalChangesDf)[finalChangesOrder,finalChangesColumns]
+#    }
+  write_xlsx( x=xlsxSheets,path=fname)
+  if(params$verbose || params$tmi) {
+    cat(paste0("Wrote: ", fname, " with ",length(xlsxSheets)," sheets\n"))
+    cat(paste0("     sheet '", names(xlsxSheets)[1]," ",nrow(xlsxSheets[[1]])," rows)\n"))
+#    if( params$output_change_report ) {    
+#      cat(paste0("     sheet '", names(xlsxSheets)[2]," ",nrow(xlsxSheets[[2]])," rows)\n"))
+#    }
+  }
   # TSV version for web app parsing
   fnameTsv = file.path(params$out_dir,params$qc_summary_tsv_fname)
   write_delim(x=errorDf[errorsSorted],file=fnameTsv, delim="\t")
@@ -453,7 +479,7 @@ load_version()
 # this uses the DATABASE schema for the taxonomy_node table (ie, naming convention)
 #
 # extra admin fields added, which wont be saved
-#   prev_taxnode_id
+#   .prev_taxnode_id
 #   prev_proposals
 #
 create_new_msl = function(curMSL,prev_msl,dest_msl,taxnode_delta) {
@@ -472,7 +498,7 @@ create_new_msl = function(curMSL,prev_msl,dest_msl,taxnode_delta) {
   #
   
   # copy original taxnode_id's into a new column
-  newMSL[,"prev_taxnode_id"] = newMSL[,"taxnode_id"]
+  newMSL[,".prev_taxnode_id"] = newMSL[,"taxnode_id"]
   
   # CSV of proposals that have already modified this taxon in this MSL
   newMSL[,"prev_proposals"] = NA_character_
@@ -1116,13 +1142,13 @@ scan_for_proposals = function() {
         errorDf[row,]$xlsx = proposalsDf[row,"xlsx"]
         errorDf[row,]$row = NA
         errorDf[row,]$level = "WARNING"
-        errorDf[row,]$error = "XSLX.TYPO"
+        errorDf[row,]$error = "xlsx.TYPO"
         errorDf[row,]$notes = paste("Using best guess:",proposalsDf[row,"xlsx"])
       } else if( guesses > 1 ) {
         # just list all the options we found
-        errorDf[row,]$error = "XSLX.MULTIPLE"
+        errorDf[row,]$error = "xlsx.MULTIPLE"
         errorDf[row,]$error = paste0("Multiple .xlsx files start with code '",errorDf[row,"code"],"', and aren't marked '",params$infile_suppl_pat,"'")
-        errorDf[row,"notes"] = paste("SUGGESTIONS:",paste(paste0(xlsxs[xlsxs$xlsxID==errorDf[row,"docxID"],"basename"],".xslx"),collapse=", "))
+        errorDf[row,"notes"] = paste("SUGGESTIONS:",paste(paste0(xlsxs[xlsxs$xlsxID==errorDf[row,"docxID"],"basename"],".xlsx"),collapse=", "))
       } else {
         # 
         # can't find the xlsx
@@ -1135,7 +1161,7 @@ scan_for_proposals = function() {
     loadErrorDfFilt = errorDf
     if( params$processing_mode == "validate" ) {
       # filter out some errors
-      loadErrorDfFilt = errorDf %>% filter(error != "XSLX.TYPO")
+      loadErrorDfFilt = errorDf %>% filter(error != "xlsx.TYPO")
     }
     if(nrow(loadErrorDfFilt) > 0) {
       # append to global list
@@ -1283,7 +1309,7 @@ xlsx_2023_row4=c(
 # changeDf column names
 #
 # this is the mapped subset of columns pulled from the proposal
-# normalized across XSLX template versions
+# normalized across xlsx template versions
 #
 xlsx_change_ranks=c("Realm", "Subrealm", "Kingdom", "Subkingdom", 
                     "Phylum", "Subphylum", "Class", "Subclass", "Order", "Suborder", 
@@ -2393,7 +2419,7 @@ qc_proposal = function(code, proposalDf) {
 # 
 # ```{r load_and_qc}
 
-##### LOAD XSLX/DOCX, QC ##### 
+##### LOAD xlsx/DOCX, QC ##### 
 
 
 load_and_qc_proposals = function(proposalsDf,changeList) {
@@ -2803,11 +2829,12 @@ apply_changes = function(changesDf) {
     # row = "12"; linenum; changesDf[row,];
     # row = rownames(changesDf)[which(row==rownames(changesDf))+1]; row # debug: next row
   
+    # .........................................................................
     #
     #
     ##### change definition #####
     #
-    #
+    # .........................................................................
     
     # track order of actions
     actionOrder = actionOrder + 1 
@@ -2832,7 +2859,8 @@ apply_changes = function(changesDf) {
                   notes=paste0(", rank=", curChangeDf$rank, 
                                "; knownRanks=", paste(dbCvList[["rank"]]$name[-1],collapse = ","))
         )
-    } else {
+    } 
+    else {
       rankClean = tolower(curChangeDf$rank)
     }
     
@@ -2857,13 +2885,13 @@ apply_changes = function(changesDf) {
     destNewMatches=(.GlobalEnv$newMSL$name==as.character(destTaxonName))
     destCurMatches=(.GlobalEnv$curMSL$name==as.character(destTaxonName))
     destOldMatches=(.GlobalEnv$oldMSLs$name==as.character(destTaxonName))
-
+    
     #
     # check that at least one of dest/src taxa were given
     #
     if(is.na(srcTaxonName) && is.na(destTaxonName)) {
       log_change_error(changeDf=change,levelStr="ERROR", errorCode="XLSX.NO_SRC_DEST", 
-                         errorStr=paste0("Change=",toupper(action),", but neither 'current taxonomy', nor 'proposed taxonomy', were specified")
+                       errorStr=paste0("Change=",toupper(action),", but neither 'current taxonomy', nor 'proposed taxonomy', were specified")
       )
       next;
       
@@ -2871,7 +2899,7 @@ apply_changes = function(changesDf) {
     #
     # check if lineage not correct in "current" 
     #
-     if( sum(srcNewMatches,na.rm=T)==1 ) {
+    if( sum(srcNewMatches,na.rm=T)==1 ) {
       srcNewTaxon = .GlobalEnv$newMSL[srcNewMatches,]
       if(curChangeDf$.srcLineage != srcNewTaxon$lineage) {
          if(!is.na(srcNewTaxon$.otherLineage) ) {
@@ -2883,7 +2911,8 @@ apply_changes = function(changesDf) {
                                          " PROPOSAL//NEW_MSL=", diff_lineages(curChangeDf$.srcLineage,srcNewTaxon$lineage)
                             )
            )
-        } else {
+        } 
+        else {
           # unexplained lineage mismatch
           log_change_error(curChangeDf=curChangeDf,levelStr="WARNING", errorCode="SRC.LINEAGE_WRONG", 
                            errorStr=paste0("'current taxonomy' in proposal doesn't match current MSL. Typo?"), 
@@ -2897,8 +2926,17 @@ apply_changes = function(changesDf) {
     #
     # make sure new taxon does not exist already
     #
-    if(!is.na(destTaxonName) && !(curChangeDf$.action %in% c("move"))
-       && !(curChangeDf$.action == 'split' && !is.na(srcTaxonName) && destTaxonName == srcTaxonName))  {
+    # only check if there IS a destTaxonName
+    # move/merge/split are not checked:
+    #    move is lineageB/taxonA to lineageC/taxonA
+    #    merge usually is taxonA into existing_taxonB
+    #   split can be to the same name, if src=dest
+    if(!is.na(destTaxonName) && !(curChangeDf$.action %in% c("move","merge"))
+       && !(curChangeDf$.action == 'split' && !is.na(srcTaxonName) && destTaxonName == srcTaxonName)) {
+      #
+      # verify we're not re-creating something that exists, or existed
+      #
+      
       # check if exists in the current MSL
       if(sum(destCurMatches)>0) {
         matchDf = .GlobalEnv$curMSL[destCurMatches,]
@@ -2924,7 +2962,7 @@ apply_changes = function(changesDf) {
         next;
       }
       # check if already created in newMSL
-      if(sum(destNewMatches)>0 && curChangeDf$.action != "merge") {
+      if(sum(destNewMatches)>0 ) {
         matchDf = .GlobalEnv$newMSL[destNewMatches,]
         matchDf = matchDf[order(matchDf$msl_release_num,decreasing = T)[1],]
         matchLineage = paste0( "MSL", matchDf$msl_release_num,":",matchDf$lineage)
@@ -2969,11 +3007,8 @@ apply_changes = function(changesDf) {
     #
     if(    curChangeDf$.action %in% c("new")
        || (curChangeDf$.action %in% c("split") && srcTaxonName != destTaxonName) 
-       ) {
+    ) {
 
-      # debug
-      #if(curChangeDf$.destTaxon == "Olpivirus" || curChangeDf$.destTaxon == 'Konkoviridae') {browser()}
-      
       # index of our "current"/src taxon,  in the newMSL
       srcNewTaxonIdx = 0 # not yet found
       srcCurTaxonIdx = 0 
@@ -2994,7 +3029,9 @@ apply_changes = function(changesDf) {
                            notes=paste0("CURRENT//PROPOSED=", diff_lineages(curChangeDf$.srcLineage,curChangeDf$.destLineage))
           )
         }
-      } else if(curChangeDf$.action == "split" ) {
+      } 
+      else if(curChangeDf$.action == "split" ) {
+#DEBUG        if(srcTaxonName == "Erythroparvovirus pinniped1"){browser()} #DEBUG
         if( is.na(srcTaxonName) ) {
           # split MUST have a source taxon (curChangeDf$.destTaxon)
           log_change_error(curChangeDf, "ERROR", "SPLIT.NO_SRC", 
@@ -3002,7 +3039,8 @@ apply_changes = function(changesDf) {
                            notes=paste0("proposedTaxonomy=",curChangeDf$.destLineage)
           )
           next;
-        } else {
+        } 
+        else {
           # has a source taxon, let's find it
           srcCurTaxonIdx=(.GlobalEnv$curMSL$name==as.character(srcTaxonName))
           if( sum(srcCurTaxonIdx) == 0 ) {
@@ -3023,16 +3061,27 @@ apply_changes = function(changesDf) {
           .GlobalEnv$curMSL[srcCurTaxonIdx,".split_actionOrder"] = actionOrder
           .GlobalEnv$curMSL[srcCurTaxonIdx,".actionOrder"] = actionOrder
           
-          # mark the newMSL entry we may delete
-          srcNewTaxonIdx=(.GlobalEnv$newMSL$name==as.character(srcTaxonName))
-          if( sum(srcNewTaxonIdx)>0) {
-            # mark for possible deletion, if not also flagged for preservation
-            .GlobalEnv$newMSL[srcNewTaxonIdx,".split"] = TRUE 
-            .GlobalEnv$newMSL[srcNewTaxonIdx,".split_code"] = code
-            .GlobalEnv$newMSL[srcNewTaxonIdx,".split_linenum"] = linenum
-            .GlobalEnv$newMSL[srcNewTaxonIdx,".split_actionOrder"] = actionOrder
-            
-          }
+          # mark the newMSL entry we may delete, if not already marked
+          if(!.GlobalEnv$curMSL[srcCurTaxonIdx,".split_kept"]) {
+            # NOT already seen by SPLIT=, so WE must mark
+            #srcNewTaxonIdx=(.GlobalEnv$newMSL$name==as.character(srcTaxonName))
+            srcNewTaxonIdx=(.GlobalEnv$newMSL$.prev_taxnode_id==.GlobalEnv$curMSL$taxnode_id[srcCurTaxonIdx])
+            if( sum(srcNewTaxonIdx,na.rm=T)>0) {
+              # mark for possible deletion, if not also flagged for preservation
+              .GlobalEnv$newMSL[srcNewTaxonIdx,".split"] = TRUE 
+              .GlobalEnv$newMSL[srcNewTaxonIdx,".split_code"] = code
+              .GlobalEnv$newMSL[srcNewTaxonIdx,".split_linenum"] = linenum
+              .GlobalEnv$newMSL[srcNewTaxonIdx,".split_actionOrder"] = actionOrder
+            }
+            else {
+              # ERROR can't find src taxon in newMSL
+              log_change_error(curChangeDf, "ERROR", "SPLIT.SRC_NOT_IN_NEW", 
+                               errorStr="Change=SPLIT, but 'current taxonomy' can not be found in newMSL", 
+                               notes=paste0("currentTaxonomy=",curChangeDf$.srcLineage)
+              )
+              next;
+            }
+          } # hasn't been marked by SPLIT=
         } # has srcTaxon
       } # split
      
@@ -3095,7 +3144,8 @@ apply_changes = function(changesDf) {
                              errorStr=paste0("Change=",toupper(curChangeDf$.action),", accession number is 'pending'"), 
                              notes=paste0("accession=", curChangeDf$exemplarAccession)
             )
-          } else {
+          } 
+          else {
             # hard error for each other species with this accession
             ## QQQ what proposal created this? (from this round? historically? Need a function: last_modified())
             log_change_error(curChangeDf, errLevel, "CREATE.DUP_ACC", 
@@ -3117,7 +3167,8 @@ apply_changes = function(changesDf) {
       if(is.na(destParentName)) {
         # no parent - use root node
         parentDestNewMatches=(.GlobalEnv$newMSL$taxnode_id==.GlobalEnv$newMSL$tree_id)
-      } else {
+      } 
+      else {
         # newMSL: find parent by name (must be unique) 
         parentDestNewMatches=(.GlobalEnv$newMSL$name==as.character(destParentName))
         if(sum(parentDestNewMatches)==0 ) {
@@ -3134,7 +3185,8 @@ apply_changes = function(changesDf) {
                              errorStr="PROPOSED parent taxon already modified", 
                              notes=paste0("proposal(s)=", parentDestNew$.otherLineageProposal, " did a '", parentDestNew$.otherLineageAction,"' ")
             )
-          } else {
+          } 
+          else {
             # changeDf: look for another proposal that already changed the name in newMSL?
             changedParent = .GlobalEnv$allChangeDf %>% filter(.srcTaxon==as.character(destParentName))
             if(nrow(changedParent)==1) {
@@ -3146,13 +3198,15 @@ apply_changes = function(changesDf) {
                                errorStr="PROPOSED parent taxon already modified", 
                                notes=paste0("proposal(s)=", parentDestNewTaxon$.otherLineageProposal, " did a '", parentDestNewTaxon$.otherLineageAction,"' ")
               )
-            } else if(sum(parentDestNewMatches)>1) {
+            } 
+            else if(sum(parentDestNewMatches)>1) {
               log_change_error(curChangeDf, "ERROR", "CREATE.PARENT_MULTIPLE_MATCH", 
                                  errorStr="Probably parent was split by another proposal", 
                                  notes=paste0("proposal(s)=", changedParent$.code, " did a '",changedParent$change,"' ",
                                         "of '",changedParent$.srcTaxon, "' to '", changedParent$.destTaxon,"'")
                 )
-            } else if(sum(parentDestNewMatches)==0) {
+            } 
+            else if(sum(parentDestNewMatches)==0) {
               # just missing
               log_change_error(curChangeDf, "ERROR", "CREATE.PARENT_NO_EXIST", 
                                errorStr=paste0("Change=",toupper(curChangeDf$.action),", but parent rank taxon does not exist"), 
@@ -3163,7 +3217,12 @@ apply_changes = function(changesDf) {
         } # search curMSL
       } # search newMSL
         
-      if(params$verbose) {cat(paste0("CREATE: ",toupper(curChangeDf$rank)," code:",code," line:",linenum," '",destTaxonName, "' findParent(",destParentName,destParentNameAlias,")=",sum(parentDestNewMatches)),"\n")}
+      if(params$verbose) {
+        labelStr = ifelse(curChangeDf$.action=="split",
+                          "CREATE(SPLIT):     ",
+                          "CREATE:            ")
+        cat(paste0(labelStr,toupper(curChangeDf$rank)," code:",code," line:",linenum," '",destTaxonName, "' findParent(",destParentName,destParentNameAlias,")=",sum(parentDestNewMatches)),"\n")
+      }
 
       # no parent found: skip record, otherwise, get parent
       if(sum(parentDestNewMatches)!=1) {
@@ -3182,7 +3241,7 @@ apply_changes = function(changesDf) {
         )
       }
       
-      #### binomial check ####
+      ###### binomial check ######
       # if new SPECIES, check binomial prefix matches parent genus
       #
       if( destTaxonRank=="species" ) {
@@ -3199,7 +3258,8 @@ apply_changes = function(changesDf) {
         # check if parent is a genus
         if(destParentTaxon$rank=="genus") {
           destParentGenusTaxon = destParentTaxon
-        } else {
+        } 
+        else {
           if(destParentTaxon$rank == "subgenus" ) {
             # check up one rank
             destParentGenusTaxon = .GlobalEnv$newMSL %>% filter(taxnode_id == destParentTaxon$parent_id)
@@ -3212,7 +3272,8 @@ apply_changes = function(changesDf) {
               )
               next;
             }
-          } else {
+          } 
+          else {
             # parent isn't subgenus or genus
             log_change_error(curChangeDf, "ERROR", "CREATE.SPECIES_NO_GENUS", 
                              errorStr=paste0("Change=",toupper(curChangeDf$.action),", can not find parent genus"), 
@@ -3234,10 +3295,9 @@ apply_changes = function(changesDf) {
       }
       
       # 
-      #####  create new taxon  ##### 
+      #####  create new taxon #####
       #
-      
-      
+    
       # get parent
       newTaxon = .GlobalEnv$newMSL[parentDestNewMatches,]
   
@@ -3256,9 +3316,10 @@ apply_changes = function(changesDf) {
                                           #", OBSERVED=",newTaxon$lineage,
                                           
                              )
-          )
+            )
           }
-        } else {
+        } 
+        else {
           # WARNING: wasn't renamed, that we know of
           log_change_error(curChangeDf, "WARNING", "CREATE.PARENT_LINEAGE", 
                            errorStr=paste0("Change=",toupper(curChangeDf$.action),", proposed parent taxon exists, but not with expected lineage, using observed lineage"), 
@@ -3300,7 +3361,7 @@ apply_changes = function(changesDf) {
       newTaxon[1,xlsx2dbMap["comments"]]= curChangeDf[1,"comments"]
       
       # change tracking
-      newTaxon[1,".changeOrder"] = changeOrder
+      newTaxon[1,".actionOrder"] = actionOrder
       #
       # if split, do admin for split
       #
@@ -3325,7 +3386,7 @@ apply_changes = function(changesDf) {
       }
       
       #
-      #### CREATE.SPECIES ####  
+      ##### create.species #####  
       #
       if( destTaxonRank == "species" ) {
         #
@@ -3355,7 +3416,7 @@ apply_changes = function(changesDf) {
       newTaxon[1,"lineage"]    = destLineage
       
       # clear some columns inherited from parent
-      newTaxon[1,"prev_taxnode_id"] = NA
+      newTaxon[1,".prev_taxnode_id"] = NA
       newTaxon[1,"prev_proposals"] = paste0( proposalsDf[code,"basename"],".zip:",linenum) 
       
       # add new taxon to newMSL
@@ -3371,15 +3432,15 @@ apply_changes = function(changesDf) {
                        errorStr=paste0("Change=",toupper(curChangeDf$.action),", applied successfully"), 
                        notes=paste0("Create ", newTaxon$rank," of '",newTaxon$lineage,"'")
       )
-    } # create new taxon
-    else  if(curChangeDf$.action %in% c("rename") ) {
+    } # create new taxon (new, split!=)
+    else if(curChangeDf$.action %in% c("rename") ) {
     
-      #  -------------------------------------------------------------------------
+      # ........................................................................
       #
-      #### RENAME ####
+      #### RENAME ####  
       #
-      #  -------------------------------------------------------------------------
-
+      # ........................................................................
+      
       # check if srcTaxon was specified in xlsx (required)
       if(is.na(srcTaxonName)) {
         log_change_error(curChangeDf, "ERROR", "RENAME.WO_SRC", 
@@ -3403,7 +3464,7 @@ apply_changes = function(changesDf) {
       # find the target to rename in NEW
       #
       srcNewTarget=(.GlobalEnv$newMSL$name==as.character(srcTaxonName))
-      if(params$verbose) {cat(paste0("RENAME: ",toupper(curChangeDf$rank)," code:",code," line:",linenum," '",destTaxonName, "' findTarget(",srcTaxonName,")=",sum(srcNewTarget)),"\n")}
+      if(params$verbose) {cat(paste0("RENAME:            ",toupper(curChangeDf$rank)," code:",code," line:",linenum," '",destTaxonName, "' findTarget(",srcTaxonName,")=",sum(srcNewTarget)),"\n")}
     
       if(sum(srcNewTarget)==0) {
         # check if someone else already modified it
@@ -3414,26 +3475,29 @@ apply_changes = function(changesDf) {
                            errorStr=paste0("taxon=", srcTaxonName, ", lineage=",srcLineage,", proposedTaxon=", destTaxonName)
           )
            next;
-        } else {
+        } 
+        else {
           # previous record - must have been modified already this MSL
           log_change_error(curChangeDf, "ERROR", "RENAME.SRC_ALREADY_CHANGED", "Change=RENAME, but taxon already modified", 
                            errorStr=paste0("proposal(s)=", prevSrcTaxon$out_filename, " also did a '",prevSrcTaxon$out_change,"' to '", prevSrcTaxon$out_target,"'")
           )
           next;
         }
-      } else if(sum(srcNewTarget)>1) {
+      } 
+      else if(sum(srcNewTarget)>1) {
         log_change_error(curChangeDf, "ERROR", "RENAME.MANY", "Change=RENAME, multiple taxa exist with parent name", 
                          errorStr=paste0("taxon=", srcTaxonName, ", lineage=",srcLineage,", proposedTaxon=", destTaxonName
                                          , " matches ", sum(srcNewTarget) ))
          next;
-      } else {
+      } 
+      else {
         
         # find original taxon in prevMSL being renamed
-        srcPrevTarget=(.GlobalEnv$curMSL$taxnode_id==.GlobalEnv$newMSL[srcNewTarget,]$prev_taxnode_id)
+        srcPrevTarget=(.GlobalEnv$curMSL$taxnode_id==.GlobalEnv$newMSL[srcNewTarget,]$.prev_taxnode_id)
         srcNewParent= (.GlobalEnv$newMSL$taxnode_id==.GlobalEnv$newMSL[srcNewTarget,]$parent_id )
         # print(paste("srcPrevTarget=",sum(srcPrevTarget),"srcNewParent=",sum(srcNewParent)))
         
-        ##### binomial check #####
+        ###### binomial check ######
         
         # if rename SPECIES, check binomial prefix matches parent genus
         #
@@ -3442,7 +3506,8 @@ apply_changes = function(changesDf) {
           destParentTaxon = as.data.frame(newMSL[srcNewParent,])
           if(destParentTaxon$rank=="genus") {
             destParentGenusTaxon = destParentTaxon
-          } else {
+          } 
+          else {
             if(destParentTaxon$rank == "subgenus" ) {
               # check up one rank
               destParentGenusTaxon = .GlobalEnv$newMSL %>% filter(taxnode_id == destParentTaxon$parent_id)
@@ -3455,7 +3520,8 @@ apply_changes = function(changesDf) {
                 )
                 next;
               }
-            } else {
+            } 
+            else {
               # parent isn't subgenus or genus
               log_change_error(curChangeDf, "ERROR", "CREATE.SPECIES_NO_GENUS", 
                                errorStr="Change=CREATE, can not find parent genus", 
@@ -3476,7 +3542,8 @@ apply_changes = function(changesDf) {
           
         }
         
-        ##### RENAME apply changes  #####
+        ##### rename apply changes  #####
+        
         # change the name and update lineage
         srcNewTargetOldLineage = .GlobalEnv$newMSL[srcNewTarget,"lineage"]
         .GlobalEnv$newMSL[srcNewTarget,"name"] = destTaxonName
@@ -3533,24 +3600,21 @@ apply_changes = function(changesDf) {
         
         # success note
         errorDf=log_change_error(curChangeDf, "SUCCESS", "RENAME.OK", "Change=RENAME, applied successfully", 
-                         paste0("RENAME ",srcTaxonRank, 
-                                " from ", "'",srcTaxonName,"'",
-                                " to ",   "'", .GlobalEnv$newMSL[srcNewTarget,"name"], "'",
-                                " in ",   "'", .GlobalEnv$newMSL[srcNewParent,"lineage"], "'"
-                         )
+                                 paste0("RENAME ",srcTaxonRank, 
+                                        " from ", "'",srcTaxonName,"'",
+                                        " to ",   "'", .GlobalEnv$newMSL[srcNewTarget,"name"], "'",
+                                        " in ",   "'", .GlobalEnv$newMSL[srcNewParent,"lineage"], "'"
+                                 )
         )
         
-        ## ZZZ add comments to out_notes?
       } # target found
-      # RENAME
-    } else if(curChangeDf$.action %in% c("abolish") 
-              #|| curChangeDf$.action %in% c("merge") && curChangeDf$
-    ) { 
-      #  -------------------------------------------------------------------------
+    } # RENAME
+    else if(curChangeDf$.action %in% c("abolish") ) { 
+      # ........................................................................
       #
-      #####  ABOLISH       #### 
+      ##### ABOLISH #####  
       #
-      #  -------------------------------------------------------------------------
+      # ........................................................................
       # check if srcTaxon was specified in xlsx (required)
       if(is.na(srcTaxonName)) {
         errorDf=log_error(code=curChangeDf$.code,linenum=curChangeDf$.linenum,action=curChangeDf$change,actionOrder=curChangeDf$.order,
@@ -3565,9 +3629,9 @@ apply_changes = function(changesDf) {
       # find the target to abolish in NEW and CUR
       #
       srcNewTarget=(.GlobalEnv$newMSL$name==as.character(srcTaxonName))
-      srcPrevTarget=(.GlobalEnv$curMSL$taxnode_id==.GlobalEnv$newMSL[srcNewTarget,]$prev_taxnode_id)
+      srcPrevTarget=(.GlobalEnv$curMSL$taxnode_id==.GlobalEnv$newMSL[srcNewTarget,]$.prev_taxnode_id)
 
-      if(params$verbose) {cat(paste0("ABOLISH: ",code," line ",linenum," '",srcTaxonName, "' findTarget(",srcTaxonName,")=",sum(srcNewTarget),"/",sum(srcPrevTarget)),"\n")}
+      if(params$verbose) {cat(paste0("ABOLISH:           ",code," line ",linenum," '",srcTaxonName, "' findTarget(",srcTaxonName,")=",sum(srcNewTarget),"/",sum(srcPrevTarget)),"\n")}
       
       if(sum(srcNewTarget,na.rm=TRUE)==0) {
         # check if someone else already modified it
@@ -3577,14 +3641,16 @@ apply_changes = function(changesDf) {
           log_change_error(curChangeDf, "ERROR", "ABOLISH.NO_EXIST", "Change=ABOLISH, but taxon does not exist", 
                            notes=paste0("taxon=", srcTaxonName, ", lineage=",srcLineage,", proposedTaxon=", destTaxonName))
           next;
-        } else {
+        } 
+        else {
           # previous record - must have been modified already this MSL
           log_change_error(curChangeDf, "ERROR", "ABOLISH.SRC_ALREADY_CHANGED", "Change=ABOLISH, but taxon already modified", 
                             notes=paste0("proposal(s)=", prevSrcTaxon$out_filename, " also did a '",prevSrcTaxon$out_change,"' to '", prevSrcTaxon$out_target,"'")
           )
           next;
         }
-      } else if(sum(srcNewTarget,na.rm=TRUE)>1) {
+      } 
+      else if(sum(srcNewTarget,na.rm=TRUE)>1) {
          # this should never happen
         log_change_error(curChangeDf, "ERROR", "ABOLISH.MANY", "Change=ABOLISH, multiple taxa exist with name", 
                          notes=paste0("taxon=", srcTaxonName, ", lineage=",srcLineage,", proposedTaxon=", destTaxonName
@@ -3621,63 +3687,59 @@ apply_changes = function(changesDf) {
                        notes=paste0("ABOLISH ",srcTaxonRank, " named ",srcTaxonName)
       )
       
-    } else if(curChangeDf$.action %in% c("move","promote","demote","merge") 
-              || ( curChangeDf$.action =='split' && srcTaxonName == destTaxonName) ) { 
-      #  -------------------------------------------------------------------------
+    } # ABOLISH
+    else if(curChangeDf$.action %in% c("move","promote","demote") 
+            || ( curChangeDf$.action =='split' && srcTaxonName == destTaxonName) 
+            || ( curChangeDf$.action =='merge' && srcTaxonName == destTaxonName) 
+    ) { 
+      # ........................................................................
       #
-      #### MOVE, PROMOTE/DEMOTE, MERGE, SPLIT #### 
+      ##### MOVE,PROMOTE/DEMOTE,SPLIT=,MERGE= ##### 
       #
       # Only SPLIT where srcName = destName
       # MOVE w/ and w/o rename
       #
       # these all require a SRC and DEST, and change structure
       #
-      #  -------------------------------------------------------------------------
+      # ........................................................................
+ 
       # check if srcTaxon was specified in xlsx (required)
       if(is.na(srcTaxonName) && curChangeDf$.action =='move') {
         # they didn't specify the source, but  it's a MOVE
         # we should be able to find it
-        if(curChangeDf$.action %in% c("move") ) {
-          guessSource = (.GlobalEnv$newMSL$name==as.character(destTaxonName))
-          if( sum(guessSource,na.rm=TRUE) == 1) {
-            # found it, so WARNING
-            log_change_error(curChangeDf, "WARNING", "MOVE.NO_SRC_CAN_GUESS", "Change=MOVE, but 'current taxonomy' columns are empty", 
-                             notes=paste0("destTaxonomy=", destLineage,
-                                          "; we guess you meant=", .GlobalEnv$newMSL$lineage[guessSource])
-            )
-            srcTaxonName=.GlobalEnv$newMSL$name[guessSource]
-            srcTaxonRank=.GlobalEnv$newMSL$rank[guessSource]
-            srcLineage  =.GlobalEnv$newMSL$lineage[guessSource]
-          } else {
-            # didn't find it, or found multiple, so ERROR
-            log_change_error(curChangeDf, "WARNING", "MOVE.NO_SRC", "Change=MOVE, but 'current taxonomy' columns are empty", 
-                             notes=paste0("destTaxonomy=", destLineage,
-                                          "; no existing taxon '",destTaxonName,"' found")
-            )
-            next
-          }
-        } else { 
-          log_change_error(curChangeDf, "WARNING", "CHANGE_RANK.NO_SRC", 
-                           errorStr=paste0("Change=",toupper(curChangeDf$.action),", but 'current taxonomy' columns are empty"), 
-                           notes= paste0("destTaxonomy=", destLineage)
+        guessSource = (.GlobalEnv$newMSL$name==as.character(destTaxonName))
+        if( sum(guessSource,na.rm=TRUE) == 1) {
+          # found it, so WARNING
+          log_change_error(curChangeDf, "WARNING", "MOVE.NO_SRC_CAN_GUESS", "Change=MOVE, but 'current taxonomy' columns are empty", 
+                           notes=paste0("destTaxonomy=", destLineage,
+                                        "; we guess you meant=", .GlobalEnv$newMSL$lineage[guessSource])
+          )
+          srcTaxonName=.GlobalEnv$newMSL$name[guessSource]
+          srcTaxonRank=.GlobalEnv$newMSL$rank[guessSource]
+          srcLineage  =.GlobalEnv$newMSL$lineage[guessSource]
+        } 
+        else {
+          # didn't find it, or found multiple, so ERROR
+          log_change_error(curChangeDf, "WARNING", "MOVE.NO_SRC", "Change=MOVE, but 'current taxonomy' columns are empty", 
+                           notes=paste0("destTaxonomy=", destLineage,
+                                        "; no existing taxon '",destTaxonName,"' found")
           )
           next
-          }
-      }
+        }
+      } 
       
-      #
       ##### validate rank #####
       #   1. consistent
       #   2. move does not change
       #   3. promote/demote does
       #
       if( destTaxonRank != rankClean ) {
-          # 1. consistent: src rank doesn't match action rank
+        # 1. consistent: src rank doesn't match action rank
         log_change_error(curChangeDf, "ERROR", "MOVE.DEST_WRONG_RANK", 
                          errorStr=paste0("Change=",toupper(curChangeDf$.action),", but 'proposed taxonomy' ranks doesn't match 'proposed rank' column"), 
                          notes=paste0("rank=", rankClean, ", srcTaxonomy=[", srcTaxonRank,"]",srcLineage)
         )
-          next;
+        next;
       }
       
       if( curChangeDf$.action %in% c("move") && srcTaxonRank != destTaxonRank ) {
@@ -3688,13 +3750,14 @@ apply_changes = function(changesDf) {
                          )
         )
         next;
-      } else if( curChangeDf$.action %in% c("promote","demote") && srcTaxonRank == destTaxonRank ) {
+      } 
+      else if( curChangeDf$.action %in% c("promote","demote") && srcTaxonRank == destTaxonRank ) {
         # 3. PROMOTE/DEMOTE src/dest ranks ARE the same 
         log_change_error(curChangeDf, "ERROR", "CHANGE_RANK.SAME_RANK", 
                          errorStr=paste0("Change=",toupper(curChangeDf$.action),", but 'current taxonomy' and 'proposed taxonomy' ranks are the same; use MOVE"), 
                          notes=paste0("rank=", rankClean, 
                                       ", CUR//PROPOSED=",diff_lineages(srcLineage,destLineage))
-                               
+                         
         )
         next;
       }
@@ -3703,9 +3766,9 @@ apply_changes = function(changesDf) {
       # find the SRC target to MOVE in NEW and CUR
       #
       srcNewTarget =(.GlobalEnv$newMSL$name==as.character(srcTaxonName))
-      srcPrevTarget=(.GlobalEnv$curMSL$taxnode_id==.GlobalEnv$newMSL[srcNewTarget,]$prev_taxnode_id)
+      srcPrevTarget=(.GlobalEnv$curMSL$taxnode_id==.GlobalEnv$newMSL[srcNewTarget,]$.prev_taxnode_id)
 
-      if(params$verbose) {cat(paste0("MOVE:   ",toupper(curChangeDf$rank)," code:",code," line:",linenum," '",srcTaxonName, "' findTarget(",srcTaxonName,")=",sum(srcNewTarget),"/",sum(srcPrevTarget)),"\n")}
+      if(params$verbose) {cat(paste0("MOVE:              ",toupper(curChangeDf$rank)," code:",code," line:",linenum," '",srcTaxonName, "' findTarget(",srcTaxonName,")=",sum(srcNewTarget),"/",sum(srcPrevTarget)),"\n")}
     
       if(sum(srcNewTarget,na.rm=TRUE)==0) {
         # check prevMSL, to see if something else already moved it
@@ -3717,7 +3780,8 @@ apply_changes = function(changesDf) {
                            notes=paste0("taxon=", srcTaxonName, ",CUR//PROPOSED=",diff_lineages(srcLineage,destLineage),
                                         ", CUR=",srcLineage,", PROPOSED=", destLineage))
           next;
-        } else {
+        } 
+        else {
           # previous record - must have been modified already this MSL
           log_change_error(curChangeDf, "ERROR", "MOVE.SRC_ALREADY_CHANGED", 
                            errorStr=paste0("Change=",toupper(curChangeDf$.action),", but taxon already modified"), 
@@ -3727,7 +3791,8 @@ apply_changes = function(changesDf) {
           )
           next;
         }
-      } else if(sum(srcNewTarget,na.rm=TRUE)>1) {
+      } 
+      else if(sum(srcNewTarget,na.rm=TRUE)>1) {
         log_change_error(curChangeDf, "ERROR", "MOVE.MANY", 
                          errorStr=paste0("Change=",toupper(curChangeDf$.action),", multiple taxa exist with name"), 
                          notes=paste0("taxon=", srcTaxonName, ", lineage=",srcLineage,", proposedTaxon=", destTaxonName
@@ -3748,7 +3813,6 @@ apply_changes = function(changesDf) {
         )
         ## QQQ what proposal created this? (from this round? historically? Need a function: last_modified())
         next;
-        
       }
       
       # 
@@ -3758,12 +3822,13 @@ apply_changes = function(changesDf) {
       if(is.na(destParentName)) {
         # no parent - use root node
         parentDestNewMatches=(.GlobalEnv$newMSL$taxnode_id==.GlobalEnv$newMSL$tree_id)
-      } else {
+      } 
+      else {
         # find parent by name (must be unique)
         parentDestNewMatches=(.GlobalEnv$newMSL$name==as.character(destParentName))
       }
       
-      if(params$verbose) {cat(paste0("MOVE:   ",toupper(curChangeDf$rank)," code:",code," line ",linenum," '",destTaxonName, "' findParent(",destParentName,")=",sum(parentDestNewMatches)),"\n")}
+      if(params$verbose) {cat(paste0("MOVE:              ",toupper(curChangeDf$rank)," code:",code," line ",linenum," '",destTaxonName, "' findParent(",destParentName,")=",sum(parentDestNewMatches)),"\n")}
     
       if(sum(parentDestNewMatches,na.rm=TRUE)==0) {
         # check if it used to exist
@@ -3775,7 +3840,8 @@ apply_changes = function(changesDf) {
                            notes=paste0("parentTaxon=", destParentName, ", proposedTaxonomy=", destLineage)
           )
           next;
-        } else {
+        } 
+        else {
           # someone already modified it - tell me who!
           log_change_error(curChangeDf, "ERROR", "MOVE.PARENT_ALREADY_CHANGED", 
                            errorStr=paste0("Change=",toupper(curChangeDf$.action),", but parent taxon already modified"), 
@@ -3783,7 +3849,8 @@ apply_changes = function(changesDf) {
           )
           next;
         }
-      } else if(sum(parentDestNewMatches,na.rm=TRUE)>1) {
+      } 
+      else if(sum(parentDestNewMatches,na.rm=TRUE)>1) {
         # this should never happen
         log_change_error(curChangeDf, "ERROR", "MOVE.PARENT_MANY", 
                          errorStr=paste0("Change=",toupper(curChangeDf$.action),", multiple taxa exist with parent name"), 
@@ -3858,7 +3925,7 @@ apply_changes = function(changesDf) {
         
       } # dest lineage unexpected
       
-      #### binomial check (species) ####
+      ##### binomial check (species) #####
       #
       # if move SPECIES, check binomial prefix matches parent genus
       #
@@ -3962,7 +4029,7 @@ apply_changes = function(changesDf) {
       # update curMSL [out_*] (for non-splits)
       #
       if( curChangeDf$.action == 'split' ) {
-        #
+        # SPLIT=
         # if the list of split directives does NOT include the current name, 
         # then we will have to (after the proposal is finished) abolish the copy
         # of the current name in the new MSL. Here, we mark that we've seen the 
@@ -3979,8 +4046,28 @@ apply_changes = function(changesDf) {
         .GlobalEnv$newMSL[srcNewTarget,"in_filename"] = proposalZip
         .GlobalEnv$newMSL[srcNewTarget,"in_target"] = srcLineage
         .GlobalEnv$newMSL[srcNewTarget,"in_notes"] = paste0("linenum=",linenum) # add comments?
+      } 
+      else if( curChangeDf$.action == 'merge' ) {
+        # MERGE=
+        # if the list of split directives does NOT include the current name, 
+        # then we will have to (after the proposal is finished) abolish the copy
+        # of the current name in the new MSL. Here, we mark that we've seen the 
+        # split directive with the same name, so we should NOT abolish this one.
+        # admin; mark we kept the original name in the split
+        .GlobalEnv$curMSL[srcPrevTarget,".merge_kept"] = TRUE # old copy, just to know
+        .GlobalEnv$newMSL[srcNewTarget, ".merge_kept"] = TRUE  # new copy - don't delete!
+        .GlobalEnv$newMSL[srcNewTarget, ".merge_code"] = code  
+        .GlobalEnv$newMSL[srcNewTarget, ".merge_actionOrder"] = actionOrder  
+        .GlobalEnv$newMSL[srcNewTarget, ".merge_linenum"] = curChangeDf$.linenum  # new copy - mark which line saved
         
-      } else {
+        # set OUT change for MERGE
+        .GlobalEnv$curMSL[srcPrevTarget,"out_change"] = curChangeDf$.action
+        .GlobalEnv$curMSL[srcPrevTarget,"out_filename"] = proposalZip
+        .GlobalEnv$curMSL[srcPrevTarget,"out_target"] = destLineage
+        .GlobalEnv$curMSL[srcPrevTarget,"out_notes"] = paste0("linenum=",linenum) # add comments?
+        .GlobalEnv$curMSL[srcPrevTarget,".actionOrder"] = actionOrder
+      } 
+      else {
         # set OUT change for all others
         .GlobalEnv$curMSL[srcPrevTarget,"out_updated"] = TRUE  # admin; mark this to save to db
         .GlobalEnv$curMSL[srcPrevTarget,"out_change"] = curChangeDf$.action
@@ -3989,11 +4076,10 @@ apply_changes = function(changesDf) {
         .GlobalEnv$curMSL[srcPrevTarget,"out_notes"] = paste0("linenum=",linenum) # add comments?
         .GlobalEnv$curMSL[srcPrevTarget,".out_taxnode_id"] = .GlobalEnv$newMSL[srcNewTarget,"taxnode_id"] 
         .GlobalEnv$curMSL[srcPrevTarget,".actionOrder"] = actionOrder
-        
       }
       
       # success note
-      errorCodeMoveMap=c("move"="MOVE.OK","promote"="PROMOTE.OK","demote"="DEMOTE.OK","merge"="MERGE.OK","split"="SPLIT=.OK")
+      errorCodeMoveMap=c("move"="MOVE.OK","promote"="PROMOTE.OK","demote"="DEMOTE.OK","split"="SPLIT=.OK","merge"="MERGE=.OK")
       log_change_error(curChangeDf, "SUCCESS",  errorCodeMoveMap[curChangeDf$.action], 
                        errorStr=paste0("Change=",toupper(curChangeDf$.action),", applied successfully"), 
                        notes=paste0(toupper(curChangeDf$.action)," ",
@@ -4006,27 +4092,399 @@ apply_changes = function(changesDf) {
                                     
                        )
       )
-    } else {
-      #  -------------------------------------------------------------------------
+    } # MOVE/PROMOTE/DEMOTE/SPLIT=/MERGE=
+    else if(curChangeDf$.action %in% c("merge") ) { 
+      # ........................................................................
       #
-      #### UNKNOWN ACTION not implemented. ####
+      ###### MERGE != ######
       #
-      #  -------------------------------------------------------------------------
+      # this can be 3 cases
+      # curMSL    newMSL  case
+      #   A   ->   A      (A exists; just set out_*)  [implemneted with move & split=]
+      #   A   ->   B      (B exists; just set out_*)
+      #   A   ->   C      (C not exits; like rename: set out_*)
+      # 
+      # also may need to delete A from newMSL. Mark and check afterwards.
+      # ........................................................................
+      
+      # check if srcTaxon was specified in xlsx (required)
+      if(is.na(srcTaxonName)) {
+        log_change_error(curChangeDf, "ERROR", "MERGE.WO_SRC", 
+                         errorStr="Change=MERGE, but 'current taxonomy' columns are empty", 
+                         notes=paste0("currentTaxonomy=", srcLineage, ", destTaxonomy=", destLineage)
+        )
+        next;
+      }
+      
+      # check if MERGED taxon has the same name 
+      # that should have been handled above with SPLIT= and MOVE
+      if(srcTaxonName == destTaxonName) {
+        log_change_error(curChangeDf, "WARNING", "MERGE.INTERNAL_SAME_NAME", 
+                         errorStr="Change=MERGE, current=proposed, internal error", 
+                         notes=paste0("MERGE(current=proposed) should be handled elsewhere;",
+                                      " programming error")
+        )
+      }
+      
+      
+      #
+      ##### find SRC #####
+      #
+      # first look in curMSL
+      srcCurTaxon = curMSL %>% filter(name==as.character(srcTaxonName))
+      if(params$verbose) {cat(paste0("MERGE:             ",toupper(curChangeDf$rank)," code:",code," line:",linenum," src.findTarget(cur,",srcTaxonName,")=",nrow(srcCurTaxon),"\n"))}
+      if(nrow(srcCurTaxon)==0) {
+        # not found in curMSL - see if it's been renamed, look in newMSL
+        srcNewTaxon= newMSL %>% filter(name==as.character(srcTaxonName))
+        if(params$verbose) {cat(paste0("MERGE:             ",toupper(curChangeDf$rank)," code:",code," line:",linenum," '", "' src.findTarget(new,",srcTaxonName,")=",nrow(srcNewTaxon),"\n"))}
+        if(nrow(srcNewTaxon)==0 ) {
+          # not found anywhere
+          log_change_error(curChangeDf, "ERROR", "MERGE.SRC_NOT_FOUND", "Change=MERGE, but taxon not found", 
+                           errorStr=paste0("Looked for=",srcTaxonName,
+                                           "; merge(CURRENT//PROPOSED)=", diff_lineages(srcLineage,destLineage))
+          )
+          next;
+        }
+        else { 
+          # found in newMSL, but not in curMSL; go find original curMSL name
+          srcCurTaxon = curMSL %>% filter(taxnode_id==srcNewTaxon$.prev_taxnode_id)
+          # warn about discrepancy
+          log_change_error(curChangeDf, "WARN", "MERGE.SRC_ALREADY_CHANGED", "Change=MERGE, but current taxon already changed", 
+                           errorStr=paste0("Looked for=",srcTaxonName,
+                                           "; ORIGNAL//FOUND=", diff_lineages(srcCurTaxon$lineage,srcNewTaxon$lineage),
+                                           "; proposal=",," already did=",)
+          )
+        }
+      }
+      
+      ##### tag SRC in newMSL #####
+
+      # create selectors for update (should re-write to use data.table update) 
+      srcCurSelect = curMSL$taxnode_id == srcCurTaxon$taxnode_id
+      srcNewSelect = newMSL$taxnode_id == srcNewTaxon$taxnode_id
+
+      # mark original, just in case that's usefule
+      .GlobalEnv$curMSL[srcCurSelect,".merge"] = TRUE
+      .GlobalEnv$curMSL[srcCurSelect,".merge_code"] = code
+      .GlobalEnv$curMSL[srcCurSelect,".merge_linenum"] = linenum
+      .GlobalEnv$curMSL[srcCurSelect,".merge_actionOrder"] = actionOrder
+      .GlobalEnv$curMSL[srcCurSelect,".actionOrder"] = actionOrder
+      
+      # mark the newMSL entry for possible, if no MERGE= elsewhere
+      .GlobalEnv$newMSL[srcNewSelect,".merge"] = TRUE 
+      .GlobalEnv$newMSL[srcNewSelect,".merge_code"] = code
+      .GlobalEnv$newMSL[srcNewSelect,".merge_linenum"] = linenum
+      .GlobalEnv$newMSL[srcNewSelect,".merge_actionOrder"] = actionOrder
+     
+      ##### look for DEST #####
+      
+      foundMergeTarget=FALSE
+      destNewTaxon=.GlobalEnv$newMSL %>% filter(name==as.character(destTaxonName))
+      if(params$verbose) {cat(paste0("MERGE:             ",toupper(curChangeDf$rank)," code:",code," line:",linenum," dest.findTarget(new,",destTaxonName,")=",nrow(destNewTaxon),"\n"))}
+      if(nrow(destNewTaxon)==1) {
+        # great, found it
+        foundMergeTarget = TRUE
+      } 
+      else if(nrow(destNewTaxon)==0) {
+        # check if someone else already modified it
+        destCurTaxon = curMSL %>% filter(name==as.character(destTaxonName))
+        if(nrow(destCurTaxon)==0) {
+          # just not there - we'll be creating it!
+          foundMergeTarget = FALSE
+        } 
+        else if(nrow(destCurTaxon)==1 ) {
+          # previous record - must have been modified already this MSL
+          # find current matching record in newMSL
+          destNewTaxon = (.GlobalEnv$newMSL$.prev_taxnode_id==destCurTaxon$taxnode_id)
+          if(nrow(destNewTaxon)==1) {
+            # great, found it
+            foundMergeTarget = TRUE
+            # warn about it (possibly contradictory) change
+            log_change_error(curChangeDf, "WARNING", "MERGE.DEST_ALREADY_CHANGED", "Change=MERGE, but proposed taxon already modified", 
+                             errorStr=paste0("proposal(s)=", destCurTaxon$out_filename, " also did a '",destCurTaxon$out_change,"' to '", destCurTaxon$out_target,"'",
+                                             "; PROPOSED//OBSERVED=",diff_lineage(destLineage,destCurTaxon$lineage))
+            )
+          } 
+          else if(nrow(destNewTaxon) == 0) { 
+            # just not there - we'll be creating it!
+            foundMergeTarget = FALSE
+          } 
+          else if(nrow(destNewTaxon)>1) { 
+            # crazy - perhaps it was split
+            log_change_error(curChangeDf, "ERROR", "MERGE.DEST_MANY", "Change=MERGE, but proposed taxon already split", 
+                             errorStr=paste0("proposal(s)=", destNewTaxon$in_filename[1], " already did a SPLIT? ")
+            )
+            next;
+          } # multiple matches
+        } # dest found in curMSL
+        else if(nrow(destCurTaxon)>1 ) {
+          # crazy - perhaps it was split
+          log_change_error(curChangeDf, "ERROR", "MERGE.DEST_MANY_2", "Change=MERGE, but multiple taxa", 
+                           errorStr=paste0("proposal(s)=", destCurTaxon$out_filename[1], " already did a MERGED? ")
+          )
+          next;
+        } # dest multiple in curMSL
+      } # dest not in newMSL
+      
+      ##### rename/move or merge #####  
+      if( foundMergeTarget )  {
+        ###### . merge into existing ######
+        if(params$verbose) {cat(paste0("MERGE_INTO:        ", srcTaxonName, " into ", destTaxonName," (",destNewTaxon$lineage,")\n"))}
+        
+        # set out_* in curMSL for SRC
+        .GlobalEnv$curMSL[srcCurSelect,"out_updated"] = TRUE  # admin; mark this to save to db
+        .GlobalEnv$curMSL[srcCurSelect,"out_change"] = "merge"
+        .GlobalEnv$curMSL[srcCurSelect,"out_filename"] = proposalZip
+        .GlobalEnv$curMSL[srcCurSelect,"out_target"] = destNewTaxon$lineage
+        .GlobalEnv$curMSL[srcCurSelect,"out_notes"] = paste0("linenum=",linenum)
+        .GlobalEnv$curMSL[srcCurSelect,".out_taxnode_id"] = destNewTaxon$taxnode_id
+        .GlobalEnv$curMSL[srcCurSelect,".actionOrder"] = actionOrder
+        
+        # set admin columns in newMSL for DEST
+        destNewSelect = newMSL$taxnode_id == destNewTaxon$taxnode_id
+        .GlobalEnv$curMSL[destNewSelect,".actionOrder"] = actionOrder
+        
+        #
+        # remove the now abandon record for src in newMSL (because it is linked
+        # to dest, instead)
+        #
+        
+        # check for kids
+        srcNewKidsSelect=(.GlobalEnv$newMSL$parent_id==.GlobalEnv$newMSL[srcNewSelect,"taxnode_id"])
+        if(sum(srcNewKidsSelect,na.rm=TRUE)>0) {
+          log_change_error(curChangeDf, "ERROR", "MERGE_INTO.KIDS.UNIMP", "Change=MERGE, merging child taxa not implemented (yet) ", 
+                           notes=paste0("taxon='", srcTaxonName, "', lineage='",srcLineage,"', kids: N=",sum(srcNewKidsSelect,na.rm=TRUE),
+                                        ", NAMES=[", paste(.GlobalEnv$newMSL$rank[srcNewKidsSelect],.GlobalEnv$newMSL$name[srcNewKidsSelect],sep=":"),"]" ) 
+          )
+          next;
+        }     
+        
+        # remove taxon from NEW
+        .GlobalEnv$newMSL = .GlobalEnv$newMSL[!srcNewSelect,]
+        
+        # message setup
+        logNotes =paste0(toupper(curChangeDf$.action)," ",
+                         srcCurTaxon$rank, " named '", srcCurTaxon$name, "'", 
+                         " into ", destNewTaxon$rank, " named '", destNewTaxon$name, "'", 
+                         " CUR//PROPOSED=",  
+                         diff_lineages(srcCurTaxon$lineage,destNewTaxon$lineage)
+        )
+        
+        # we don't implement merging child nodes, so only SPECIES implemented
+        if(srcCurTaxon$rank != "species") {
+          log_change_error(curChangeDf, "ERROR",  "MERGE_INTO.SRC_NOT_SPECIES.UNIMP", 
+                           errorStr=paste0("Change=MERGE only species merging has been implemented"),
+                           notes=logNotes
+          )
+          
+        }
+        # success note
+        log_change_error(curChangeDf, "SUCCESS",  "MERGE_INTO.OK", 
+                         errorStr=paste0("Change=",toupper(curChangeDf$.action),", applied successfully"), 
+                         notes=logNotes
+        )
+      } # MERGE_INTO
+      else { # MERGE_MOVE_RENAME
+        ###### . move/rename taxon ######
+        if(params$verbose) {cat(paste0("MERGE_MOVE_RENAME: ", srcTaxonName, " into ", destTaxonName," (",destLineage,")\n"))}
+        
+        # find parent in newMSL
+        # 
+        # verify that PARENT taxon exists already in newMSL
+        #
+        parentDestNameAlias =""
+        parentDestNewSelect = NA
+        parentDestNewTaxon = NA
+        parentDestNameAlias = ""
+        if(is.na(destParentName)) {
+          # no parent - use root node
+          parentDestNewSelect=(.GlobalEnv$newMSL$taxnode_id==.GlobalEnv$newMSL$tree_id)
+        } 
+        else {
+          # newMSL: find parent by name (must be unique) 
+          parentDestNewSelect=(.GlobalEnv$newMSL$name==as.character(destParentName))
+        }
+        parentDestNewTaxon = .GlobalEnv$newMSL[parentDestNewSelect,]
+  
+        if(params$verbose) {cat(paste0("MERGE_MOVE_RENAME: ",toupper(curChangeDf$rank)," code:",code," line:",linenum," '",destTaxonName, "' findParent(",destParentName,parentDestNameAlias,")=",sum(parentDestNewSelect)),"\n")}
+          
+        if(sum(parentDestNewSelect)==0 ) {
+          # find parent by other means: look for name in old (curMSL), and assume it got renamed already in newMSL
+          # and find it's new entry in newMSL
+          parentDestCurTaxon = curMSL %>% filter(name==as.character(destParentName))
+          if(nrow(parentDestCurTaxon)==1) {
+            # get what that older name became
+            parentDestNewSelect = (.GlobalEnv$newMSL$.prev_taxnode_id==parentDestCurTaxon$taxnode_id)
+            parentDestNewTaxon = .GlobalEnv$newMSL[parentDestNewSelect,]
+            parentDestNameAlias =    paste0(" [AKA ",parentDestNewTaxon$name,"]")
+            # INFO message
+            log_change_error(curChangeDf, "INFO", "MERGE_MOVE_RENAME.PARENT_ALREADY_CHANGED", 
+                             errorStr="PROPOSED parent taxon already modified", 
+                             notes=paste0("proposal(s)=", parentDestNewTaxon$.otherLineageProposal, " did a '", parentDestNewTaxon$.otherLineageAction,"' ")
+            )
+          } 
+          else if(nrow(parentDestCurTaxon)==0 ) {
+            # changeDf: look for another proposal that already changed the name in newMSL?
+            changedParent = .GlobalEnv$allChangeDf %>% filter(.srcTaxon==as.character(destParentName))
+            if(nrow(changedParent)==1) {
+              # get what that older name became
+              parentDestNewTaxon  = (.GlobalEnv$newMSL %>% filter(name==changedParent$.destTaxon))
+              
+              # INFO message
+              log_change_error(curChangeDf, "INFO", "MERGE_MOVE_RENAME.PARENT_ALREADY_CHANGED_2",
+                               errorStr="PROPOSED parent taxon already modified", 
+                               notes=paste0("proposal(s)=", parentDestNewTaxon$.otherLineageProposal, " did a '", parentDestNewTaxon$.otherLineageAction,"' ")
+              )
+            } 
+            else {
+              log_change_error(curChangeDf, "ERROR", "MERGE_MOVE_RENAME.PARENT_NOT_FOUND_2",
+                               errorStr="PROPOSED parent taxon not found", 
+                               notes=paste0("'",destParentName,"' : ",destParentLineage)
+              )
+              next
+            }
+          }
+          else if(nrow(parentDestCurTaxon)>1) {
+            log_change_error(curChangeDf, "ERROR", "MERGE_MOVE_RENAME.PARENT_MULTIPLE_MATCH", 
+                             errorStr="Probably parent was split by another proposal", 
+                             notes=paste0("proposal(s)=", changedParent$.code, " did a '",changedParent$change,"' ",
+                                          "of '",changedParent$.srcTaxon, "' to '", changedParent$.destTaxon,"'")
+            )
+            next
+          } 
+        }
+        else if(sum(parentDestNewSelect)==0) {
+          # just missing
+          log_change_error(curChangeDf, "ERROR", "MERGE_MOVE_RENAME.PARENT_NO_EXIST", 
+                           errorStr=paste0("Change=",toupper(curChangeDf$.action),", but parent rank taxon does not exist"), 
+                           notes=paste0("parentTaxon=", destParentName, ", proposedTaxonomy=", destLineage)
+          )
+          next
+        } # just missing
+        
+        ###### . create binomial check ######
+        
+        # if  SPECIES, check binomial prefix matches parent genus
+        #
+        if( destTaxonRank=="species" ) {
+          # check if parent is a genus
+          if(parentDestNewTaxon$rank=="genus") {
+            destParentGenusTaxon = parentDestNewTaxon
+          } 
+          else {
+            if(parentDestNewTaxon$rank == "subgenus" ) {
+              # check up one rank
+              destParentGenusTaxon = .GlobalEnv$newMSL %>% filter(taxnode_id == parentDestNewTaxon$parent_id)
+              if(destParentGenusTaxon$rank != "genus") {
+                # can't find genus parent
+                log_change_error(curChangeDf, "ERROR", "MERGE_CREATE.SPECIES_SUBGENUS_NO_GENUS", 
+                                 errorStr="Change=MERGE_CREATE, can not find parent genus", 
+                                 notes=paste0("subgenus '",parentDestNewTaxon$name,"' is not in a genus;",
+                                              " it's parent '",destParentGenusTaxon$name,"' is a ",destParentGenusTaxon$rank )
+                )
+                next;
+              }
+            } 
+            else {
+              # parent isn't subgenus or genus
+              log_change_error(curChangeDf, "ERROR", "MERGE_CREATE.SPECIES_NO_GENUS", 
+                               errorStr="Change=MERGE_CREATE, can not find parent genus", 
+                               notes=paste0("parent '",destParentGenusTaxon$name,"' is a ",destParentGenusTaxon$rank )
+              )
+              next;
+            }
+          } 
+          # have genus (parent or grandparent)
+          # check binomial naming
+          if( str_detect(destTaxonName,paste0(destParentGenusTaxon$name," ")) != TRUE ) {
+            errLevel = ifelse(params$processing_mode %in% c("draft","final"),"ERROR","WARNING")
+            log_change_error(curChangeDf, errLevel, "CREATE_RENAME.SPECIES_BINOMIAL_MISMATCH", 
+                             errorStr="Change=RENAME, but proposed species names does not start with 'genus[space]' per binomial naming convention", 
+                             notes=paste0("GENUS//SPECIES =", diff_strings(destParentGenusTaxon$name,destTaxonName))
+            )
+            if( errLevel=="ERROR") {next}
+          }
+        } # species (check binomial)
+        
+        # add to list of genera to check for binomial problems after proposal is complete
+        if(  destTaxonRank == "genus" ) {
+          renamedGenera = rbind(renamedGenera, 
+                                data.frame(name =c(destTaxonName$genus), 
+                                           taxnode_id=.GlobalEnv$newMSL$taxnode_id[srcNewTarget],
+                                           code=code, 
+                                           row= row,
+                                           actionOrder = actionOrder)
+          )
+        } 
+        
+        # check if that is the expected lineage
+        # RENAME: WARN that PARENT_LINEAGE is not expected, AND USE MSL/OBSERVED PARENT LINEAGE
+        # DON'T NEED THIS - would already be reported above as SRC. LINEAGE_CHANGED
+        # if( curChangeDf$.destParentName != .GlobalEnv$newMSL[srcNewParent,"name"] ) {
+        #   parentRank = .GlobalEnv$newMSL[srcNewParent,]$rank
+        #   errorDf=log_error(curChangeDf$.code,curChangeDf$.linenum,curChangeDf$.order,curChangeDf$change,curChangeDf$rank,curChangeDf$.changeTaxon,
+        #                    "WARNING", "RENAME.PARENT_NAME", 
+        #                    "parent name not as expected; was this meant to be a move? Is there a typo?", 
+        #                    paste0("parent in this proposal: '", curChangeDf$.destParentName,"'[", curChangeDf$.destParentRank, "], ",
+        #                          "but MSL parent is '",.GlobalEnv$newMSL[srcNewParent,"name"],"'[", .GlobalEnv$newMSL[srcNewParent,]$rank, "]; ",
+        #                          "other new proposals: ",.GlobalEnv$newMSL[srcNewTarget,"prev_proposals"])
+        #   )
+        # }
+        
+        # append proposal
+        destNewSelect = srcNewSelect
+        
+        .GlobalEnv$newMSL[destNewSelect,"prev_proposals"] = paste0(
+          ifelse(is.na(.GlobalEnv$newMSL[destNewSelect,"prev_proposals"]),"",paste0(.GlobalEnv$newMSL[destNewSelect,"prev_proposals"],",")),
+          proposalZip,":",linenum)
+        
+        # update (rename/move) dest in newMSL
+        .GlobalEnv$newMSL[destNewSelect,"name"] = destTaxonName
+        .GlobalEnv$newMSL[destNewSelect,"lineage"] = paste0(parentDestNewTaxon$lineage,";",destTaxonName)
+        .GlobalEnv$newMSL[destNewSelect,".actionOrder"] = actionOrder
+        
+        # put out_* changes on curMSL
+        .GlobalEnv$curMSL[srcCurSelect,"out_updated"] = TRUE  # admin; mark this to save to db
+        .GlobalEnv$curMSL[srcCurSelect,"out_change"] = "merge"
+        .GlobalEnv$curMSL[srcCurSelect,"out_filename"] = proposalZip
+        .GlobalEnv$curMSL[srcCurSelect,"out_target"] = newMSL[destNewSelect,"lineage"]
+        .GlobalEnv$curMSL[srcCurSelect,"out_notes"] = paste0("linenum=",linenum)
+        .GlobalEnv$curMSL[srcCurSelect,".out_taxnode_id"] = newMSL[destNewSelect,"taxnode_id"]
+        .GlobalEnv$curMSL[srcCurSelect,".actionOrder"] = actionOrder
+        
+        # success note
+        errorDf=log_change_error(curChangeDf, "SUCCESS", "MERGE_MOVE_RENAME.OK", "Change=MERGE, applied successfully", 
+                                 paste0("MERGE ",srcTaxonRank, 
+                                        " from ", "'",srcTaxonName,"'",
+                                        " to ",   "'", newMSL[destNewSelect,"name"], "'",
+                                        " in ",   "'", parentDestNewTaxon$lineage, "'",
+                                        ", CURRENT//PROPOSED=", diff_lineages(curMSL[srcCurSelect,"lineage"], newMSL[destNewSelect,"lineage"] )
+                                 )
+        )
+        
+      } # MERGE_MOVE_RENAME
+    } # MERGE
+    else {
+      # ........................................................................
+      #
+      ##### UNKNOWN ACTION not implemented. #####
+      #
+      # ........................................................................
       log_change_error(curChangeDf, "ERROR", "CHANGE.UNIMP", 
                        errorStr=paste0("Change=",toupper(action)," is NOT (yet) implemented"), 
                        notes=paste0("lineageChange=", diffLineageString(srcLineage,destLineage))
-                       )
+      )
       next;
-  
+      
     } # ACTION UN-IMP
- 
+    
   } # for each line in XLSX
-
-    #  -------------------------------------------------------------------------
+  
+  # ........................................................................
   #
   #### POST-QC #### 
   #
-  #  -------------------------------------------------------------------------
+  # ........................................................................
   .GlobalEnv$actionOrder = .GlobalEnv$actionOrder+1
   
   #
@@ -4244,7 +4702,11 @@ if( !is.null(nrow(allChangeDf)) && nrow(allChangeDf) > 0 ) {
 #### SECTION write error list #####
 #
 # set "final" to be TRUE (which produces per-subcommittee error files) only if not in "validate" mode
+#print(dim(.GlobalEnv$allErrorDf))
+#print(dim(.GlobalEnv$curMSL))
+#print(dim(.GlobalEnv$newMSL))
 
+#print("write_error_summary(final)")
 write_error_summary(.GlobalEnv$allErrorDf,params$processing_mode != "validate")
 
 #### EXPORT MSL ####
@@ -4295,7 +4757,7 @@ if(params$export_msl) {
     # "molecule", # should be in molecule_id
     # program admin columns - not in db
     #"out_updated",
-    #"prev_taxnode_id",
+    #".prev_taxnode_id",
     #"prev_proposals",
     "host_source", 
     "exemplar_name",
@@ -4330,13 +4792,12 @@ if(params$export_msl) {
   close(tsvout)
   cat("WROTE   ", newTsvFilename, "\n")
   
-  # ------------------------------------------------------------------------------
+  # ........................................................................
   # 
   # # Export proposal summary to TSV
   #
   # metadata from DOCX
   #
-  # ```{r tsv_export_docx_meta}
   #### SECTION export DOCX meta to TSV #####
   tsvDocxColList = c(
     "subcommittee",
@@ -4382,19 +4843,8 @@ if(params$export_msl) {
   close(docxMetaOut)
   cat("WROTE   ", docxTsvFilename, "\n")
   
-  # ```
-  
-  # ------------------------------------------------------------------------------
-  # 
-  # # Export SQL to update the db
-  # 
-  # ```{r sql_export}
   #### SECTION export to SQL #####
-  #### open issues #####
-  # 1. why is there a "molecule" column?
-  # 2. notes vs comments columns? 
-  #
-  # ------------------------------------------------------------------------------
+  # ........................................................................
   #
   # SQL to insert new MSL
   #
@@ -4408,7 +4858,7 @@ if(params$export_msl) {
   #   2. escape apostrophies
   #   3. single-quot evalues
   #
-  # ------------------------------------------------------------------------------
+  # ........................................................................
   # cat(paste0('"',paste(names(newMSL),collapse='",\n"'),'"'))
   sqlColList = c("taxnode_id",
               "parent_id",
@@ -4447,7 +4897,7 @@ if(params$export_msl) {
               # "molecule", # should be in molecule_id
               # program admin columns - not in db
               #"out_updated",
-              #"prev_taxnode_id",
+              #".prev_taxnode_id",
               #"prev_proposals",
               "host_source",
               "exemplar_name",
@@ -4468,9 +4918,11 @@ if(params$export_msl) {
   cat("-- begin transaction\n", file=sqlout)
   cat("-- rollback transaction\n", file=sqlout)
   
+  # ........................................................................
   #
-  # add new MSL to [taxonomy_toc]
+  ##### SQL to add new MSL to [taxonomy_toc]   ##### 
   #
+  # ........................................................................
   cat("insert into [taxonomy_toc] ([tree_id],[msl_release_num],[comments]) ",
       "values (", paste(
        sort(levels(as.factor(newMSL$tree_id)),decreasing = T)[1],
@@ -4480,6 +4932,10 @@ if(params$export_msl) {
       ")\n",
       file=sqlout
   )
+  
+  # ........................................................................
+  #
+  ##### SQL to insert newMSL into [taxonomy_node] #####
   #
   # convert factors to character
   # (was easier to do on a data.frame, because of data.table FAQ 1.1)
@@ -4568,16 +5024,16 @@ if(params$export_msl) {
   order by level_id,in_change
   
   "), file=sqlout)
-  # ------------------------------------------------------------------------------
+  # ........................................................................
   #
-  # SQL to update out_ in prevMSL
+  ##### SQL to update prevMSL.out in [taxonomy_node]   ##### 
   #
   # column names and data codings in newMSL should match the taxonomy_node table. 
   #
   # convert newMSL to a data.frame, so we can convert factor columns to character, 
   # then generate SQL
   #
-  # ------------------------------------------------------------------------------
+  # ........................................................................
   
   cat("Writing out_* updates for prevMSL\n")
   #

@@ -1,5 +1,5 @@
 # Rscript merge_proposal_zips.R --proposalsDir=testData/proposalsMergeSpecies --outDir=testResults/proposalsMergeSpecies --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v1.14.dc3348c
+VERSION: v1.15.2bb253e
 Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # LOAD_PROPOSAL_DOCX( 2023.001S )
