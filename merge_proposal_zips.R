@@ -243,13 +243,14 @@ if( interactive() ) {
   params$mode = 'draft'
   #params$output_change_report = F
   params$export_msl = T
-  params$proposals_dir = "./MSL39v2/Pending_Proposals"
-  params$out_dir       = "./MSL39v3_results/Pending_Proposals"
 #  params$test_case_dir = "crash"
 #  params$test_case_dir = "proposalsEC55.1"
   params$test_case_dir = "proposalsTest6_split"
   params$proposals_dir = paste0("testData/",params$test_case_dir)
   params$out_dir       = paste0("testResults/",params$test_case_dir)
+  # MSL39v4 2024.03.12
+  params$proposals_dir = "./MSL39v4/Pending_Proposals"
+  params$out_dir       = "./MSL39v4/results/Pending_Proposals"
   # MERGE
   #  params$proposals_dir = "./MSL39v2/Pending_Proposals/Plant virus (P) proposals/Proposals to be considered for EC55/2023.017P.N.v1.Caulimoviridae_6nsp.xlsx"
   #params$proposals_dir = "./MSL39v2"
