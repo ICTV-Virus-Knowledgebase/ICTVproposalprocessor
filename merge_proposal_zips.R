@@ -56,8 +56,12 @@
 # this allows modification in place of a (data) passed
 # to a subroutine (pass-by-reference feature)
 suppressPackageStartupMessages(library(data.table))
-suppressPackageStartupMessages(library(yaml))
-suppressPackageStartupMessages(library(tidyverse))
+#suppressPackageStartupMessages(library(yaml))
+#suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(stringr))  # also part of tidyverse
+suppressPackageStartupMessages(library(dplyr))  # also part of tidyverse
+suppressPackageStartupMessages(library(readr))  # also part of tidyverse
+
 suppressPackageStartupMessages(library(readxl))
 suppressPackageStartupMessages(library(writexl) )# another option library(openxlsx)
 suppressPackageStartupMessages(library(DescTools)) # AscToChar
