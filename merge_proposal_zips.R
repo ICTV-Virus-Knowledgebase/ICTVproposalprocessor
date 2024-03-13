@@ -973,7 +973,8 @@ scan_for_proposals = function() {
   # break filename into proposal code, filename and basename
   #
   docxs          = inputFiles[grep(inputFiles$file,pattern="\\.docx*$"),,drop=FALSE]
-  names(docxs)   = c("docxpath","path","docx","basename","code","scAbbrev")
+  colnames(docxs)[which(colnames(docxs) %in% c("docpath","file") )] <- c("docxpath","docx")
+  #names(docxs)   = c("docxpath","path","docx","basename","code","scAbbrev")
   
   if(params$tmi) { cat("# doc(x) files found: N=",nrow(docxs),"\n")}
   
@@ -1025,7 +1026,8 @@ scan_for_proposals = function() {
   #
   
   xlsxs          = inputFiles[grep(inputFiles$file,pattern="\\.xlsx*$"),,drop=FALSE]
-  names(xlsxs)   = c("xlsxpath","path","xlsx","basename","code","scAbbrev")
+  colnames(xlsxs)[which(colnames(xlsxs) %in% c("docpath","file") )] <- c("xlsxpath","xlsx")
+  #names(xlsxs)   = c("xlsxpath","path","xlsx","basename","code","scAbbrev")
   
   if(params$tmi) { cat("# xls(x) files found: N=",nrow(xlsxs),"\n")}
   
@@ -1033,25 +1035,72 @@ scan_for_proposals = function() {
   dups = duplicated(xlsxs$code) & !is.na(xlsxs$code)
   allDups =xlsxs$code %in% xlsxs$code[dups]
   if( sum(dups) > 0 ) {
+    # track if all dups were resolved by being non-template files
+    dups_ok = TRUE 
+    filter_rows = NULL
+    
+    if(params$tmi) { cat("START: can not proceed with duplicated proposal IDs:", paste(levels(as.factor(xlsxs[dups,"code"])),collapse=","),"\n") }
     # error details
     errorDf = xlsxs[allDups, c("scAbbrev", "code", "xlsx")]
     errorDf$level = "ERROR"
     errorDf$error = "XLSX_DUPCODE"
     for( code in xlsxs$code[dups] ) {
+      if(params$tmi) {
+        print("====================================================================================" )
+        print(paste("====", code, ":  DUP XLSXS ===="))
+        print("====================================================================================" )
+      }
+      for( row in rownames(xlsxs[xlsxs$code==code,]) ) {
+        if(params$tmi) { 
+          print("------------------------------------------------------------------------------------" )
+          print(paste("DUP_XLSX_FORMAT_CHECK: ", xlsxs[row,"xlsx"] ))
+        }
+        load_check = load_proposal(code,  xlsxs[row,"xlsxpath"] )
+        if(is.null(load_check[["proposalDf"]])) {
+          # report the non-proposal non-suppl-named xlsx file
+          if(params$tmi) { print(paste0("LOAD_CHECK_RESULT:  NOT PROPOSAL: ", xlsxs[row,"xlsx"])) }
+          subErrorDf = xlsxs[row,]
+          subErrorDf[,c("docpath","file")] = subErrorDf[,c("xlsxpath","xlsx")]
+          subErrorDf$level = "WARNING"
+          subErrorDf$error = "NON_PROPOSAL_NOT_SUPPL"
+          subErrorDf$message = paste0("Note a proposal XLSX: All supplemental XLSX files should have '_Suppl.' in the name!")
+          .GlobalEnv$allErrorDf = rbindlist(list(.GlobalEnv$allErrorDf, subErrorDf),fill=TRUE)
+          write_error_summary(.GlobalEnv$allErrorDf)
+          if(params$tmi) { cat(paste0("# DUP file filtered out (not a template): code=",code,", file=",xlsxs[row,"xlsx"],"\n"))}
+          # remove it from dups list
+          allDups[row]= FALSE
+          filter_rows=c(filter_rows,row)
+        } else {
+          if(params$tmi) { print(paste0("LOAD_CHECK_RESULT:  *IS PROPOSAL: ", xlsxs[row,"xlsx"])) }
+        }
+      } # for each dup for this code
+      
+      # check if there was only one parsable xlsx
+      code_template_count = nrow(xlsxs[xlsxs$code==code && allDups,])
+      if( code_template_count > 1 ) {
+          dups_ok = FALSE
+      }
       # build list of all xlsxs using duplicate codes
       errorDf[errorDf$code==code,"message"] = 
         paste0("duplicate proposal ID: ",
                paste(xlsxs$xlsx[xlsxs$code==code],collapse=","))
-      
-    }
-    # append to global list
+    } # for each code with dups
+    #
+    # finalize
+    #
+    # append to global error list
     .GlobalEnv$allErrorDf = rbindlist(list(.GlobalEnv$allErrorDf, errorDf),fill=TRUE)
     # output
     write_error_summary(.GlobalEnv$allErrorDf)
     
-    # terminate
-    cat("ERROR: can not proceed with duplicated proposal IDs:", paste(levels(as.factor(xlsxs[dups,"code"])),collapse=","),"\n")
-    stop(1)
+    if( !dups_ok ) {
+      # terminate
+      cat("ERROR: can not proceed with duplicated proposal IDs:", paste(levels(as.factor(xlsxs[dups,"code"])),collapse=","),"\n")
+      stop(1)
+    } else {
+      # remove the xlsxs rows that got filtered 
+      xlsxs = xlsxs[!(rownames(xlsxs) %in% filter_rows),]
+    }
   }
   rownames(xlsxs) = ifelse(is.na(xlsxs$code),rownames(xlsxs),xlsxs$code)
   xlsxs[,"code"] = rownames(xlsxs)
@@ -1672,16 +1721,27 @@ diff_lineages=function(lin1, lin2) {
 #
 # load .xlsx file into DF
 #
-load_proposal = function(code) {
-  cat("# LOAD_PROPOSAL(",code,")\n")
+# NOTE on global variables (ick):
+# when called from scan_proposal_dir:
+#    ARG: xlsxpath_override will be set
+#    GLOBAL: proposalsDf wont exist
+#    GLOBAL: 
+# 
+load_proposal = function(code,xlsxpath_override=NA) {
+  cat("# LOAD_PROPOSAL(",code,",",xlsxpath_override,")\n")
   
+  # get xlsxpath, if not specified
+  xlsxpath = ifelse(is.na(xlsxpath_override),
+                    proposalsDf[code,"xlsxpath"],
+                    xlsxpath_override)
+                    
   # return data
   proposalDf = NULL
   
   # get worksheet names
   proposalsSheetNameRegex = "proposal*"
   sheetNames = suppressMessages(
-    excel_sheets(proposalsDf[code,"xlsxpath"])
+    excel_sheets(xlsxpath)
   )
   #
   # comapre to expected sets of sheet names, warn if they added extra sheets
@@ -1699,12 +1759,14 @@ load_proposal = function(code) {
   } 
   if( length(extraSheets > 1) ) {
     cat(paste0("code ", code, ": Extra worksheets found in xlsx: '",paste0(extraSheets,collapse="','"),"'\n"))
-    log_error(code,linenum=0,action="OPEN_XLSX",actionOrder=actionOrder, 
+    if(is.na(xlsxpath_override)) {
+      log_error(code,linenum=0,action="OPEN_XLSX",actionOrder=actionOrder, 
               rank="",taxon="",
               levelStr="WARNING",errorCode="XLSX_EXTRA_SHEETS",
               errorStr="XLS file has additional sheets not present in template",
               notes=paste0("Worksheet(s) named '",paste0(extraSheets,collapse="','"),"' were added ")
-    )
+     )
+    }
   }
   
   # Try and find the one sheet that contains the proposal data
@@ -1712,23 +1774,27 @@ load_proposal = function(code) {
   if( is.na(proposalsSheetNames[1]) ) {
     # ERROR if can't find it. 
     cat(paste0("code ", code, ": A worksheet name matching '",proposalsSheetNameRegex,"' was not found: ","logging error","\n"))
-    log_error(code,linenum=0,action="OPEN_XLSX",actionOrder=actionOrder, rank="",taxon="",
+    if(is.na(xlsxpath_override)) {
+      log_error(code,linenum=0,action="OPEN_XLSX",actionOrder=actionOrder, rank="",taxon="",
               levelStr="ERROR","XLSX_NOT_PROPOSAL",
               errorStr="XLS no acceptably named 'proposal' sheet",
               notes=paste0("A worksheet name matching '",proposalsSheetNameRegex,"' was not found, only: ",
                      "'",paste0(sheetNames,collapse="','"),"'"
               )
-    )
+      )
+    }
   } else if( length(proposalsSheetNames) > 1 ) {
     # ERROR if find more than one
     cat(paste0("code ", code, ": ERROR: More than 1 worksheet named like '",proposalsSheetNameRegex,"' found: '",paste0(proposalsSheetNames,collapse="','"),"'\n"))
-    log_error(code,linenum=0,action="OPEN_XLSX",actionOrder=actionOrder, rank="",taxon="",
-      levelStr="ERROR","XLSX_MULTI_PROPOSAL", 
-      errorStr="XLS file has more than one sheet named 'proposal'",
-      notes=paste0("More than 1 worksheet named '",proposalsSheetNameRegex,"' were found: '",paste0(proposalsSheetNames,collapse="','"),"'")
-    )
+    if(is.na(xlsxpath_override)) {
+      log_error(code,linenum=0,action="OPEN_XLSX",actionOrder=actionOrder, rank="",taxon="",
+        levelStr="ERROR","XLSX_MULTI_PROPOSAL", 
+        errorStr="XLS file has more than one sheet named 'proposal'",
+        notes=paste0("More than 1 worksheet named '",proposalsSheetNameRegex,"' were found: '",paste0(proposalsSheetNames,collapse="','"),"'")
+      )
+    }
   } else {
-    # OK: ound one and only one proposal sheet - read that one
+    # OK: found one and only one proposal sheet - read that one
     
     # read XLSX file, no column names
     proposalDf = data.frame(
@@ -1736,7 +1802,7 @@ load_proposal = function(code) {
       # https://github.com/tidyverse/readxl/issues/580#issuecomment-519804058
       suppressMessages(
         read_excel(
-          proposalsDf[code,"xlsxpath"],
+          xlsxpath,
           sheet=proposalsSheetNames[1],
           trim_ws = TRUE,
           na = c("Please select","[Please select]","[Please\u00A0select]"),
