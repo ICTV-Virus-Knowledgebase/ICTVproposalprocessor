@@ -23,8 +23,8 @@ if [ "$(uname)" == "Linux" ]; then
 	# update docker image, just incase
 	#
 	echo "# Building docker image"
-	echo ./docker_build_image.sh
-	./docker_build_image.sh
+	echo "# SKIP ./docker_build_image.sh"
+	#./docker_build_image.sh
 fi
 
 #
