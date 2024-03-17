@@ -2677,6 +2677,10 @@ for( code in codes) {
     merged=merged+1
   } # if have proposal XLSX
 } # for proposal code
+# index by code:linenum
+allChangeDf$.codeLine = paste0(allChangeDf$.code,":",allChangeDf$.linenum)
+rownames(allChangeDf) = allChangeDf$.codeLine 
+
 cat("# DONE. MERGED",merged," proposal(s), skipped",skipped,"; total changes:",nrow(allChangeDf),"\n")
 #
 
@@ -2729,62 +2733,209 @@ if( !is.null(nrow(allChangeDf)) && nrow(allChangeDf) > 0 ) {
   allChangeDf[allChangeDfOrder,".changeOrder"] = seq(1,nrow(allChangeDf))
   
 }
+##
 ##### detect chaining #####
-
+##
+# we find series of changes that affect the same taxon
+# we then order them so that they will get applied correctly. 
+# 
+# for example, [B->C], A->B must be re-ordered [A->B, B>C]
+#
+# previously, actions were sorted and .changeOrder was set
+# we set .chainOrder, using decimals added to the .changeOrder of the first link
+# After we finish, we re-set the .changeOrder variable. 
+# original .changeOrder is stored in 
+##
 
 if( !is.null(nrow(allChangeDf)) && nrow(allChangeDf) > 0 ) {
   # by default, everything is not chained
   .GlobalEnv$allChangeDf$.chainOrder = 0
+  .GlobalEnv$allChangeDf$.chainStart = ""
   .GlobalEnv$allChangeDf$.originalOrder = .GlobalEnv$allChangeDf$.changeOrder
+  .GlobalEnv$allChangeDf$.srcRankTaxon  = paste0(allChangeDf$.srcRank,":",allChangeDf$.srcTaxon)
+  .GlobalEnv$allChangeDf$.destRankTaxon = paste0(allChangeDf$.destRank,":",allChangeDf$.destTaxon)
   
-  # scan for chained changes: prev.destTaxon = next.srcTaxon
-  chainedTaxonNames = setdiff(intersect(allChangeDf$.srcTaxon, allChangeDf$.destTaxon),c(NA))
-  if( length(chainedTaxonNames) > 0) {
-    if(params$verbose){cat("# CHAIN: Found ", length(chainedTaxonNames), "chained taxon names!\n")}
-    if(params$tmi){cat(paste0("# CHAINed name:        ",chainedTaxonNames,"\n"))}
+  # scan for chained changes: prev.destTaxon = next.srcTaxon (and not self)
+  # note that moves, merges and splits can all have srcTaxon=destTaxon!
+  #
+  link_cols= c(".codeLine",".srcRankTaxon",".destRankTaxon","change",".changeOrder",".chainOrder",".chainStart")
+  chainedTaxaDf = merge(
+    x=(allChangeDf[,link_cols] %>% filter(.destRankTaxon != 'NA:NA')),
+    y=(allChangeDf[,link_cols]  %>% filter(.srcRankTaxon != 'NA:NA')),
+    by.x = ".destRankTaxon", 
+    by.y=".srcRankTaxon", 
+    suffixes = c("Prev","Next")
+  ) %>% filter(.codeLinePrev != .codeLineNext)
+  rownames(chainedTaxaDf) = paste0(chainedTaxaDf$.codeLinePrev,":",chainedTaxaDf$.codeLineNext)
+  chainTaxaCols = c(".codeLinePrev",".changeOrderPrev",".srcRankTaxon","changePrev",".destRankTaxon","changeNext",".destRankTaxonNext",".codeLineNext",".changeOrderNext")
+  # View(chainedTaxaDf[,chainTaxaCols])
+  # 
+  
+  if( nrow(chainedTaxaDf) == 0) {
+    # no chains to re-order
+    if(params$verbose){cat("# CHAIN: NO chained changes found\n")}
+  } else {
+    
+    if(params$verbose){cat("# CHAIN: Found", nrow(chainedTaxaDf), "links!\n")}
+    if(params$tmi){with(chainedTaxaDf, 
+                        cat("",paste0("    # LINK :        ",.codeLinePrev," ",.srcRankTaxon,
+                                      " [",changePrev,"] ",
+                                      .destRankTaxon," ", .codeLineNext, 
+                                      "\n")))}
     chainDepth = 1
     
-    # mark first change in each chain
-    chainStarts = !(allChangeDf$.srcTaxon %in% chainedTaxonNames) &  allChangeDf$.destTaxon %in% chainedTaxonNames
-    if(params$verbose){cat("# CHAIN: level ", chainDepth, " has ", sum(chainStarts), " changes","\n")}
+    #
+    # mark first link in each chain
+    #
+    # links where srcRankTaxon does NOT appear in the DEST of another link
+    chainStartsSimple =  !(chainedTaxaDf$.srcRankTaxon %in% chainedTaxaDf$.destRankTaxon)
+    # links [A,A] (src=dest), where A is not in the DEST of any other link, except the  link itself
+    chainStartsNoOp = chainedTaxaDf$.srcRankTaxon == chainedTaxaDf$.destRankTaxon & !(chainedTaxaDf$.srcRankTaxon %in% chainedTaxaDf$.destRankTaxon[chainedTaxaDf$.srcRankTaxon != chainedTaxaDf$.destRankTaxon])
+    # merge start lists
+    chainStartLinks = chainStartsSimple | chainStartsNoOp
     
-    .GlobalEnv$allChangeDf[chainStarts,".chainOrder"] = paste0(allChangeDf[chainStarts,".changeOrder"],".",chainDepth)
-    chainEnds = allChangeDf[chainStarts,".destTaxon"] 
     
-    # mark down the chains
-    while( length(chainEnds)>0) {
+    # mark order in  chain list (.chainOrder = [.changeOrder].1)
+    chainedTaxaDf[chainStartLinks,".chainOrderPrev"] = paste0(chainedTaxaDf[chainStartLinks,".changeOrderPrev"],".",chainDepth)
+    chainedTaxaDf[chainStartLinks,".chainStartPrev"] = chainedTaxaDf[chainStartLinks,".codeLinePrev"]
+    
+    # isolate the active links we're building chains on
+    activeLinksDf = chainedTaxaDf[chainStartLinks,] 
+
+    if(params$verbose){cat("# CHAIN: level ", chainDepth, " has ", length(unique(activeLinksDf$.codeLinePrev)), " startLinks in ",nrow(activeLinksDf), " chains","\n")}
+    if(params$tmi){with(activeLinksDf, 
+                        cat("",paste0("    #",
+                                      " CHAIN ", .chainStartPrev, 
+                                      " LINK :        ",.codeLinePrev," ",.srcRankTaxon,
+                                      " [",changePrev,"] ",
+                                      .destRankTaxon," ", .codeLineNext, 
+                                      "\n")))}
+    
+    # copy .chainOrder to master change list
+    # use fact rowname(allChangeDf)=.codeLine
+    .GlobalEnv$allChangeDf[activeLinksDf$.codeLinePrev,".chainOrder"] = activeLinksDf$.chainOrderPrev
+    .GlobalEnv$allChangeDf[activeLinksDf$.codeLinePrev,".chainStart"] = activeLinksDf$.chainStartPrev
+    
+    if(params$verbose){with(activeLinksDf,
+                            cat("",paste0("     #   SET prevChainOrder:  ",
+                                          .codeLinePrev, " = ", .chainOrderPrev, 
+                                          " which is", .srcRankTaxon, 
+                                          " [", changePrev, "] ", 
+                                          .destRankTaxon, 
+                                          "\n")
+                            ))}
+
+    #
+    # get and mark next link in each chain
+    #
+    while( nrow(activeLinksDf)>0 ) {
       
-      # next link in the chain
+      if(params$tmi){cat("",paste0("    # CHAIN: level ", chainDepth, " process link.Next\n"))}
+
+      # print active links
       chainDepth = chainDepth +1
-      if(params$tmi){cat(paste0("# CHAIN: level ", chainDepth, " chainEnds: ",chainEnds,"\n"))}
+   
+      # 
+      # set depth of 2nd change in the link
+      #
+      # use the greater of
+      #   the chainHead.actionOrder + chainDepth/10
+      #   the  nextLink.actionOrder + chainDepth/10
+      #
+      # this minimizes re-order, at the expense of less of an audit trail (not all orders have the head as prefix)
+      chainOrderNext = as.integer(chainedTaxaDf[rownames(activeLinksDf),".chainOrderPrev"])+chainDepth/10
+      orderNext =      as.integer(chainedTaxaDf[rownames(activeLinksDf),".changeOrderNext"])+chainDepth/10
+      chainedTaxaDf[rownames(activeLinksDf),".chainOrderNext"] = ifelse(chainOrderNext > orderNext, chainOrderNext, orderNext)
+ 
+      # carry over chain name
+      chainedTaxaDf[rownames(activeLinksDf),".chainStartNext"] = chainedTaxaDf[rownames(activeLinksDf),".chainStartPrev"]
       
-      # find set of taxa to add to the chains
-      chainNext = (allChangeDf$.chainOrder==0) & (allChangeDf$.srcTaxon %in% chainEnds)
-      if(params$verbose){cat("# CHAIN: level ", chainDepth, " has ", sum(chainNext), " changes","\n")}
-      if(params$tmi){cat(paste0("# CHAIN: level ", chainDepth, 
-                                " chainNext: ",allChangeDf[chainNext,".srcTaxon"],
-                                " >>",allChangeDf[chainNext,"change"],">> ",
-                                allChangeDf[chainNext,".destTaxon"]," \n"))}
+      # copy to global
+      .GlobalEnv$allChangeDf[chainedTaxaDf[rownames(activeLinksDf),".codeLineNext"],".chainOrder"] = chainedTaxaDf[rownames(activeLinksDf),".chainOrderNext"] 
+      .GlobalEnv$allChangeDf[chainedTaxaDf[rownames(activeLinksDf),".codeLineNext"],".chainStart"] = chainedTaxaDf[rownames(activeLinksDf),".chainStartNext"] 
       
-      # for each taxon in the list, link it to the previous link in the chain
-      for( row in which(chainNext) ) {
-        srcTaxon = allChangeDf %>% filter(.destTaxon == allChangeDf[row,".srcTaxon"])
-        .GlobalEnv$allChangeDf[row,".chainOrder"]=paste0(as.integer(srcTaxon$.chainOrder),".",chainDepth)
-      }
+      if(params$tmi){with(chainedTaxaDf[rownames(activeLinksDf),],
+                          cat("",paste0("     #   SET nextChainOrder:  ",
+                                        .codeLineNext, " = ",.chainOrderNext, 
+                                        " which is ", .destRankTaxon, 
+                                        " [", changeNext, "] ", 
+                                        .destRankTaxonNext, 
+                                        "\n")
+                          ))}
       
-      # next set of ends
-      chainEnds = allChangeDf[chainNext,".destTaxon"]
-    }
-    
+      # copy to "in" side of any following links
+      for( activeRow in rownames(activeLinksDf) ) {
+        # activeRow = rownames(activeLinksDf)[1] # debug
+        activeRowDf = chainedTaxaDf[activeRow,]
+        # copy outgoing (Next) .chainOrder to incoming (Prev) side of any following links
+        onwardLinks=chainedTaxaDf$.codeLinePrev == activeRowDf$.codeLineNext
+        if( sum(onwardLinks) > 0) {
+          # copy that chainOrder from the Next of this link, to Prev of next link
+          chainedTaxaDf[onwardLinks,".chainOrderPrev"] = activeRowDf$.chainOrderNext
+          chainedTaxaDf[onwardLinks,".chainStartPrev"] = activeRowDf$.chainStartNext
+          
+          if(params$tmi){with(chainedTaxaDf[onwardLinks,],
+                              cat("",paste0("     #   SET NEXT.prevChainOrder:  ",
+                                            .codeLinePrev, " = ",.chainOrderPrev, 
+                                            " which is ", .srcRankTaxon, 
+                                            " [", changePrev, "] ", 
+                                            .destRankTaxon, 
+                                            "\n")
+                              ))}
+        } # if onward links
+
+      } # for each active link/chain
+      
+      # find next links in this chain
+      activeLinksDf = chainedTaxaDf[
+        # links the connect to the Next of activeLinks
+        chainedTaxaDf$.codeLinePrev %in% activeLinksDf[,".codeLineNext"] &
+          # AND haven't been traversed already
+          !(chainedTaxaDf$.chainStartPrev %in% activeLinksDf[,".chainStartNext"])
+        ,]
+      
+      if(params$verbose){cat("# CHAIN: level ", chainDepth, " has ", length(unique(activeLinksDf$.codeLinePrev)), " startLinks in ",nrow(activeLinksDf), " chains","\n")}
+      if(params$tmi){with(activeLinksDf, 
+                          cat("",paste0("    #",
+                                        " CHAIN ", .chainStartPrev, 
+                                        " LINK :        ",.codeLinePrev," ",.srcRankTaxon,
+                                        " [",changePrev,"] ",
+                                        .destRankTaxon," ", .codeLineNext, 
+                                        "\n")))}
+      
+        
+    } # while more links to traverse
+    #
     # record final ordering
+    #
     .GlobalEnv$allChangeDf$.chainedOrder=ifelse(allChangeDf$.chainOrder == "0", allChangeDf$.changeOrder, allChangeDf$.chainOrder)
     allChangeDfOrder = order(as.numeric(.GlobalEnv$allChangeDf$.chainedOrder))
     .GlobalEnv$allChangeDf[allChangeDfOrder,".changeOrder"] = seq(1,nrow(allChangeDf))
-  } else {
-    if(params$verbose){cat("# CHAIN: NO chained changes found\n")}
-  }
-}
-
+    #
+    # errors for any links that didn't get traversed
+    #
+    badLinksDf = chainedTaxaDf %>% filter(.chainOrderPrev==0 | .chainOrderNext==0)
+    if( nrow(badLinksDf)) {
+      # these changes were in chains, but didn't get traversed. 
+      # could be chains w/o heads, etc
+      for( badIdx in rownames(badLinksDf)) {
+        prevTaxon = .GlobalEnv$allChangeDf[badLinksDf[badIdx,".codeLinePrev"],]
+        badLinkDf = badLinksDf[badIdx,]
+        
+        
+        log_error(prevTaxon$.code,linenum=prevTaxon$.linenum,action=prevTaxon$change,actionOrder=prevTaxon$actionOrder, 
+                  rank=prevTaxon$rank,taxon=prevTaxon$.changeTaxon,
+                  levelStr="ERROR",errorCode="CHAIN.HIDDEN",errorStr="Chained change order not resolved",
+                  notes=paste("Change links with ",badLinkDf$.codeLineNext,": ",
+                              badLinkDf$.destRankTaxon," [",badLinkDf$changeNext,"] ",badLinkDf$.destRankTaxonNext)
+            
+        )
+      } # for hidden link
+      # write any linking errors out
+      write_error_summary(.GlobalEnv$allErrorDf)
+    } # if any hidden links
+  } # if there are CHAINS
+} # if there are changes
 #### APPLY CHANGES functions ####
 #
 # This uses changes (in the PROPOSAL.XLSX schema) to make changes (one per line)
