@@ -237,8 +237,8 @@ if( interactive() ) {
   #options(error=browser)
   params$debug=F
   # WARNING - this will store all the other debug settings into the proposalDir/.RData file!
-  params$load_proposal_cache = T
-  params$save_proposal_cache = T
+  params$load_proposal_cache = F
+  params$save_proposal_cache = F
   # defeat auto-caching when debugging
   #rm(docxList,xlsxList,changeList)
   params$verbose = T
