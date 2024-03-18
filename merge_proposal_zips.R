@@ -3050,7 +3050,6 @@ apply_changes = function(changesDf) {
     # row = rownames(changesDf)[63] ; row; changesDf[row,"change"];# debug
     # row = "12"; linenum; changesDf[row,];
     # row = rownames(changesDf)[which(row==rownames(changesDf))+1]; row # debug: next row
-  
     # .........................................................................
     #
     #
@@ -4107,13 +4106,19 @@ apply_changes = function(changesDf) {
       # 
       # MOVE the taxon
       #
+      if( row == '2023.015F:7') { browser() }
+      # MSL39v4
+      # MOVE:              GENUS code:2023.015F line:7 'Botybirnavirus' findTarget(Botybirnavirus)=1/1 
+      # MOVE:              GENUS code:2023.015F line 7 'Botybirnavirus' findParent(Botybirnaviridae)=1 
+      # Error in if (exists("prevDestParent") && prevDestParent$lineage != destParentLineage) { : 
+      #    missing value where TRUE/FALSE needed
       
       # get new parent
       destParentTaxon = .GlobalEnv$newMSL[parentDestNewMatches,]
-
-      # WARN if PARENT_LINEAGE is not expected
+       # WARN if PARENT_LINEAGE is not expected
       if( !is.na(destParentLineage) && (destParentTaxon$lineage != destParentLineage) ) {
         # check if this is a known change
+        
         if( !is.na(destParentTaxon$.otherLineage)  ) { 
           # a parent of the destParent was renamed, moved, etc.
           log_change_error(curChangeDf, "INFO", "MOVE.PROPOSED_PARENT_LINEAGE_CHANGED", 
@@ -4123,7 +4128,7 @@ apply_changes = function(changesDf) {
                                   "; OBSERVED//PROPOSED=", diff_lineages(destParentTaxon$lineage, destParentLineage)
                            )
           )
-        } else if( exists("prevDestParent") && prevDestParent$lineage != destParentLineage ) {
+        } else if( exists("prevDestParent") && nrow(prevDestParent) && (prevDestParent$lineage != destParentLineage) ) {
           # lineage mismatch not explained by curMSL lineage
           log_change_error(curChangeDf,  "WARNING", "MOVE.PARENT_LINEAGE", 
                            errorStr=paste0("PROPOSED parent taxon exists, but not with expected lineage"), 
