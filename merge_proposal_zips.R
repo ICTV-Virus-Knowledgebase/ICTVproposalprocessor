@@ -2677,11 +2677,16 @@ for( code in codes) {
     merged=merged+1
   } # if have proposal XLSX
 } # for proposal code
-# index by code:linenum
-allChangeDf$.codeLine = paste0(allChangeDf$.code,":",allChangeDf$.linenum)
-rownames(allChangeDf) = allChangeDf$.codeLine 
 
-cat("# DONE. MERGED",merged," proposal(s), skipped",skipped,"; total changes:",nrow(allChangeDf),"\n")
+# if there are any changes, add index by code:linenum
+tot_changes = 0
+if(!is.null(allChangeDf)) {
+  allChangeDf$.codeLine = paste0(allChangeDf$.code,":",allChangeDf$.linenum)
+  rownames(allChangeDf) = allChangeDf$.codeLine 
+  tot_changes = nrow(allChangeDf)
+}
+
+cat("# DONE. MERGED",merged," proposal(s), skipped",skipped,"; total changes:",tot_changes,"\n")
 #
 
 
@@ -2766,10 +2771,6 @@ if( !is.null(nrow(allChangeDf)) && nrow(allChangeDf) > 0 ) {
     by.y=".srcRankTaxon", 
     suffixes = c("Prev","Next")
   ) %>% filter(.codeLinePrev != .codeLineNext)
-  rownames(chainedTaxaDf) = paste0(chainedTaxaDf$.codeLinePrev,":",chainedTaxaDf$.codeLineNext)
-  chainTaxaCols = c(".codeLinePrev",".changeOrderPrev",".srcRankTaxon","changePrev",".destRankTaxon","changeNext",".destRankTaxonNext",".codeLineNext",".changeOrderNext")
-  # View(chainedTaxaDf[,chainTaxaCols])
-  # 
   
   if( nrow(chainedTaxaDf) == 0) {
     # no chains to re-order
@@ -2777,6 +2778,12 @@ if( !is.null(nrow(allChangeDf)) && nrow(allChangeDf) > 0 ) {
   } else {
     
     if(params$verbose){cat("# CHAIN: Found", nrow(chainedTaxaDf), "links!\n")}
+
+    # index df
+    rownames(chainedTaxaDf) = paste0(chainedTaxaDf$.codeLinePrev,":",chainedTaxaDf$.codeLineNext)
+    chainTaxaCols = c(".codeLinePrev",".changeOrderPrev",".srcRankTaxon","changePrev",".destRankTaxon","changeNext",".destRankTaxonNext",".codeLineNext",".changeOrderNext")
+    # View(chainedTaxaDf[,chainTaxaCols])
+    
     if(params$tmi){with(chainedTaxaDf, 
                         cat("",paste0("    # LINK :        ",.codeLinePrev," ",.srcRankTaxon,
                                       " [",changePrev,"] ",
@@ -4882,7 +4889,7 @@ apply_changes = function(changesDf) {
 # debug 
 #cat("allErrorDf:",tracemem(allErrorDf),"\n");
 if( params$tmi ) {
-    cat("Summary of allErrorDf$code:" )
+    cat("Summary of allErrorDf$code:\n" )
     summary(as.factor(.GlobalEnv$allErrorDf$code))
 }
 
