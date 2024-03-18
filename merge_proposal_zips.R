@@ -2541,7 +2541,7 @@ load_and_qc_proposals = function(proposalsDf,changeList) {
         } else {
           cat("#  DOCX FROM CACHE: ",code,"\n")
         }
-        proposalsDf[code,names(docxList[[code]])] = docxList[[code]]
+        .GlobalEnv$proposalsDf[code,names(docxList[[code]])] = docxList[[code]]
         #
         # try to load proposal from XLSX
         #
@@ -4106,13 +4106,7 @@ apply_changes = function(changesDf) {
       # 
       # MOVE the taxon
       #
-      if( row == '2023.015F:7') { browser() }
-      # MSL39v4
-      # MOVE:              GENUS code:2023.015F line:7 'Botybirnavirus' findTarget(Botybirnavirus)=1/1 
-      # MOVE:              GENUS code:2023.015F line 7 'Botybirnavirus' findParent(Botybirnaviridae)=1 
-      # Error in if (exists("prevDestParent") && prevDestParent$lineage != destParentLineage) { : 
-      #    missing value where TRUE/FALSE needed
-      
+
       # get new parent
       destParentTaxon = .GlobalEnv$newMSL[parentDestNewMatches,]
        # WARN if PARENT_LINEAGE is not expected
@@ -5017,7 +5011,7 @@ if(params$export_msl) {
     file=tsvout)
   }
   close(tsvout)
-  cat("WROTE   ", newTsvFilename, "\n")
+  cat(paste0("WROTE   ", newTsvFilename, " (",nrow(tsvDf)," rows)\n"))
   
   # ........................................................................
   # 
@@ -5068,7 +5062,7 @@ if(params$export_msl) {
     file=docxMetaOut)
   }
   close(docxMetaOut)
-  cat("WROTE   ", docxTsvFilename, "\n")
+  cat(paste0("WROTE   ", docxTsvFilename," (",nrow(tsvDocxDf), ")\n"))
   
   #### SECTION export to SQL #####
   # ........................................................................
