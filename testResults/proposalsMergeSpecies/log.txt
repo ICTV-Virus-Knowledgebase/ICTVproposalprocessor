@@ -2,18 +2,20 @@
 VERSION: v1.16.e712427
 Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+Wrote: OUTDIR/QC.summary.tsv (1 rows)
 # LOAD_PROPOSAL_DOCX( 2023.001S )
-# LOADED:  2023.001S  DOCX with  0  errors/warnings
+# LOADED:  2023.001S  DOCX with  1  errors/warnings
 # LOAD_PROPOSAL( 2023.001S , NA )
-# LOADED:  2023.001S  XLS with  0  errors/warnings
+# LOADED:  2023.001S  XLS with  1  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (1 rows)
 # LOADED:  2023.001S 
 # QC start: 2023.001S: proposal loaded (1 out of 1)
-# QCed:      2023.001S  with  0  errors/warnings
+# QCed:      2023.001S  with  1  errors/warnings
 changeList:  2023.001S 
-Wrote: OUTDIR/QC.summary.tsv (0 rows)
-# MERGE PROC: 2023.001S with 2 changes  (1 out of 1)
-# DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 2 
-# APPLIED:   2 changes from 2023.001S.N.v1.Caliciviridae_12sprenamed.merge_only  with SUCCESS:2 
-# TOTAL  :   2 changes  from 1 proposals  with SUCCESS:2 
-Wrote: OUTDIR/QC.summary.tsv (2 rows)
+Wrote: OUTDIR/QC.summary.tsv (1 rows)
+# MERGE PROC: 2023.001S with 13 changes  (1 out of 1)
+# DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 13 
+# APPLIED:  13 changes from 2023.001S.A.v2.Caliciviridae_12sprenamed  with SUCCESS:13 
+# TOTAL  :  13 changes  from 1 proposals  with INFO:1 SUCCESS:13 
+Wrote: OUTDIR/QC.summary.tsv (14 rows)
 # COMPLETED.
