@@ -1,10 +1,10 @@
 # Rscript merge_proposal_zips.R --proposalsDir=testData/proposalsTest_renameSheet --outDir=testResults/proposalsTest_renameSheet --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v1.14.dc3348c
+VERSION: v1.16.e712427
 Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # LOAD_PROPOSAL_DOCX( 2023.013P )
 # LOADED:  2023.013P  DOCX with  0  errors/warnings
-# LOAD_PROPOSAL( 2023.013P )
+# LOAD_PROPOSAL( 2023.013P , NA )
 code 2023.013P: Extra worksheets found in xlsx: 'Proposal Potyviridae'
 code 2023.013P: ERROR: More than 1 worksheet named like 'proposal*' found: 'Proposal Potyviridae','Proposal Template'
 # LOADED:  2023.013P  XLS with  2  errors/warnings
@@ -13,6 +13,6 @@ Wrote: OUTDIR/QC.summary.tsv (2 rows)
 SKIP:  2023.013P : proposal could not be loaded
 changeList:   
 Wrote: OUTDIR/QC.summary.tsv (2 rows)
-# DONE. MERGED 0  proposal(s), skipped 1 ; total changes: 
+# DONE. MERGED 0  proposal(s), skipped 1 ; total changes: 0 
 Wrote: OUTDIR/QC.summary.tsv (2 rows)
 # COMPLETED.

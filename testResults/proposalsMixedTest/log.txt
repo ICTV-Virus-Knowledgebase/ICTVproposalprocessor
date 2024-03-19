@@ -1,11 +1,11 @@
 # Rscript merge_proposal_zips.R --proposalsDir=testData/proposalsMixedTest --outDir=testResults/proposalsMixedTest --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v1.14.dc3348c
+VERSION: v1.16.e712427
 Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 Wrote: OUTDIR/QC.summary.tsv (2 rows)
 # LOAD_PROPOSAL_DOCX( 2023.002A )
 # LOADED:  2023.002A  DOCX with  2  errors/warnings
-# LOAD_PROPOSAL( 2023.002A )
+# LOAD_PROPOSAL( 2023.002A , NA )
 # LOADED:  2023.002A  XLS with  2  errors/warnings
 Wrote: OUTDIR/QC.summary.tsv (2 rows)
 # LOADED:  2023.002A 
@@ -13,7 +13,7 @@ Wrote: OUTDIR/QC.summary.tsv (2 rows)
 # QCed:      2023.002A  with  2  errors/warnings
 # LOAD_PROPOSAL_DOCX( 3 )
 # LOADED:  3  DOCX with  2  errors/warnings
-# LOAD_PROPOSAL( 3 )
+# LOAD_PROPOSAL( 3 , NA )
 # LOADED:  3  XLS with  2  errors/warnings
 Wrote: OUTDIR/QC.summary.tsv (2 rows)
 # LOADED:  3 
@@ -21,7 +21,7 @@ Wrote: OUTDIR/QC.summary.tsv (2 rows)
 # QCed:      3  with  2  errors/warnings
 # LOAD_PROPOSAL_DOCX( 4 )
 # LOADED:  4  DOCX with  2  errors/warnings
-# LOAD_PROPOSAL( 4 )
+# LOAD_PROPOSAL( 4 , NA )
 code 4: A worksheet name matching 'proposal*' was not found: logging error
 # LOADED:  4  XLS with  3  errors/warnings
 Wrote: OUTDIR/QC.summary.tsv (3 rows)
@@ -29,7 +29,7 @@ Wrote: OUTDIR/QC.summary.tsv (3 rows)
 SKIP:  4 : proposal could not be loaded
 # LOAD_PROPOSAL_DOCX( 2 )
 # LOADED:  2  DOCX with  4  errors/warnings
-# LOAD_PROPOSAL( 2 )
+# LOAD_PROPOSAL( 2 , NA )
 # LOADED:  2  XLS with  4  errors/warnings
 Wrote: OUTDIR/QC.summary.tsv (4 rows)
 # LOADED:  2 

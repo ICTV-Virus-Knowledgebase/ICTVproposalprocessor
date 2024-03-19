@@ -249,12 +249,12 @@ if( interactive() ) {
   params$export_msl = T
 #  params$test_case_dir = "crash"
 #  params$test_case_dir = "proposalsEC55.1"
-  params$test_case_dir = "proposalsTest6_split"
+  params$test_case_dir = "proposalsTest3_binomial"
   params$proposals_dir = paste0("testData/",params$test_case_dir)
   params$out_dir       = paste0("testResults/",params$test_case_dir)
   # MSL39v4 2024.03.12
-  params$proposals_dir = "./MSL39v4/Pending_Proposals"
-  params$out_dir       = "./MSL39v4/results/Pending_Proposals"
+  #params$proposals_dir = "./MSL39v4/Pending_Proposals"
+  #params$out_dir       = "./MSL39v4/results/Pending_Proposals"
   # MERGE
   #  params$proposals_dir = "./MSL39v2/Pending_Proposals/Plant virus (P) proposals/Proposals to be considered for EC55/2023.017P.N.v1.Caulimoviridae_6nsp.xlsx"
   #params$proposals_dir = "./MSL39v2"
@@ -301,6 +301,18 @@ log_change_error = function(curChangeDf,levelStr, errorCode, errorStr, notes="")
                    levelStr=levelStr, errorCode=errorCode, errorStr=errorStr, notes=notes))
 }
 log_error=function(code,linenum,action,rank,taxon,levelStr,errorCode,errorStr,notes="",actionOrder="") {
+  #cat("log_error(",code,",linenum=",linenum,"...,action=",action,",rank=",rank,",taxon=",taxon,"...)\n")
+  #
+  # handle non-numeric linenum, gracefully
+  # sometimes linenum is empty, or is "code:linenum" 
+  #
+  linenum_parts = unlist(strsplit(linenum,":"))
+  if( length(linenum_parts)>1 ) { 
+    linenum = linenum_parts[2]
+  }
+  if( is.na(linenum) || linenum == "") {
+    linenum = "0"
+  }
   nextErrorDf = data.frame(
     subcommittee = proposalsDf[code,]$subcommittee,
     code = code,
@@ -335,9 +347,10 @@ write_error_summary = function(errorDf,final=FALSE) {
   errorDf$validator_version = params[["version"]]
 
   # sort by row of worksheet
-  errorSortCols = errorDf[,c("code","row")]
+  errorSortCols = errorDf[,c("code","row","order")]
   errorSortCols$row_n = as.integer(errorSortCols$row)
-  errorsSorted = do.call(order,errorSortCols[,c("code","row_n")])
+  errorSortCols$order_n = as.integer(errorSortCols$order)
+  errorsSorted = do.call(order,errorSortCols[,c("code","row_n","order_n")])
   
   # ..........PRETTY FORMAT ..............
   # write current error list
@@ -3040,7 +3053,7 @@ apply_changes = function(changesDf) {
   
   # genera to scan for binomial issues when we're done
   # QQQQ: should replace this with an admin column on newMSL!
-  renamedGenera = data.frame(name=c("genusName"),taxnode_id=0, code="2023.000A", row="0", actionOrder=0)
+  renamedGenera = data.frame(name=c("genusName"),taxnode_id=0, code="2023.000A", linenum="0", actionOrder=0)
   
   #### admin columns ####
   .GlobalEnv$curMSL[,c(".split",".split_kept")] = FALSE
@@ -3793,7 +3806,7 @@ apply_changes = function(changesDf) {
                                 data.frame(name =c(destTaxonName$genus), 
                                            taxnode_id=.GlobalEnv$newMSL$taxnode_id[srcNewTarget],
                                            code=code, 
-                                           row= row,
+                                           linenum= linenum,
                                            actionOrder = actionOrder)
           )
         } 
@@ -4093,7 +4106,7 @@ apply_changes = function(changesDf) {
                               data.frame(name =c(destTaxonName$genus), 
                                          taxnode_id=.GlobalEnv$newMSL$taxnode_id[srcNewTarget],
                                          code=code, 
-                                         row= row,
+                                         linenum= linenum,
                                          actionOrder = actionOrder)
         )
        } 
@@ -4640,7 +4653,7 @@ apply_changes = function(changesDf) {
                                 data.frame(name =c(destTaxonName$genus), 
                                            taxnode_id=.GlobalEnv$newMSL$taxnode_id[srcNewTarget],
                                            code=code, 
-                                           row= row,
+                                           linenum= linenum,
                                            actionOrder = actionOrder)
           )
         } 
@@ -4737,7 +4750,7 @@ apply_changes = function(changesDf) {
     # default error report
     # (need to improve change tracking to do better!)
     # NOTE we don't even try to track species moved out of genera
-    errLineNum     = ""
+    errLineNum     = "0"
     errChange      = ""
     errText        = "check if lower rank taxa were moved elsewhere?"
     # split
@@ -4793,7 +4806,7 @@ apply_changes = function(changesDf) {
       # get offending species list
       speciesDf = as.data.frame(renamedGeneraSpeciesTaxons)[binomialViolations,]
       speciesDf = speciesDf[order(speciesDf$name),]
-      log_error(code=renamedGenera[genusCheckRow,"code"],linenum=renamedGenera[genusCheckRow,"row"],
+      log_error(code=renamedGenera[genusCheckRow,"code"],linenum=renamedGenera[genusCheckRow,"linenum"],
                 action="rename_genus",actionOrder=renamedGenera[genusCheckRow,"actionOrder"],
                 rank="species",taxon=speciesDf$name,
                 # override default order

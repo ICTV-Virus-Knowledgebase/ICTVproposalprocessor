@@ -1,16 +1,16 @@
 # Rscript merge_proposal_zips.R --proposalsDir=testData/proposalsTest1 --outDir=testResults/proposalsTest1 --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v1.14.dc3348c
+VERSION: v1.16.e712427
 Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # LOAD_PROPOSAL_DOCX( 2023.001A )
 # LOADED:  2023.001A  DOCX with  0  errors/warnings
-# LOAD_PROPOSAL( 2023.001A )
+# LOAD_PROPOSAL( 2023.001A , NA )
 # LOADED:  2023.001A  XLS with  0  errors/warnings
 # LOADED:  2023.001A 
 # QC start: 2023.001A: proposal loaded (1 out of 1)
 # QCed:      2023.001A  with  1  errors/warnings
 changeList:   
 Wrote: OUTDIR/QC.summary.tsv (1 rows)
-# DONE. MERGED 0  proposal(s), skipped 1 ; total changes: 
+# DONE. MERGED 0  proposal(s), skipped 1 ; total changes: 0 
 Wrote: OUTDIR/QC.summary.tsv (1 rows)
 # COMPLETED.
