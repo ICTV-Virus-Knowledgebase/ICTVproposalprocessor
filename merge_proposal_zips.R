@@ -305,13 +305,14 @@ log_error=function(code,linenum,action,rank,taxon,levelStr,errorCode,errorStr,no
   #
   # handle non-numeric linenum, gracefully
   # sometimes linenum is empty, or is "code:linenum" 
+  # sometimes it's just a numeric, like it should be.
   #
-  linenum_parts = unlist(strsplit(linenum,":"))
-  if( length(linenum_parts)>1 ) { 
-    linenum = linenum_parts[2]
-  }
-  if( is.na(linenum) || linenum == "") {
-    linenum = "0"
+  real_linenum = NA
+  if( class(linenum) == "character" ) {
+    linenum_parts = unlist(strsplit(linenum,":"))
+    if( length(linenum_parts)>1 ) { 
+      real_linenum = as.numeric(linenum_parts[2])
+    }
   }
   nextErrorDf = data.frame(
     subcommittee = proposalsDf[code,]$subcommittee,
@@ -4483,7 +4484,7 @@ apply_changes = function(changesDf) {
         
         # set admin columns in newMSL for DEST
         destNewSelect = newMSL$taxnode_id == destNewTaxon$taxnode_id
-        .GlobalEnv$curMSL[destNewSelect,".actionOrder"] = actionOrder
+        .GlobalEnv$newMSL[destNewSelect,".actionOrder"] = actionOrder
         
         #
         # remove the now abandon record for src in newMSL (because it is linked
@@ -4750,7 +4751,7 @@ apply_changes = function(changesDf) {
     # default error report
     # (need to improve change tracking to do better!)
     # NOTE we don't even try to track species moved out of genera
-    errLineNum     = "0"
+    errLineNum     = ""
     errChange      = ""
     errText        = "check if lower rank taxa were moved elsewhere?"
     # split
