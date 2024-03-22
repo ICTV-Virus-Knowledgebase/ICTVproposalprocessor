@@ -4855,7 +4855,7 @@ apply_changes = function(changesDf) {
                   linenum=.GlobalEnv$newMSL[rowIdx,]$.split_linenum,
                   action="split_abolish",actionOrder=actionOrder,
                   rank=as.character(.GlobalEnv$newMSL[rowIdx,]$rank),.GlobalEnv$newMSL[rowIdx,]$name,
-                  lvelStr= "ERROR", errorCode="SPLIT.IMPLICIT_ABOLISH_WITH_KIDS", 
+                  levelStr= "ERROR", errorCode="SPLIT.IMPLICIT_ABOLISH_WITH_KIDS", 
                   errorStr="Change=ABOLISH, taxon still has un-abolished/moved children", 
                   notes=paste0("taxon=", .GlobalEnv$newMSL[rowIdx,]$name, ", lineage=",.GlobalEnv$newMSL[rowIdx,]$lineage,", kids: N=",sum(srcKids,na.rm=TRUE),
                                ", NAMES=[",paste(.GlobalEnv$newMSL$rank[srcKids],.GlobalEnv$newMSL$name[srcKids],sep=":"),"]"
