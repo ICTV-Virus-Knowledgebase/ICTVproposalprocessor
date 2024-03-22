@@ -873,7 +873,7 @@ scan_for_proposals = function() {
   ##### filename regex #####
   #
   if( params$processing_mode == "final") {
-    filenameFormatRegex="^[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9][A-Z]\\.[A-Za-z]+\\.[^ ]*"
+    filenameFormatRegex="^[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9][A-Z]\\.[^ ]*"
     filenameFormatMsg="####[A-Z].###[A-Z].[A-Z]+.____"
   } else if( params$processing_mode == "draft") {
     filenameFormatRegex="^[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9][A-Z]\\.[A-Za-z]+\\.v[0-9]+\\.[^ ]*"
