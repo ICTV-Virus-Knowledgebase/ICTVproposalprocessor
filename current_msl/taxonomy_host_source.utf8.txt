@@ -10,6 +10,7 @@ invertebrates, plants
 invertebrates, vertebrates
 marine (S)
 other (specify)
+oomycetes
 phytobiome (S)
 plants
 plants (S)
