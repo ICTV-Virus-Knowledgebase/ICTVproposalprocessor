@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# process MSL39v4 (./Pending_Proposals)
+# process MSL39v4 (./Pending_Proposals | ./proposalsFinal)
 #
 # USAGE: ./process.sh [test_pattern] [container_version]
 #
@@ -9,12 +9,12 @@
 #
 
 # which tests to run 
-TEST_PAT="Pending_Proposals"
+TEST_PAT="Pending_Proposals"; RUN_MODE="draft" # [validate], draft, final
+TEST_PAT="proposalsFinal";    RUN_MODE="final" # [validate], draft, final
 #TEST_PAT="2023.017P*.xlsx"
 echo TEST_PAT=$TEST_PAT
 
-MODE="draft" # [validate], draft, final
-echo "MODE=$MODE"
+echo "RUN_MODE=$RUN_MODE"
 
 # 
 # where are we
@@ -22,9 +22,9 @@ echo "MODE=$MODE"
 RUN_DIR=$(basename $(pwd))
 
 # pass-through args
-MSL_NOTES="DRAFT EC55 v4 MSL. EC Use Only DRAFT (to-be MSL 39); Updated 2024-03-12.0000"
-SCRIPT_ARGS='--msl --mode=draft --newMslName=2023 '
-#SCRIPT_ARGS='--msl --mode=draft --newMslName=2023 --newMslNotes="EC55 Draft 2023-07-18 (MSL 39-draft)" '
+MSL_NOTES="DRAFT EC55 v5 MSL. EC Use Only DRAFT (to-be MSL 39); Updated 2024-03-22.0000"
+SCRIPT_ARGS="--msl --mode=$RUN_MODE --newMslName=2023 "
+#SCRIPT_ARGS='--msl --mode=draft --newMslName=2023 --newMslNotes="EC55 Draft 2023-07-18 (MSL 39v5-draft)" '
 if [ ! -z "$1" ]; then SCRIPT_ARGS="$SCRIPT_ARGS $*"; fi
 echo SCRIPT_ARGS=$SCRIPT_ARGS
 
