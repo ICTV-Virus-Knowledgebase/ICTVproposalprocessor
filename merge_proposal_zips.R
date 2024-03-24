@@ -244,15 +244,16 @@ if( interactive() ) {
   params$verbose = T
   params$tmi = T
   params$debug_on_error = F
-  params$mode = 'draft'
+  params$processing_mode = 'final'
   #params$output_change_report = F
   params$export_msl = T
 #  params$test_case_dir = "crash"
 #  params$test_case_dir = "proposalsEC55.1"
-  params$test_case_dir = "proposalsTest3_binomial"
+  params$test_case_dir = "proposals2023.014D"
   params$proposals_dir = paste0("testData/",params$test_case_dir)
   params$out_dir       = paste0("testResults/",params$test_case_dir)
   # MSL39v4 2024.03.12
+  #params$processing_mode = 'draft'
   #params$proposals_dir = "./MSL39v4/Pending_Proposals"
   #params$out_dir       = "./MSL39v4/results/Pending_Proposals"
   # MERGE
@@ -260,14 +261,15 @@ if( interactive() ) {
   #params$proposals_dir = "./MSL39v2"
   #params$out_dir       = "./MSL39v3_results"
   # fast debugging merge/chain
-  #params$proposals_dir = "./MSL39v2_fast"
-  #params$out_dir       = "./MSL39v2_fast_results"
+  params$processing_mode ="final"
+  params$proposals_dir = "./MSL39v4/proposalsFinal"
+  params$out_dir       = "./MSL39v4/results/proposalsFinal"
   #params$proposals_dir = "EC55"
   #params$out_dir       = "EC55_results"
   params$qc_regression_tsv_fname = "QC.regression.new.tsv"
   cat("!! VERBOSE: ",params$versbose, "\n")
   cat("!! TMI:     ",params$tmi, "\n")
-  cat("!! MODE:    ",params$mode, "\n")
+  cat("!! MODE:    ",params$processing_mode, "\n")
   cat("!! SRC_DIR: ",params$proposals_dir, "\n")
   cat("!! OUT_DIR: ",params$out_dir, "\n")
 }
@@ -874,14 +876,14 @@ scan_for_proposals = function() {
   #
   if( params$processing_mode == "final") {
     filenameFormatRegex="^[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9][A-Z]\\.[^ ]*"
-    filenameFormatMsg="####[A-Z].###[A-Z].[A-Z]+.____"
+    filenameFormatMsg="final:####[A-Z].###[A-Z].____"
   } else if( params$processing_mode == "draft") {
     filenameFormatRegex="^[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9][A-Z]\\.[A-Za-z]+\\.v[0-9]+\\.[^ ]*"
-    filenameFormatMsg="####[A-Z].###[A-Z].[A-Z]+.v#.____"
+    filenameFormatMsg="draft:####[A-Z].###[A-Z].[A-Z]+.v#.____"
   } else if( params$processing_mode == "validate") {
     # allow any doc/xls file
     filenameFormatRegex="^.*"
-    filenameFormatMsg="*.____"
+    filenameFormatMsg="validate:*.____"
   } else {
     # unsupported format
     cat(paste0("ERROR: --mode='",params$processing_mode,"' is not a valid option: validate, draft, or final\n"))
