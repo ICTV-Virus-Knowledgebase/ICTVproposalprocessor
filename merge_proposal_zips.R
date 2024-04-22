@@ -242,14 +242,14 @@ if( interactive() ) {
   # defeat auto-caching when debugging
   #rm(docxList,xlsxList,changeList)
   params$verbose = T
-  params$tmi = T
+  params$tmi = F
   params$debug_on_error = F
   params$processing_mode = 'final'
   #params$output_change_report = F
   params$export_msl = T
 #  params$test_case_dir = "crash"
 #  params$test_case_dir = "proposalsEC55.1"
-  params$test_case_dir = "proposals2023.014D"
+  params$test_case_dir = "proposals2024X"
   params$proposals_dir = paste0("testData/",params$test_case_dir)
   params$out_dir       = paste0("testResults/",params$test_case_dir)
   # MSL39v4 2024.03.12
@@ -261,9 +261,9 @@ if( interactive() ) {
   #params$proposals_dir = "./MSL39v2"
   #params$out_dir       = "./MSL39v3_results"
   # fast debugging merge/chain
-  params$processing_mode ="final"
-  params$proposals_dir = "./MSL39v4/proposalsFinal"
-  params$out_dir       = "./MSL39v4/results/proposalsFinal"
+#  params$processing_mode ="final"
+#  params$proposals_dir = "./MSL39v6/proposalsFinal"
+#  params$out_dir       = "./MSL39v6/results/proposalsFinal"
   #params$proposals_dir = "EC55"
   #params$out_dir       = "EC55_results"
   params$qc_regression_tsv_fname = "QC.regression.new.tsv"
@@ -875,11 +875,11 @@ scan_for_proposals = function() {
   ##### filename regex #####
   #
   if( params$processing_mode == "final") {
-    filenameFormatRegex="^[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9][A-Z]\\.[^ ]*"
-    filenameFormatMsg="final:####[A-Z].###[A-Z].____"
+    filenameFormatRegex="^[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9][A-Z]X*\\.[^ ]*"
+    filenameFormatMsg="final:####[A-Z].###[A-Z][X].____"
   } else if( params$processing_mode == "draft") {
-    filenameFormatRegex="^[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9][A-Z]\\.[A-Za-z]+\\.v[0-9]+\\.[^ ]*"
-    filenameFormatMsg="draft:####[A-Z].###[A-Z].[A-Z]+.v#.____"
+    filenameFormatRegex="^[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9][A-Z]X*\\.[A-Za-z]+\\.v[0-9]+\\.[^ ]*"
+    filenameFormatMsg="draft:####[A-Z].###[A-Z][X].[A-Z]+*.v#.____"
   } else if( params$processing_mode == "validate") {
     # allow any doc/xls file
     filenameFormatRegex="^.*"
@@ -940,9 +940,9 @@ scan_for_proposals = function() {
   inputFiles$file         = basename(inputFiles$docpath)
   inputFiles$basename     = gsub("(.*).(doc|xls)x*$","\\1",inputFiles$file)
   # code may not be in early versions of filenames
-  parseableFilenames = grep(inputFiles$basename,pattern="^[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9][A-Z]\\.")
-  inputFiles[parseableFilenames,"code"]          = sub("^([0-9]+\\.[0-9]+[A-Z]).*","\\1",inputFiles[parseableFilenames,]$basename)
-  inputFiles[parseableFilenames,"scAbbrev"]      = sub("^[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9]([A-Z])\\.","\\1",inputFiles[parseableFilenames,"code"] )
+  parseableFilenames = grep(inputFiles$basename,pattern="^[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9][A-Z]X*\\.")
+  inputFiles[parseableFilenames,"code"]          = sub("^([0-9]+\\.[0-9]+[A-Z]X*).*","\\1",inputFiles[parseableFilenames,]$basename)
+  inputFiles[parseableFilenames,"scAbbrev"]      = sub("^[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9]([A-Z])X*$","\\1",inputFiles[parseableFilenames,"code"] )
   
   ##### filter filenames #####
   # remove all *.Ud.* files, when in draft/final modes
@@ -1074,7 +1074,7 @@ scan_for_proposals = function() {
       for( row in rownames(xlsxs[xlsxs$code==code,]) ) {
         if(params$tmi) { 
           print("------------------------------------------------------------------------------------" )
-          print(paste("DUP_XLSX_FORMAT_CHECK: ", xlsxs[row,"xlsx"] ))
+          print(paste("D5UP_XLSX_FORMAT_CHECK: ", xlsxs[row,"xlsx"] ))
         }
         load_check = load_proposal(code,  xlsxs[row,"xlsxpath"] )
         if(is.null(load_check[["proposalDf"]])) {
@@ -1190,7 +1190,7 @@ scan_for_proposals = function() {
                                 xlsxs[proposalsDf$code,"scAbbrev"],
                                 docxs[proposalsDf$code,"scAbbrev"])
   # strip off version, workflow status and .fix, to get final, production filename
-  proposalsDf$cleanbase= gsub("^([0-9]+\\.[0-9]+[A-Z])(\\.[A-Z]+)(\\.v[0-9]+)*(\\.fix)*(\\..*)$","\\1\\5",proposalsDf$basename)
+  proposalsDf$cleanbase= gsub("^([0-9]+\\.[0-9]+[A-Z]X*)(\\.[A-Z]+)(\\.v[0-9]+)*(\\.fix)*(\\..*)$","\\1\\5",proposalsDf$basename)
   
   # QC  - missing xlsx file
   missing= is.na(proposalsDf$xlsx)
@@ -1245,9 +1245,9 @@ scan_for_proposals = function() {
   # get SC names from last letter of code
   #
   proposalsDf$scAbbrev = NA
-  parsableCode = grep(proposalsDf$code, pattern="[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9]([A-Z])" )
+  parsableCode = grep(proposalsDf$code, pattern="[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9]([A-Z])X*" )
   if( length(parsableCode) >0 ) {
-    proposalsDf[parsableCode,"scAbbrev"] =  gsub("[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9]([A-Z])","\\1",proposalsDf$code[parsableCode])
+    proposalsDf[parsableCode,"scAbbrev"] =  gsub("[0-9][0-9][0-9][0-9]\\.[0-9][0-9][0-9]([A-Z])X*","\\1",proposalsDf$code[parsableCode])
   }
   # QC
   badProposalAbbrevs = !(proposalsDf$scAbbrev %in% names(scAbbrevNameMap))
@@ -1765,7 +1765,7 @@ load_proposal = function(code,xlsxpath_override=NA) {
     excel_sheets(xlsxpath)
   )
   #
-  # comapre to expected sets of sheet names, warn if they added extra sheets
+  # compare to expected sets of sheet names, warn if they added extra sheets
   #
   sheets2022=c("Proposals Template","Menu Items (Do not change)")
   sheets2023=c("Instructions","Proposal Template","Menu Items (Do not change)")
@@ -1975,12 +1975,35 @@ qc_proposal = function(code, proposalDf) {
 
   #### guess template version ####
 
+  
   # check row 3, cell 1 for 2023 and later version numbers
-  if(!is.null(proposalDf[2,1]) && (substring(proposalDf[2,1],1,13) == "version 2023.")) {
+  if(!is.null(proposalDf[2,1]) && (
+    (substring(proposalDf[2,1],1,13) == "version 2023.")
+    || (substring(proposalDf[2,1],1,13) == "version 2024.")
+    )) {
     
-    templateVersion = substring(proposalDf[2,1],9,13)
+    # "YYYY.##."
+    templateVersionX = substring(proposalDf[2,1],9) 
+    # "YYYY."
+    templateVersion  = substring(templateVersionX,1,5)
+
+    if( templateVersion == "2024." ) {
+      # 2024.1 is the same as 2023.# series
+      if( templateVersionX == "2024.1") { templateVersion = "2023." } # QQQQ debug fix after test
+      else {
+        # new, unspported version
+        proposalsDf[code,"templateVersion"]="error"   
+        log_error(code,linenum=2,action="OPEN_XLSX",actionOrder=actionOrder, 
+                  rank="",taxon="",
+                  levelStr="ERROR",errorCode="XLSX.TEMPLATE_UNK",errorStr="XLSX template version",
+                  notes=paste0("Cell A2='",proposalDf[2,1],"'")
+        )
+        return(list())
+      }
+    }
+      
     # 
-    # process 2023 template layout
+    # process 2023-style template layout
     #
     
     # complain about any formatting changes
@@ -2017,7 +2040,26 @@ qc_proposal = function(code, proposalDf) {
                                   xlsx_2023_row4[which(!row4match)],"'"),
                            collapse="; ")
     )
-    
+    # report error if header lines have un-expected cell values
+    if( row3mismatchCt > 0 || row4mismatchCt > 0 ) { 
+      proposalsDf[code,"templateVersion"]="error"   
+      if( row3mismatchCt > 0 ) {
+        log_error(code,linenum=2,action="OPEN_XLSX",actionOrder=actionOrder, 
+                  rank="",taxon="",
+                  levelStr="ERROR",errorCode="XLSX.TEMPLATE_LINE3",errorStr="XLSX template version",
+                  notes=row3Error
+        )
+      }
+      if( row4mismatchCt > 0 ) {
+        log_error(code,linenum=2,action="OPEN_XLSX",actionOrder=actionOrder, 
+                  rank="",taxon="",
+                  levelStr="ERROR",errorCode="XLSX.TEMPLATE_LINE4",errorStr="XLSX template version",
+                  notes=row4Error
+        )
+      }
+      # stop processing this file
+      return(list())
+    } # line3 or line4 error
   } else {
     #
     # figure out v1 or v2 templates from contents of rows 2 & 3
@@ -2109,6 +2151,8 @@ qc_proposal = function(code, proposalDf) {
     codeRow = NA
     if( templateVersion == "v1" ) { codeValue= proposalDf[1,1]; codeCell="A1"; codeRow=1 }
     if( templateVersion == "v2" ) { codeValue= proposalDf[3,1]; codeCell="A3"; codeRow=3 }
+    if( templateVersion == "2023." ) { codeValue= proposalDf[1,5]; codeCell="E1"; codeRow=1 }
+    if( templateVersion == "2024." ) { codeValue= proposalDf[1,5]; codeCell="E1"; codeRow=1 }
     if( codeValue != code ) {
       if( str_starts(codeValue,"Code") ) {
         if(params$show.xlsx.code_miss) {
@@ -2144,8 +2188,16 @@ qc_proposal = function(code, proposalDf) {
   # map columns
   firstDataRow=4
   if(templateVersion=="v1") { firstDataRow=4; changeDf = proposalDf[firstDataRow:nrow(proposalDf),xlsx_v1_change_cols] }
-  if(templateVersion=="v2") { firstDataRow=4; changeDf = proposalDf[firstDataRow:nrow(proposalDf),xlsx_v2_change_cols] }
-  if(templateVersion=="2023." ) {firstDataRow=5; changeDf = proposalDf[firstDataRow:nrow(proposalDf),xlsx_2023_change_cols]}
+  else if(templateVersion=="v2") { firstDataRow=4; changeDf = proposalDf[firstDataRow:nrow(proposalDf),xlsx_v2_change_cols] }
+  else if(templateVersion=="2023." ) {firstDataRow=5; changeDf = proposalDf[firstDataRow:nrow(proposalDf),xlsx_2023_change_cols]}
+  else if(templateVersion=="2024." ) {firstDataRow=5; changeDf = proposalDf[firstDataRow:nrow(proposalDf),xlsx_2023_change_cols]}
+  else {
+    log_error(code,linenum=firstDataRow,action="OPEN_XLSX",actionOrder=actionOrder, 
+              rank="",taxon="",
+              levelStr="ERROR", errorCode="XLSX.EMPTY",errorStr="XLSX no change rows found")
+    return(list())
+    
+    }
   colnames(changeDf) = xlsx_change_colnames
   # a flag to exclude rows with irrecoverable errors
   changeDf[,".noErrors"] = TRUE
@@ -3576,7 +3628,9 @@ apply_changes = function(changesDf) {
       
       # add new info - primary columns
       newTaxon[1,"in_change"]   = curChangeDf$.action
-      newTaxon[1,"in_filename"] = proposalZip
+      newTaxon[1,"in_filename"] = 
+        ifelse(is.na(newTaxon[1,"in_filename"]),proposalZip,
+               paste0(newTaxon[1,"in_filename"],";",proposalZip))
       newTaxon[1,"in_notes"]    = paste0("xlsx_row=",linenum)
       newTaxon[1,"in_target"]   = destLineage
       
@@ -3624,7 +3678,9 @@ apply_changes = function(changesDf) {
         
         # set IN change for SPLIT
         newTaxon[1,"in_change"] = curChangeDf$.action
-        newTaxon[1,"in_filename"] = proposalZip
+        newTaxon[1,"in_filename"] = 
+          ifelse(is.na(newTaxon[1,"in_filename"]),proposalZip,
+                 paste0(newTaxon[1,"in_filename"],";",proposalZip))
         newTaxon[1,"in_target"] = srcLineage
         newTaxon[1,"in_notes"] = paste0("linenum=",linenum) # add comments?
       }
@@ -3836,7 +3892,9 @@ apply_changes = function(changesDf) {
         # put out_* changes on curMSL
         .GlobalEnv$curMSL[srcPrevTarget,"out_updated"] = TRUE  # admin; mark this to save to db
         .GlobalEnv$curMSL[srcPrevTarget,"out_change"] = "rename"
-        .GlobalEnv$curMSL[srcPrevTarget,"out_filename"] = proposalZip
+        .GlobalEnv$curMSL[srcPrevTarget,"out_filename"] = 
+            ifelse(is.na(.GlobalEnv$curMSL[srcPrevTarget,"out_filename"]),proposalZip,
+                   paste0(.GlobalEnv$curMSL[srcPrevTarget,"out_filename"],";",proposalZip))
         .GlobalEnv$curMSL[srcPrevTarget,"out_target"] = destTaxonName
         .GlobalEnv$curMSL[srcPrevTarget,"out_notes"] = paste0("linenum=",linenum)
         .GlobalEnv$curMSL[srcPrevTarget,".out_taxnode_id"] = .GlobalEnv$newMSL[srcNewTarget,"taxnode_id"]
@@ -3921,7 +3979,9 @@ apply_changes = function(changesDf) {
       # put out_* changes on curMSL
       .GlobalEnv$curMSL[srcPrevTarget,"out_updated"] = TRUE  # admin; mark this to save to db
       .GlobalEnv$curMSL[srcPrevTarget,"out_change"] = "abolish"
-      .GlobalEnv$curMSL[srcPrevTarget,"out_filename"] = proposalZip
+      .GlobalEnv$curMSL[srcPrevTarget,"out_filename"] = 
+        ifelse(is.na(.GlobalEnv$curMSL[srcPrevTarget,"out_filename"]),proposalZip,
+               paste0(.GlobalEnv$curMSL[srcPrevTarget,"out_filename"],";",proposalZip))
       .GlobalEnv$curMSL[srcPrevTarget,"out_target"] = destTaxonName
       .GlobalEnv$curMSL[srcPrevTarget,"out_notes"] = paste0("linenum=",linenum) # add comments?
       .GlobalEnv$curMSL[srcPrevTarget,".actionOrder"] = actionOrder
@@ -4287,7 +4347,9 @@ apply_changes = function(changesDf) {
         
         # set IN change for SPLIT
         .GlobalEnv$newMSL[srcNewTarget,"in_change"] = curChangeDf$.action
-        .GlobalEnv$newMSL[srcNewTarget,"in_filename"] = proposalZip
+        .GlobalEnv$newMSL[srcNewTarget,"in_filename"] = 
+            ifelse(is.na(.GlobalEnv$newMSL[srcNewTarget,"in_filename"] ),proposalZip,
+            paste0(.GlobalEnv$newMSL[srcNewTarget,"in_filename"],";",proposalZip))
         .GlobalEnv$newMSL[srcNewTarget,"in_target"] = srcLineage
         .GlobalEnv$newMSL[srcNewTarget,"in_notes"] = paste0("linenum=",linenum) # add comments?
       } 
@@ -4306,7 +4368,9 @@ apply_changes = function(changesDf) {
         
         # set OUT change for MERGE
         .GlobalEnv$curMSL[srcPrevTarget,"out_change"] = curChangeDf$.action
-        .GlobalEnv$curMSL[srcPrevTarget,"out_filename"] = proposalZip
+        .GlobalEnv$curMSL[srcPrevTarget,"out_filename"] = 
+          ifelse(is.na(.GlobalEnv$curMSL[srcPrevTarget,"out_filename"]),proposalZip,
+                 paste0(.GlobalEnv$curMSL[srcPrevTarget,"out_filename"],";",proposalZip))
         .GlobalEnv$curMSL[srcPrevTarget,"out_target"] = destLineage
         .GlobalEnv$curMSL[srcPrevTarget,"out_notes"] = paste0("linenum=",linenum) # add comments?
         .GlobalEnv$curMSL[srcPrevTarget,".actionOrder"] = actionOrder
@@ -4315,7 +4379,9 @@ apply_changes = function(changesDf) {
         # set OUT change for all others
         .GlobalEnv$curMSL[srcPrevTarget,"out_updated"] = TRUE  # admin; mark this to save to db
         .GlobalEnv$curMSL[srcPrevTarget,"out_change"] = curChangeDf$.action
-        .GlobalEnv$curMSL[srcPrevTarget,"out_filename"] = proposalZip
+        .GlobalEnv$curMSL[srcPrevTarget,"out_filename"] = 
+          ifelse(is.na(.GlobalEnv$curMSL[srcPrevTarget,"out_filename"]),proposalZip,
+                 paste0(.GlobalEnv$curMSL[srcPrevTarget,"out_filename"],";",proposalZip))
         .GlobalEnv$curMSL[srcPrevTarget,"out_target"] = destLineage
         .GlobalEnv$curMSL[srcPrevTarget,"out_notes"] = paste0("linenum=",linenum) # add comments?
         .GlobalEnv$curMSL[srcPrevTarget,".out_taxnode_id"] = .GlobalEnv$newMSL[srcNewTarget,"taxnode_id"] 
