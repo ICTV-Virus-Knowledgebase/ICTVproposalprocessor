@@ -1,0 +1,5 @@
+Wed Apr 24 17:29:03 CDT 2024
+genome-cov2.lan1
+PASS  proposalsFinal
+LOG_PASS  proposalsFinal
+#-------------------------

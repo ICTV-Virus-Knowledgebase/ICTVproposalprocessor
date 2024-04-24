@@ -235,21 +235,22 @@ if( interactive() ) {
   print("!!!!||||||||||||||||||||||||!!!!")
   options(error=recover)
   #options(error=browser)
-  params$debug=F
+  params$debug=T
   # WARNING - this will store all the other debug settings into the proposalDir/.RData file!
   params$load_proposal_cache = F
   params$save_proposal_cache = F
   # defeat auto-caching when debugging
   #rm(docxList,xlsxList,changeList)
   params$verbose = T
-  params$tmi = F
+  params$tmi = T
   params$debug_on_error = F
-  params$processing_mode = 'final'
+  params$processing_mode = 'draft'
   #params$output_change_report = F
   params$export_msl = T
 #  params$test_case_dir = "crash"
 #  params$test_case_dir = "proposalsEC55.1"
   params$test_case_dir = "proposals2024X"
+  params$test_case_dir = 'proposals2023merge-rename'
   params$proposals_dir = paste0("testData/",params$test_case_dir)
   params$out_dir       = paste0("testResults/",params$test_case_dir)
   # MSL39v4 2024.03.12
@@ -1019,7 +1020,7 @@ scan_for_proposals = function() {
   rownames(docxs)=ifelse(is.na(docxs$code),rownames(docxs),docxs$code)
   docxs[,"code"] = rownames(docxs)
   
-  # spaces in filenames
+  # spaces in filenames - move this out of DOCX/XLSX and into common
   spacedOut = grep(pattern=" ",docxs$docx)
   if(sum(spacedOut) > 0) {
     errorDf = docxs[spacedOut, c("scAbbrev", "code", "docx")]
@@ -1048,7 +1049,7 @@ scan_for_proposals = function() {
   
   xlsxs          = inputFiles[grep(inputFiles$file,pattern="\\.xlsx*$"),,drop=FALSE]
   colnames(xlsxs)[which(colnames(xlsxs) %in% c("docpath","file") )] <- c("xlsxpath","xlsx")
-  #names(xlsxs)   = c("xlsxpath","path","xlsx","basename","code","scAbbrev")
+  #names(xlsxs)   = c("xlsx path","path","xlsx","basename","code","scAbbrev")
   
   if(params$tmi) { cat("# xls(x) files found: N=",nrow(xlsxs),"\n")}
   
@@ -1126,7 +1127,7 @@ scan_for_proposals = function() {
   rownames(xlsxs) = ifelse(is.na(xlsxs$code),rownames(xlsxs),xlsxs$code)
   xlsxs[,"code"] = rownames(xlsxs)
   #
-  # check that xlsx names match format
+  # check that xlsx names match format - move this out of DOCX/XLSX and into common
   #
   # production format (no version)
   xlsxBadFnameFormats = grep(xlsxs$xlsx, pattern=paste0(filenameFormatRegex,".xlsx*$"), invert=T)
@@ -1172,23 +1173,15 @@ scan_for_proposals = function() {
   ##### merge XLSX list into DOCX list #####
   #
   
-  proposalsDf = data.frame(
-    row.names=c(union(rownames(xlsxs),rownames(docxs)))
-  )
-  proposalsDf$code = ifelse(is.na(xlsxs[rownames(proposalsDf),"code"]),rownames(proposalsDf),xlsxs[rownames(proposalsDf),"code"])
-  # XLSX only fields
-  proposalsDf$xlsx     = xlsxs[rownames(proposalsDf),"xlsx"]
-  proposalsDf$xlsxpath = xlsxs[rownames(proposalsDf),"xlsxpath"]
-  # DOCS only fields
-  proposalsDf$docx = docxs[rownames(proposalsDf),"docx"]
-  proposalsDf$docxpath = docxs[rownames(proposalsDf),"docxpath"]
-  # MERGE 
-  proposalsDf$basename = ifelse(!is.na(xlsxs[proposalsDf$code,"basename"]),
-                                xlsxs[proposalsDf$code,"basename"],
-                                docxs[proposalsDf$code,"basename"])
-  proposalsDf$scAbbrev = ifelse(!is.na(xlsxs[proposalsDf$code,"scAbbrev"]),
-                                xlsxs[proposalsDf$code,"scAbbrev"],
-                                docxs[proposalsDf$code,"scAbbrev"])
+  proposalsDf = merge(xlsxs, docxs, by=c("code","path","scAbbrev"), 
+                      all=T, suffixes = c(".xlsx",".docx"))
+  # prioritize the xlsx basename for zip file naming and reporting.
+  proposalsDf$basename = ifelse(!is.na(proposalsDf$basename.xlsx),proposalsDf$basename.xlsx, proposalsDf$basename.docx)
+  # remove xlsx/docx specific basenames
+  proposalsDf = subset(proposalsDf, select = -c(basename.xlsx, basename.docx) ) 
+  
+  rownames(proposalsDf)=proposalsDf$code
+  
   # strip off version, workflow status and .fix, to get final, production filename
   proposalsDf$cleanbase= gsub("^([0-9]+\\.[0-9]+[A-Z]X*)(\\.[A-Z]+)(\\.v[0-9]+)*(\\.fix)*(\\..*)$","\\1\\5",proposalsDf$basename)
   
