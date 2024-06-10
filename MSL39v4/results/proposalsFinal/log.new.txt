@@ -1,0 +1,2051 @@
+# Rscript ./merge_proposal_zips.R --mode=final --proposalsDir=MSL39v4/./proposalsFinal --outDir=MSL39v4/results/proposalsFinal --qcTsvRegression=QC.regression.new.tsv --qcTsvRegression=QC.regression.new.tsv --newMslNotes=DRAFT EC55 v5 MSL. EC Use Only DRAFT (to-be MSL 39); Updated 2024-03-22.0000 --msl --mode=final --newMslName=2023
+VERSION: v1.16.56c8118
+Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt 
+WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+Wrote: OUTDIR/QC.summary.tsv (14 rows)
+Wrote: OUTDIR/QC.summary.tsv (15 rows)
+# LOAD_PROPOSAL( 2023.062B , MSL39v4/./proposalsFinal/Bacterial viruses (B) proposals/2023.062B.Skurskavirinae_nsf.xlsx )
+# LOAD_PROPOSAL( 2023.062B , MSL39v4/./proposalsFinal/Bacterial viruses (B) proposals/2023.062B.Skurskavirinae-Pakpunavirus_VIRIDIC_heatmap.xlsx )
+code 2023.062B: A worksheet name matching 'proposal*' was not found: logging error
+Wrote: OUTDIR/QC.summary.tsv (16 rows)
+Wrote: OUTDIR/QC.summary.tsv (18 rows)
+Wrote: OUTDIR/QC.summary.tsv (19 rows)
+# LOAD_PROPOSAL_DOCX( 2023.001S )
+# LOADED:  2023.001S  DOCX with  19  errors/warnings
+# LOAD_PROPOSAL( 2023.001S , NA )
+# LOADED:  2023.001S  XLS with  19  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (19 rows)
+# LOADED:  2023.001S 
+# QC start: 2023.001S: proposal loaded (1 out of 203)
+# QCed:      2023.001S  with  19  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.002S )
+# LOADED:  2023.002S  DOCX with  19  errors/warnings
+# LOAD_PROPOSAL( 2023.002S , NA )
+# LOADED:  2023.002S  XLS with  19  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (19 rows)
+# LOADED:  2023.002S 
+# QC start: 2023.002S: proposal loaded (2 out of 203)
+# QCed:      2023.002S  with  19  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.003S )
+# LOADED:  2023.003S  DOCX with  19  errors/warnings
+# LOAD_PROPOSAL( 2023.003S , NA )
+# LOADED:  2023.003S  XLS with  19  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (19 rows)
+# LOADED:  2023.003S 
+# QC start: 2023.003S: proposal loaded (3 out of 203)
+# QCed:      2023.003S  with  19  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.004S )
+# LOADED:  2023.004S  DOCX with  19  errors/warnings
+# LOAD_PROPOSAL( 2023.004S , NA )
+# LOADED:  2023.004S  XLS with  19  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (19 rows)
+# LOADED:  2023.004S 
+# QC start: 2023.004S: proposal loaded (4 out of 203)
+# QCed:      2023.004S  with  19  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.005S )
+# LOADED:  2023.005S  DOCX with  19  errors/warnings
+# LOAD_PROPOSAL( 2023.005S , NA )
+# LOADED:  2023.005S  XLS with  19  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (19 rows)
+# LOADED:  2023.005S 
+# QC start: 2023.005S: proposal loaded (5 out of 203)
+# QCed:      2023.005S  with  19  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.006S )
+# LOADED:  2023.006S  DOCX with  19  errors/warnings
+# LOAD_PROPOSAL( 2023.006S , NA )
+# LOADED:  2023.006S  XLS with  19  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (19 rows)
+# LOADED:  2023.006S 
+# QC start: 2023.006S: proposal loaded (6 out of 203)
+# QCed:      2023.006S  with  19  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.007S )
+# LOADED:  2023.007S  DOCX with  19  errors/warnings
+# LOAD_PROPOSAL( 2023.007S , NA )
+# LOADED:  2023.007S  XLS with  19  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (19 rows)
+# LOADED:  2023.007S 
+# QC start: 2023.007S: proposal loaded (7 out of 203)
+# QCed:      2023.007S  with  19  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.008S )
+# LOADED:  2023.008S  DOCX with  19  errors/warnings
+# LOAD_PROPOSAL( 2023.008S , NA )
+# LOADED:  2023.008S  XLS with  19  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (19 rows)
+# LOADED:  2023.008S 
+# QC start: 2023.008S: proposal loaded (8 out of 203)
+# QCed:      2023.008S  with  19  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.009S )
+# LOADED:  2023.009S  DOCX with  19  errors/warnings
+# LOAD_PROPOSAL( 2023.009S , NA )
+# LOADED:  2023.009S  XLS with  19  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (19 rows)
+# LOADED:  2023.009S 
+# QC start: 2023.009S: proposal loaded (9 out of 203)
+# QCed:      2023.009S  with  19  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.010S )
+# LOADED:  2023.010S  DOCX with  19  errors/warnings
+# LOAD_PROPOSAL( 2023.010S , NA )
+# LOADED:  2023.010S  XLS with  19  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (19 rows)
+# LOADED:  2023.010S 
+# QC start: 2023.010S: proposal loaded (10 out of 203)
+# QCed:      2023.010S  with  19  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.011S )
+# LOADED:  2023.011S  DOCX with  19  errors/warnings
+# LOAD_PROPOSAL( 2023.011S , NA )
+# LOADED:  2023.011S  XLS with  19  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (19 rows)
+# LOADED:  2023.011S 
+# QC start: 2023.011S: proposal loaded (11 out of 203)
+# QCed:      2023.011S  with  19  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.012S )
+# LOADED:  2023.012S  DOCX with  19  errors/warnings
+# LOAD_PROPOSAL( 2023.012S , NA )
+# LOADED:  2023.012S  XLS with  19  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (19 rows)
+# LOADED:  2023.012S 
+# QC start: 2023.012S: proposal loaded (12 out of 203)
+# QCed:      2023.012S  with  19  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.013S )
+# LOADED:  2023.013S  DOCX with  19  errors/warnings
+# LOAD_PROPOSAL( 2023.013S , NA )
+# LOADED:  2023.013S  XLS with  19  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (19 rows)
+# LOADED:  2023.013S 
+# QC start: 2023.013S: proposal loaded (13 out of 203)
+# QCed:      2023.013S  with  19  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.014S )
+# LOADED:  2023.014S  DOCX with  19  errors/warnings
+# LOAD_PROPOSAL( 2023.014S , NA )
+# LOADED:  2023.014S  XLS with  19  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (19 rows)
+# LOADED:  2023.014S 
+# QC start: 2023.014S: proposal loaded (14 out of 203)
+# QCed:      2023.014S  with  19  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.001D )
+# LOADED:  2023.001D  DOCX with  19  errors/warnings
+# LOAD_PROPOSAL( 2023.001D , NA )
+# LOADED:  2023.001D  XLS with  19  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (19 rows)
+# LOADED:  2023.001D 
+# QC start: 2023.001D: proposal loaded (15 out of 203)
+# QCed:      2023.001D  with  19  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.002D )
+# LOADED:  2023.002D  DOCX with  19  errors/warnings
+# LOAD_PROPOSAL( 2023.002D , NA )
+# LOADED:  2023.002D  XLS with  19  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (19 rows)
+# LOADED:  2023.002D 
+# QC start: 2023.002D: proposal loaded (16 out of 203)
+# QCed:      2023.002D  with  19  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.003D )
+# LOADED:  2023.003D  DOCX with  19  errors/warnings
+# LOAD_PROPOSAL( 2023.003D , NA )
+# LOADED:  2023.003D  XLS with  19  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (19 rows)
+# LOADED:  2023.003D 
+# QC start: 2023.003D: proposal loaded (17 out of 203)
+# QCed:      2023.003D  with  19  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.004D )
+# LOADED:  2023.004D  DOCX with  19  errors/warnings
+# LOAD_PROPOSAL( 2023.004D , NA )
+# LOADED:  2023.004D  XLS with  19  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (19 rows)
+# LOADED:  2023.004D 
+# QC start: 2023.004D: proposal loaded (18 out of 203)
+# QCed:      2023.004D  with  19  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.005D )
+# LOADED:  2023.005D  DOCX with  19  errors/warnings
+# LOAD_PROPOSAL( 2023.005D , NA )
+# LOADED:  2023.005D  XLS with  19  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (19 rows)
+# LOADED:  2023.005D 
+# QC start: 2023.005D: proposal loaded (19 out of 203)
+# QCed:      2023.005D  with  19  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.006D )
+# LOADED:  2023.006D  DOCX with  19  errors/warnings
+# LOAD_PROPOSAL( 2023.006D , NA )
+# LOADED:  2023.006D  XLS with  19  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (19 rows)
+# LOADED:  2023.006D 
+# QC start: 2023.006D: proposal loaded (20 out of 203)
+# QCed:      2023.006D  with  19  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.007D )
+# LOADED:  2023.007D  DOCX with  19  errors/warnings
+# LOAD_PROPOSAL( 2023.007D , NA )
+# LOADED:  2023.007D  XLS with  19  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (19 rows)
+# LOADED:  2023.007D 
+# QC start: 2023.007D: proposal loaded (21 out of 203)
+# QCed:      2023.007D  with  19  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.008D )
+# LOADED:  2023.008D  DOCX with  19  errors/warnings
+# LOAD_PROPOSAL( 2023.008D , NA )
+# LOADED:  2023.008D  XLS with  19  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (19 rows)
+# LOADED:  2023.008D 
+# QC start: 2023.008D: proposal loaded (22 out of 203)
+# QCed:      2023.008D  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.009D )
+# LOADED:  2023.009D  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.009D , NA )
+# LOADED:  2023.009D  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.009D 
+# QC start: 2023.009D: proposal loaded (23 out of 203)
+# QCed:      2023.009D  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.011D )
+# LOADED:  2023.011D  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.011D , NA )
+# LOADED:  2023.011D  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.011D 
+# QC start: 2023.011D: proposal loaded (24 out of 203)
+# QCed:      2023.011D  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.012D )
+# LOADED:  2023.012D  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.012D , NA )
+# LOADED:  2023.012D  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.012D 
+# QC start: 2023.012D: proposal loaded (25 out of 203)
+# QCed:      2023.012D  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.013D )
+# LOADED:  2023.013D  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.013D , NA )
+# LOADED:  2023.013D  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.013D 
+# QC start: 2023.013D: proposal loaded (26 out of 203)
+# QCed:      2023.013D  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.014D )
+# LOADED:  2023.014D  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.014D , NA )
+# LOADED:  2023.014D  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.014D 
+# QC start: 2023.014D: proposal loaded (27 out of 203)
+# QCed:      2023.014D  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.015D )
+# LOADED:  2023.015D  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.015D , NA )
+# LOADED:  2023.015D  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.015D 
+# QC start: 2023.015D: proposal loaded (28 out of 203)
+# QCed:      2023.015D  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.016D )
+# LOADED:  2023.016D  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.016D , NA )
+# LOADED:  2023.016D  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.016D 
+# QC start: 2023.016D: proposal loaded (29 out of 203)
+# QCed:      2023.016D  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.017D )
+# LOADED:  2023.017D  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.017D , NA )
+# LOADED:  2023.017D  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.017D 
+# QC start: 2023.017D: proposal loaded (30 out of 203)
+# QCed:      2023.017D  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.018D )
+# LOADED:  2023.018D  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.018D , NA )
+# LOADED:  2023.018D  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.018D 
+# QC start: 2023.018D: proposal loaded (31 out of 203)
+# QCed:      2023.018D  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.019D )
+# LOADED:  2023.019D  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.019D , NA )
+# LOADED:  2023.019D  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.019D 
+# QC start: 2023.019D: proposal loaded (32 out of 203)
+# QCed:      2023.019D  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.020D )
+# LOADED:  2023.020D  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.020D , NA )
+# LOADED:  2023.020D  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.020D 
+# QC start: 2023.020D: proposal loaded (33 out of 203)
+# QCed:      2023.020D  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.021D )
+# LOADED:  2023.021D  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.021D , NA )
+# LOADED:  2023.021D  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.021D 
+# QC start: 2023.021D: proposal loaded (34 out of 203)
+# QCed:      2023.021D  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.022D )
+# LOADED:  2023.022D  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.022D , NA )
+# LOADED:  2023.022D  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.022D 
+# QC start: 2023.022D: proposal loaded (35 out of 203)
+# QCed:      2023.022D  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.023D )
+# LOADED:  2023.023D  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.023D , NA )
+# LOADED:  2023.023D  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.023D 
+# QC start: 2023.023D: proposal loaded (36 out of 203)
+# QCed:      2023.023D  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.024D )
+# LOADED:  2023.024D  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.024D , NA )
+# LOADED:  2023.024D  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.024D 
+# QC start: 2023.024D: proposal loaded (37 out of 203)
+# QCed:      2023.024D  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.025D )
+# LOADED:  2023.025D  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.025D , NA )
+# LOADED:  2023.025D  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.025D 
+# QC start: 2023.025D: proposal loaded (38 out of 203)
+# QCed:      2023.025D  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.001M )
+# LOADED:  2023.001M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.001M , NA )
+# LOADED:  2023.001M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.001M 
+# QC start: 2023.001M: proposal loaded (39 out of 203)
+# QCed:      2023.001M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.002M )
+# LOADED:  2023.002M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.002M , NA )
+# LOADED:  2023.002M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.002M 
+# QC start: 2023.002M: proposal loaded (40 out of 203)
+# QCed:      2023.002M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.003M )
+# LOADED:  2023.003M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.003M , NA )
+# LOADED:  2023.003M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.003M 
+# QC start: 2023.003M: proposal loaded (41 out of 203)
+# QCed:      2023.003M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.004M )
+# LOADED:  2023.004M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.004M , NA )
+# LOADED:  2023.004M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.004M 
+# QC start: 2023.004M: proposal loaded (42 out of 203)
+# QCed:      2023.004M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.005M )
+# LOADED:  2023.005M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.005M , NA )
+# LOADED:  2023.005M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.005M 
+# QC start: 2023.005M: proposal loaded (43 out of 203)
+# QCed:      2023.005M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.006M )
+# LOADED:  2023.006M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.006M , NA )
+# LOADED:  2023.006M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.006M 
+# QC start: 2023.006M: proposal loaded (44 out of 203)
+# QCed:      2023.006M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.007M )
+# LOADED:  2023.007M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.007M , NA )
+# LOADED:  2023.007M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.007M 
+# QC start: 2023.007M: proposal loaded (45 out of 203)
+# QCed:      2023.007M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.008M )
+# LOADED:  2023.008M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.008M , NA )
+# LOADED:  2023.008M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.008M 
+# QC start: 2023.008M: proposal loaded (46 out of 203)
+# QCed:      2023.008M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.009M )
+# LOADED:  2023.009M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.009M , NA )
+# LOADED:  2023.009M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.009M 
+# QC start: 2023.009M: proposal loaded (47 out of 203)
+# QCed:      2023.009M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.010M )
+# LOADED:  2023.010M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.010M , NA )
+# LOADED:  2023.010M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.010M 
+# QC start: 2023.010M: proposal loaded (48 out of 203)
+# QCed:      2023.010M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.011M )
+# LOADED:  2023.011M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.011M , NA )
+# LOADED:  2023.011M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.011M 
+# QC start: 2023.011M: proposal loaded (49 out of 203)
+# QCed:      2023.011M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.012M )
+# LOADED:  2023.012M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.012M , NA )
+# LOADED:  2023.012M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.012M 
+# QC start: 2023.012M: proposal loaded (50 out of 203)
+# QCed:      2023.012M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.013M )
+# LOADED:  2023.013M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.013M , NA )
+# LOADED:  2023.013M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.013M 
+# QC start: 2023.013M: proposal loaded (51 out of 203)
+# QCed:      2023.013M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.014M )
+# LOADED:  2023.014M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.014M , NA )
+# LOADED:  2023.014M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.014M 
+# QC start: 2023.014M: proposal loaded (52 out of 203)
+# QCed:      2023.014M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.015M )
+# LOADED:  2023.015M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.015M , NA )
+# LOADED:  2023.015M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.015M 
+# QC start: 2023.015M: proposal loaded (53 out of 203)
+# QCed:      2023.015M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.016M )
+# LOADED:  2023.016M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.016M , NA )
+# LOADED:  2023.016M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.016M 
+# QC start: 2023.016M: proposal loaded (54 out of 203)
+# QCed:      2023.016M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.017M )
+# LOADED:  2023.017M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.017M , NA )
+# LOADED:  2023.017M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.017M 
+# QC start: 2023.017M: proposal loaded (55 out of 203)
+# QCed:      2023.017M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.018M )
+# LOADED:  2023.018M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.018M , NA )
+# LOADED:  2023.018M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.018M 
+# QC start: 2023.018M: proposal loaded (56 out of 203)
+# QCed:      2023.018M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.019M )
+# LOADED:  2023.019M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.019M , NA )
+# LOADED:  2023.019M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.019M 
+# QC start: 2023.019M: proposal loaded (57 out of 203)
+# QCed:      2023.019M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.020M )
+# LOADED:  2023.020M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.020M , NA )
+# LOADED:  2023.020M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.020M 
+# QC start: 2023.020M: proposal loaded (58 out of 203)
+# QCed:      2023.020M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.021M )
+# LOADED:  2023.021M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.021M , NA )
+# LOADED:  2023.021M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.021M 
+# QC start: 2023.021M: proposal loaded (59 out of 203)
+# QCed:      2023.021M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.022M )
+# LOADED:  2023.022M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.022M , NA )
+# LOADED:  2023.022M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.022M 
+# QC start: 2023.022M: proposal loaded (60 out of 203)
+# QCed:      2023.022M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.023M )
+# LOADED:  2023.023M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.023M , NA )
+# LOADED:  2023.023M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.023M 
+# QC start: 2023.023M: proposal loaded (61 out of 203)
+# QCed:      2023.023M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.024M )
+# LOADED:  2023.024M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.024M , NA )
+# LOADED:  2023.024M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.024M 
+# QC start: 2023.024M: proposal loaded (62 out of 203)
+# QCed:      2023.024M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.025M )
+# LOADED:  2023.025M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.025M , NA )
+# LOADED:  2023.025M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.025M 
+# QC start: 2023.025M: proposal loaded (63 out of 203)
+# QCed:      2023.025M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.026M )
+# LOADED:  2023.026M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.026M , NA )
+# LOADED:  2023.026M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.026M 
+# QC start: 2023.026M: proposal loaded (64 out of 203)
+# QCed:      2023.026M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.027M )
+# LOADED:  2023.027M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.027M , NA )
+# LOADED:  2023.027M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.027M 
+# QC start: 2023.027M: proposal loaded (65 out of 203)
+# QCed:      2023.027M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.028M )
+# LOADED:  2023.028M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.028M , NA )
+# LOADED:  2023.028M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.028M 
+# QC start: 2023.028M: proposal loaded (66 out of 203)
+# QCed:      2023.028M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.029M )
+# LOADED:  2023.029M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.029M , NA )
+# LOADED:  2023.029M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.029M 
+# QC start: 2023.029M: proposal loaded (67 out of 203)
+# QCed:      2023.029M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.030M )
+# LOADED:  2023.030M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.030M , NA )
+# LOADED:  2023.030M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.030M 
+# QC start: 2023.030M: proposal loaded (68 out of 203)
+# QCed:      2023.030M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.031M )
+# LOADED:  2023.031M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.031M , NA )
+# LOADED:  2023.031M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.031M 
+# QC start: 2023.031M: proposal loaded (69 out of 203)
+# QCed:      2023.031M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.032M )
+# LOADED:  2023.032M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.032M , NA )
+# LOADED:  2023.032M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.032M 
+# QC start: 2023.032M: proposal loaded (70 out of 203)
+# QCed:      2023.032M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.033M )
+# LOADED:  2023.033M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.033M , NA )
+# LOADED:  2023.033M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.033M 
+# QC start: 2023.033M: proposal loaded (71 out of 203)
+# QCed:      2023.033M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.034M )
+# LOADED:  2023.034M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.034M , NA )
+# LOADED:  2023.034M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.034M 
+# QC start: 2023.034M: proposal loaded (72 out of 203)
+# QCed:      2023.034M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.035M )
+# LOADED:  2023.035M  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.035M , NA )
+# LOADED:  2023.035M  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.035M 
+# QC start: 2023.035M: proposal loaded (73 out of 203)
+# QCed:      2023.035M  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.001A )
+# LOADED:  2023.001A  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.001A , NA )
+# LOADED:  2023.001A  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.001A 
+# QC start: 2023.001A: proposal loaded (74 out of 203)
+# QCed:      2023.001A  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.002A )
+# LOADED:  2023.002A  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.002A , NA )
+# LOADED:  2023.002A  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.002A 
+# QC start: 2023.002A: proposal loaded (75 out of 203)
+# QCed:      2023.002A  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.001B )
+# LOADED:  2023.001B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.001B , NA )
+# LOADED:  2023.001B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.001B 
+# QC start: 2023.001B: proposal loaded (76 out of 203)
+# QCed:      2023.001B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.002B )
+# LOADED:  2023.002B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.002B , NA )
+# LOADED:  2023.002B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.002B 
+# QC start: 2023.002B: proposal loaded (77 out of 203)
+# QCed:      2023.002B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.003B )
+# LOADED:  2023.003B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.003B , NA )
+# LOADED:  2023.003B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.003B 
+# QC start: 2023.003B: proposal loaded (78 out of 203)
+# QCed:      2023.003B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.004B )
+# LOADED:  2023.004B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.004B , NA )
+# LOADED:  2023.004B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.004B 
+# QC start: 2023.004B: proposal loaded (79 out of 203)
+# QCed:      2023.004B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.005B )
+# LOADED:  2023.005B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.005B , NA )
+# LOADED:  2023.005B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.005B 
+# QC start: 2023.005B: proposal loaded (80 out of 203)
+# QCed:      2023.005B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.006B )
+# LOADED:  2023.006B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.006B , NA )
+# LOADED:  2023.006B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.006B 
+# QC start: 2023.006B: proposal loaded (81 out of 203)
+# QCed:      2023.006B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.007B )
+# LOADED:  2023.007B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.007B , NA )
+# LOADED:  2023.007B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.007B 
+# QC start: 2023.007B: proposal loaded (82 out of 203)
+# QCed:      2023.007B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.008B )
+# LOADED:  2023.008B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.008B , NA )
+# LOADED:  2023.008B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.008B 
+# QC start: 2023.008B: proposal loaded (83 out of 203)
+# QCed:      2023.008B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.009B )
+# LOADED:  2023.009B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.009B , NA )
+# LOADED:  2023.009B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.009B 
+# QC start: 2023.009B: proposal loaded (84 out of 203)
+# QCed:      2023.009B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.010B )
+# LOADED:  2023.010B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.010B , NA )
+# LOADED:  2023.010B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.010B 
+# QC start: 2023.010B: proposal loaded (85 out of 203)
+# QCed:      2023.010B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.011B )
+# LOADED:  2023.011B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.011B , NA )
+# LOADED:  2023.011B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.011B 
+# QC start: 2023.011B: proposal loaded (86 out of 203)
+# QCed:      2023.011B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.012B )
+# LOADED:  2023.012B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.012B , NA )
+# LOADED:  2023.012B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.012B 
+# QC start: 2023.012B: proposal loaded (87 out of 203)
+# QCed:      2023.012B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.013B )
+# LOADED:  2023.013B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.013B , NA )
+# LOADED:  2023.013B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.013B 
+# QC start: 2023.013B: proposal loaded (88 out of 203)
+# QCed:      2023.013B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.014B )
+# LOADED:  2023.014B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.014B , NA )
+# LOADED:  2023.014B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.014B 
+# QC start: 2023.014B: proposal loaded (89 out of 203)
+# QCed:      2023.014B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.015B )
+# LOADED:  2023.015B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.015B , NA )
+# LOADED:  2023.015B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.015B 
+# QC start: 2023.015B: proposal loaded (90 out of 203)
+# QCed:      2023.015B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.016B )
+# LOADED:  2023.016B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.016B , NA )
+# LOADED:  2023.016B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.016B 
+# QC start: 2023.016B: proposal loaded (91 out of 203)
+# QCed:      2023.016B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.017B )
+# LOADED:  2023.017B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.017B , NA )
+# LOADED:  2023.017B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.017B 
+# QC start: 2023.017B: proposal loaded (92 out of 203)
+# QCed:      2023.017B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.018B )
+# LOADED:  2023.018B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.018B , NA )
+# LOADED:  2023.018B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.018B 
+# QC start: 2023.018B: proposal loaded (93 out of 203)
+# QCed:      2023.018B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.019B )
+# LOADED:  2023.019B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.019B , NA )
+# LOADED:  2023.019B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.019B 
+# QC start: 2023.019B: proposal loaded (94 out of 203)
+# QCed:      2023.019B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.020B )
+# LOADED:  2023.020B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.020B , NA )
+# LOADED:  2023.020B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.020B 
+# QC start: 2023.020B: proposal loaded (95 out of 203)
+# QCed:      2023.020B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.021B )
+# LOADED:  2023.021B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.021B , NA )
+# LOADED:  2023.021B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.021B 
+# QC start: 2023.021B: proposal loaded (96 out of 203)
+# QCed:      2023.021B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.022B )
+# LOADED:  2023.022B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.022B , NA )
+# LOADED:  2023.022B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.022B 
+# QC start: 2023.022B: proposal loaded (97 out of 203)
+# QCed:      2023.022B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.023B )
+# LOADED:  2023.023B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.023B , NA )
+# LOADED:  2023.023B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.023B 
+# QC start: 2023.023B: proposal loaded (98 out of 203)
+# QCed:      2023.023B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.024B )
+# LOADED:  2023.024B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.024B , NA )
+# LOADED:  2023.024B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.024B 
+# QC start: 2023.024B: proposal loaded (99 out of 203)
+# QCed:      2023.024B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.025B )
+# LOADED:  2023.025B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.025B , NA )
+# LOADED:  2023.025B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.025B 
+# QC start: 2023.025B: proposal loaded (100 out of 203)
+# QCed:      2023.025B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.026B )
+# LOADED:  2023.026B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.026B , NA )
+# LOADED:  2023.026B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.026B 
+# QC start: 2023.026B: proposal loaded (101 out of 203)
+# QCed:      2023.026B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.027B )
+# LOADED:  2023.027B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.027B , NA )
+# LOADED:  2023.027B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.027B 
+# QC start: 2023.027B: proposal loaded (102 out of 203)
+# QCed:      2023.027B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.029B )
+# LOADED:  2023.029B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.029B , NA )
+# LOADED:  2023.029B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.029B 
+# QC start: 2023.029B: proposal loaded (103 out of 203)
+# QCed:      2023.029B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.030B )
+# LOADED:  2023.030B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.030B , NA )
+# LOADED:  2023.030B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.030B 
+# QC start: 2023.030B: proposal loaded (104 out of 203)
+# QCed:      2023.030B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.031B )
+# LOADED:  2023.031B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.031B , NA )
+# LOADED:  2023.031B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.031B 
+# QC start: 2023.031B: proposal loaded (105 out of 203)
+# QCed:      2023.031B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.032B )
+# LOADED:  2023.032B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.032B , NA )
+# LOADED:  2023.032B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.032B 
+# QC start: 2023.032B: proposal loaded (106 out of 203)
+# QCed:      2023.032B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.033B )
+# LOADED:  2023.033B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.033B , NA )
+# LOADED:  2023.033B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.033B 
+# QC start: 2023.033B: proposal loaded (107 out of 203)
+# QCed:      2023.033B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.034B )
+# LOADED:  2023.034B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.034B , NA )
+# LOADED:  2023.034B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.034B 
+# QC start: 2023.034B: proposal loaded (108 out of 203)
+# QCed:      2023.034B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.035B )
+# LOADED:  2023.035B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.035B , NA )
+# LOADED:  2023.035B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.035B 
+# QC start: 2023.035B: proposal loaded (109 out of 203)
+# QCed:      2023.035B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.036B )
+# LOADED:  2023.036B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.036B , NA )
+# LOADED:  2023.036B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.036B 
+# QC start: 2023.036B: proposal loaded (110 out of 203)
+# QCed:      2023.036B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.037B )
+# LOADED:  2023.037B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.037B , NA )
+# LOADED:  2023.037B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.037B 
+# QC start: 2023.037B: proposal loaded (111 out of 203)
+# QCed:      2023.037B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.038B )
+# LOADED:  2023.038B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.038B , NA )
+# LOADED:  2023.038B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.038B 
+# QC start: 2023.038B: proposal loaded (112 out of 203)
+# QCed:      2023.038B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.039B )
+# LOADED:  2023.039B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.039B , NA )
+# LOADED:  2023.039B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.039B 
+# QC start: 2023.039B: proposal loaded (113 out of 203)
+# QCed:      2023.039B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.040B )
+# LOADED:  2023.040B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.040B , NA )
+# LOADED:  2023.040B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.040B 
+# QC start: 2023.040B: proposal loaded (114 out of 203)
+# QCed:      2023.040B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.041B )
+# LOADED:  2023.041B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.041B , NA )
+# LOADED:  2023.041B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.041B 
+# QC start: 2023.041B: proposal loaded (115 out of 203)
+# QCed:      2023.041B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.042B )
+# LOADED:  2023.042B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.042B , NA )
+# LOADED:  2023.042B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.042B 
+# QC start: 2023.042B: proposal loaded (116 out of 203)
+# QCed:      2023.042B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.043B )
+# LOADED:  2023.043B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.043B , NA )
+# LOADED:  2023.043B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.043B 
+# QC start: 2023.043B: proposal loaded (117 out of 203)
+# QCed:      2023.043B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.044B )
+# LOADED:  2023.044B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.044B , NA )
+# LOADED:  2023.044B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.044B 
+# QC start: 2023.044B: proposal loaded (118 out of 203)
+# QCed:      2023.044B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.045B )
+# LOADED:  2023.045B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.045B , NA )
+# LOADED:  2023.045B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.045B 
+# QC start: 2023.045B: proposal loaded (119 out of 203)
+# QCed:      2023.045B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.046B )
+# LOADED:  2023.046B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.046B , NA )
+# LOADED:  2023.046B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.046B 
+# QC start: 2023.046B: proposal loaded (120 out of 203)
+# QCed:      2023.046B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.047B )
+# LOADED:  2023.047B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.047B , NA )
+# LOADED:  2023.047B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.047B 
+# QC start: 2023.047B: proposal loaded (121 out of 203)
+# QCed:      2023.047B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.048B )
+# LOADED:  2023.048B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.048B , NA )
+# LOADED:  2023.048B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.048B 
+# QC start: 2023.048B: proposal loaded (122 out of 203)
+# QCed:      2023.048B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.049B )
+# LOADED:  2023.049B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.049B , NA )
+# LOADED:  2023.049B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.049B 
+# QC start: 2023.049B: proposal loaded (123 out of 203)
+# QCed:      2023.049B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.050B )
+# LOADED:  2023.050B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.050B , NA )
+# LOADED:  2023.050B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.050B 
+# QC start: 2023.050B: proposal loaded (124 out of 203)
+# QCed:      2023.050B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.051B )
+# LOADED:  2023.051B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.051B , NA )
+# LOADED:  2023.051B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.051B 
+# QC start: 2023.051B: proposal loaded (125 out of 203)
+# QCed:      2023.051B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.052B )
+# LOADED:  2023.052B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.052B , NA )
+# LOADED:  2023.052B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.052B 
+# QC start: 2023.052B: proposal loaded (126 out of 203)
+# QCed:      2023.052B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.053B )
+# LOADED:  2023.053B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.053B , NA )
+# LOADED:  2023.053B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.053B 
+# QC start: 2023.053B: proposal loaded (127 out of 203)
+# QCed:      2023.053B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.054B )
+# LOADED:  2023.054B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.054B , NA )
+# LOADED:  2023.054B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.054B 
+# QC start: 2023.054B: proposal loaded (128 out of 203)
+# QCed:      2023.054B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.055B )
+# LOADED:  2023.055B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.055B , NA )
+# LOADED:  2023.055B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.055B 
+# QC start: 2023.055B: proposal loaded (129 out of 203)
+# QCed:      2023.055B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.056B )
+# LOADED:  2023.056B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.056B , NA )
+# LOADED:  2023.056B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.056B 
+# QC start: 2023.056B: proposal loaded (130 out of 203)
+# QCed:      2023.056B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.057B )
+# LOADED:  2023.057B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.057B , NA )
+# LOADED:  2023.057B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.057B 
+# QC start: 2023.057B: proposal loaded (131 out of 203)
+# QCed:      2023.057B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.058B )
+# LOADED:  2023.058B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.058B , NA )
+# LOADED:  2023.058B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.058B 
+# QC start: 2023.058B: proposal loaded (132 out of 203)
+# QCed:      2023.058B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.059B )
+# LOADED:  2023.059B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.059B , NA )
+# LOADED:  2023.059B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.059B 
+# QC start: 2023.059B: proposal loaded (133 out of 203)
+# QCed:      2023.059B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.060B )
+# LOADED:  2023.060B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.060B , NA )
+# LOADED:  2023.060B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.060B 
+# QC start: 2023.060B: proposal loaded (134 out of 203)
+# QCed:      2023.060B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.061B )
+# LOADED:  2023.061B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.061B , NA )
+# LOADED:  2023.061B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.061B 
+# QC start: 2023.061B: proposal loaded (135 out of 203)
+# QCed:      2023.061B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.062B )
+# LOADED:  2023.062B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.062B , NA )
+# LOADED:  2023.062B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.062B 
+# QC start: 2023.062B: proposal loaded (136 out of 203)
+# QCed:      2023.062B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.063B )
+# LOADED:  2023.063B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.063B , NA )
+# LOADED:  2023.063B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.063B 
+# QC start: 2023.063B: proposal loaded (137 out of 203)
+# QCed:      2023.063B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.064B )
+# LOADED:  2023.064B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.064B , NA )
+# LOADED:  2023.064B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.064B 
+# QC start: 2023.064B: proposal loaded (138 out of 203)
+# QCed:      2023.064B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.065B )
+# LOADED:  2023.065B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.065B , NA )
+# LOADED:  2023.065B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.065B 
+# QC start: 2023.065B: proposal loaded (139 out of 203)
+# QCed:      2023.065B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.066B )
+# LOADED:  2023.066B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.066B , NA )
+# LOADED:  2023.066B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.066B 
+# QC start: 2023.066B: proposal loaded (140 out of 203)
+# QCed:      2023.066B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.067B )
+# LOADED:  2023.067B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.067B , NA )
+# LOADED:  2023.067B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.067B 
+# QC start: 2023.067B: proposal loaded (141 out of 203)
+# QCed:      2023.067B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.068B )
+# LOADED:  2023.068B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.068B , NA )
+# LOADED:  2023.068B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.068B 
+# QC start: 2023.068B: proposal loaded (142 out of 203)
+# QCed:      2023.068B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.069B )
+# LOADED:  2023.069B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.069B , NA )
+# LOADED:  2023.069B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.069B 
+# QC start: 2023.069B: proposal loaded (143 out of 203)
+# QCed:      2023.069B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.070B )
+# LOADED:  2023.070B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.070B , NA )
+# LOADED:  2023.070B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.070B 
+# QC start: 2023.070B: proposal loaded (144 out of 203)
+# QCed:      2023.070B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.071B )
+# LOADED:  2023.071B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.071B , NA )
+# LOADED:  2023.071B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.071B 
+# QC start: 2023.071B: proposal loaded (145 out of 203)
+# QCed:      2023.071B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.072B )
+# LOADED:  2023.072B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.072B , NA )
+# LOADED:  2023.072B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.072B 
+# QC start: 2023.072B: proposal loaded (146 out of 203)
+# QCed:      2023.072B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.073B )
+# LOADED:  2023.073B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.073B , NA )
+# LOADED:  2023.073B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.073B 
+# QC start: 2023.073B: proposal loaded (147 out of 203)
+# QCed:      2023.073B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.074B )
+# LOADED:  2023.074B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.074B , NA )
+# LOADED:  2023.074B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.074B 
+# QC start: 2023.074B: proposal loaded (148 out of 203)
+# QCed:      2023.074B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.075B )
+# LOADED:  2023.075B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.075B , NA )
+# LOADED:  2023.075B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.075B 
+# QC start: 2023.075B: proposal loaded (149 out of 203)
+# QCed:      2023.075B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.076B )
+# LOADED:  2023.076B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.076B , NA )
+# LOADED:  2023.076B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.076B 
+# QC start: 2023.076B: proposal loaded (150 out of 203)
+# QCed:      2023.076B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.077B )
+# LOADED:  2023.077B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.077B , NA )
+# LOADED:  2023.077B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.077B 
+# QC start: 2023.077B: proposal loaded (151 out of 203)
+# QCed:      2023.077B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.078B )
+# LOADED:  2023.078B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.078B , NA )
+# LOADED:  2023.078B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.078B 
+# QC start: 2023.078B: proposal loaded (152 out of 203)
+# QCed:      2023.078B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.079B )
+# LOADED:  2023.079B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.079B , NA )
+# LOADED:  2023.079B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.079B 
+# QC start: 2023.079B: proposal loaded (153 out of 203)
+# QCed:      2023.079B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.080B )
+# LOADED:  2023.080B  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.080B , NA )
+# LOADED:  2023.080B  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.080B 
+# QC start: 2023.080B: proposal loaded (154 out of 203)
+# QCed:      2023.080B  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.001F )
+# LOADED:  2023.001F  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.001F , NA )
+# LOADED:  2023.001F  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.001F 
+# QC start: 2023.001F: proposal loaded (155 out of 203)
+# QCed:      2023.001F  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.002F )
+# LOADED:  2023.002F  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.002F , NA )
+# LOADED:  2023.002F  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.002F 
+# QC start: 2023.002F: proposal loaded (156 out of 203)
+# QCed:      2023.002F  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.003F )
+# LOADED:  2023.003F  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.003F , NA )
+# LOADED:  2023.003F  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.003F 
+# QC start: 2023.003F: proposal loaded (157 out of 203)
+# QCed:      2023.003F  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.004F )
+# LOADED:  2023.004F  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.004F , NA )
+# LOADED:  2023.004F  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.004F 
+# QC start: 2023.004F: proposal loaded (158 out of 203)
+# QCed:      2023.004F  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.005F )
+# LOADED:  2023.005F  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.005F , NA )
+# LOADED:  2023.005F  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.005F 
+# QC start: 2023.005F: proposal loaded (159 out of 203)
+# QCed:      2023.005F  with  22  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.006F )
+# LOADED:  2023.006F  DOCX with  22  errors/warnings
+# LOAD_PROPOSAL( 2023.006F , NA )
+# LOADED:  2023.006F  XLS with  22  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# LOADED:  2023.006F 
+# QC start: 2023.006F: proposal loaded (160 out of 203)
+# QCed:      2023.006F  with  30  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.007F )
+# LOADED:  2023.007F  DOCX with  30  errors/warnings
+# LOAD_PROPOSAL( 2023.007F , NA )
+# LOADED:  2023.007F  XLS with  30  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (30 rows)
+# LOADED:  2023.007F 
+# QC start: 2023.007F: proposal loaded (161 out of 203)
+# QCed:      2023.007F  with  30  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.008F )
+# LOADED:  2023.008F  DOCX with  30  errors/warnings
+# LOAD_PROPOSAL( 2023.008F , NA )
+# LOADED:  2023.008F  XLS with  30  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (30 rows)
+# LOADED:  2023.008F 
+# QC start: 2023.008F: proposal loaded (162 out of 203)
+# QCed:      2023.008F  with  30  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.009F )
+# LOADED:  2023.009F  DOCX with  30  errors/warnings
+# LOAD_PROPOSAL( 2023.009F , NA )
+# LOADED:  2023.009F  XLS with  30  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (30 rows)
+# LOADED:  2023.009F 
+# QC start: 2023.009F: proposal loaded (163 out of 203)
+# QCed:      2023.009F  with  30  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.010F )
+# LOADED:  2023.010F  DOCX with  30  errors/warnings
+# LOAD_PROPOSAL( 2023.010F , NA )
+# LOADED:  2023.010F  XLS with  30  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (30 rows)
+# LOADED:  2023.010F 
+# QC start: 2023.010F: proposal loaded (164 out of 203)
+# QCed:      2023.010F  with  30  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.011F )
+# LOADED:  2023.011F  DOCX with  30  errors/warnings
+# LOAD_PROPOSAL( 2023.011F , NA )
+# LOADED:  2023.011F  XLS with  30  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (30 rows)
+# LOADED:  2023.011F 
+# QC start: 2023.011F: proposal loaded (165 out of 203)
+# QCed:      2023.011F  with  30  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.012F )
+# LOADED:  2023.012F  DOCX with  30  errors/warnings
+# LOAD_PROPOSAL( 2023.012F , NA )
+# LOADED:  2023.012F  XLS with  30  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (30 rows)
+# LOADED:  2023.012F 
+# QC start: 2023.012F: proposal loaded (166 out of 203)
+# QCed:      2023.012F  with  30  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.013F )
+# LOADED:  2023.013F  DOCX with  30  errors/warnings
+# LOAD_PROPOSAL( 2023.013F , NA )
+# LOADED:  2023.013F  XLS with  30  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (30 rows)
+# LOADED:  2023.013F 
+# QC start: 2023.013F: proposal loaded (167 out of 203)
+# QCed:      2023.013F  with  30  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.014F )
+# LOADED:  2023.014F  DOCX with  30  errors/warnings
+# LOAD_PROPOSAL( 2023.014F , NA )
+# LOADED:  2023.014F  XLS with  30  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (30 rows)
+# LOADED:  2023.014F 
+# QC start: 2023.014F: proposal loaded (168 out of 203)
+# QCed:      2023.014F  with  30  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.015F )
+# LOADED:  2023.015F  DOCX with  30  errors/warnings
+# LOAD_PROPOSAL( 2023.015F , NA )
+# LOADED:  2023.015F  XLS with  30  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (30 rows)
+# LOADED:  2023.015F 
+# QC start: 2023.015F: proposal loaded (169 out of 203)
+# QCed:      2023.015F  with  30  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.002P )
+# LOADED:  2023.002P  DOCX with  30  errors/warnings
+# LOAD_PROPOSAL( 2023.002P , NA )
+# LOADED:  2023.002P  XLS with  30  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (30 rows)
+# LOADED:  2023.002P 
+# QC start: 2023.002P: proposal loaded (170 out of 203)
+# QCed:      2023.002P  with  30  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.003P )
+# LOADED:  2023.003P  DOCX with  30  errors/warnings
+# LOAD_PROPOSAL( 2023.003P , NA )
+# LOADED:  2023.003P  XLS with  30  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (30 rows)
+# LOADED:  2023.003P 
+# QC start: 2023.003P: proposal loaded (171 out of 203)
+# QCed:      2023.003P  with  30  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.004P )
+# LOADED:  2023.004P  DOCX with  30  errors/warnings
+# LOAD_PROPOSAL( 2023.004P , NA )
+# LOADED:  2023.004P  XLS with  30  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (30 rows)
+# LOADED:  2023.004P 
+# QC start: 2023.004P: proposal loaded (172 out of 203)
+# QCed:      2023.004P  with  30  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.005P )
+# LOADED:  2023.005P  DOCX with  30  errors/warnings
+# LOAD_PROPOSAL( 2023.005P , NA )
+# LOADED:  2023.005P  XLS with  30  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (30 rows)
+# LOADED:  2023.005P 
+# QC start: 2023.005P: proposal loaded (173 out of 203)
+# QCed:      2023.005P  with  30  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.006P )
+# LOADED:  2023.006P  DOCX with  30  errors/warnings
+# LOAD_PROPOSAL( 2023.006P , NA )
+# LOADED:  2023.006P  XLS with  30  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (30 rows)
+# LOADED:  2023.006P 
+# QC start: 2023.006P: proposal loaded (174 out of 203)
+# QCed:      2023.006P  with  30  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.007P )
+# LOADED:  2023.007P  DOCX with  30  errors/warnings
+# LOAD_PROPOSAL( 2023.007P , NA )
+# LOADED:  2023.007P  XLS with  30  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (30 rows)
+# LOADED:  2023.007P 
+# QC start: 2023.007P: proposal loaded (175 out of 203)
+# QCed:      2023.007P  with  30  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.008P )
+# LOADED:  2023.008P  DOCX with  30  errors/warnings
+# LOAD_PROPOSAL( 2023.008P , NA )
+# LOADED:  2023.008P  XLS with  30  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (30 rows)
+# LOADED:  2023.008P 
+# QC start: 2023.008P: proposal loaded (176 out of 203)
+# QCed:      2023.008P  with  30  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.009P )
+# LOADED:  2023.009P  DOCX with  30  errors/warnings
+# LOAD_PROPOSAL( 2023.009P , NA )
+# LOADED:  2023.009P  XLS with  30  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (30 rows)
+# LOADED:  2023.009P 
+# QC start: 2023.009P: proposal loaded (177 out of 203)
+# QCed:      2023.009P  with  30  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.010P )
+# LOADED:  2023.010P  DOCX with  30  errors/warnings
+# LOAD_PROPOSAL( 2023.010P , NA )
+# LOADED:  2023.010P  XLS with  30  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (30 rows)
+# LOADED:  2023.010P 
+# QC start: 2023.010P: proposal loaded (178 out of 203)
+# QCed:      2023.010P  with  30  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.011P )
+# LOADED:  2023.011P  DOCX with  30  errors/warnings
+# LOAD_PROPOSAL( 2023.011P , NA )
+# LOADED:  2023.011P  XLS with  30  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (30 rows)
+# LOADED:  2023.011P 
+# QC start: 2023.011P: proposal loaded (179 out of 203)
+# QCed:      2023.011P  with  30  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.012P )
+# LOADED:  2023.012P  DOCX with  30  errors/warnings
+# LOAD_PROPOSAL( 2023.012P , NA )
+# LOADED:  2023.012P  XLS with  30  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (30 rows)
+# LOADED:  2023.012P 
+# QC start: 2023.012P: proposal loaded (180 out of 203)
+# QCed:      2023.012P  with  30  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.013P )
+# LOADED:  2023.013P  DOCX with  30  errors/warnings
+# LOAD_PROPOSAL( 2023.013P , NA )
+# LOADED:  2023.013P  XLS with  30  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (30 rows)
+# LOADED:  2023.013P 
+# QC start: 2023.013P: proposal loaded (181 out of 203)
+# QCed:      2023.013P  with  262  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.014P )
+# LOADED:  2023.014P  DOCX with  262  errors/warnings
+# LOAD_PROPOSAL( 2023.014P , NA )
+# LOADED:  2023.014P  XLS with  262  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (262 rows)
+# LOADED:  2023.014P 
+# QC start: 2023.014P: proposal loaded (182 out of 203)
+# QCed:      2023.014P  with  262  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.015P )
+# LOADED:  2023.015P  DOCX with  262  errors/warnings
+# LOAD_PROPOSAL( 2023.015P , NA )
+# LOADED:  2023.015P  XLS with  262  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (262 rows)
+# LOADED:  2023.015P 
+# QC start: 2023.015P: proposal loaded (183 out of 203)
+# QCed:      2023.015P  with  262  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.016P )
+# LOADED:  2023.016P  DOCX with  262  errors/warnings
+# LOAD_PROPOSAL( 2023.016P , NA )
+# LOADED:  2023.016P  XLS with  262  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (262 rows)
+# LOADED:  2023.016P 
+# QC start: 2023.016P: proposal loaded (184 out of 203)
+# QCed:      2023.016P  with  262  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.017P )
+# LOADED:  2023.017P  DOCX with  262  errors/warnings
+# LOAD_PROPOSAL( 2023.017P , NA )
+# LOADED:  2023.017P  XLS with  262  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (262 rows)
+# LOADED:  2023.017P 
+# QC start: 2023.017P: proposal loaded (185 out of 203)
+# QCed:      2023.017P  with  262  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.018P )
+# LOADED:  2023.018P  DOCX with  262  errors/warnings
+# LOAD_PROPOSAL( 2023.018P , NA )
+# LOADED:  2023.018P  XLS with  262  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (262 rows)
+# LOADED:  2023.018P 
+# QC start: 2023.018P: proposal loaded (186 out of 203)
+# QCed:      2023.018P  with  262  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.019P )
+# LOADED:  2023.019P  DOCX with  262  errors/warnings
+# LOAD_PROPOSAL( 2023.019P , NA )
+# LOADED:  2023.019P  XLS with  262  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (262 rows)
+# LOADED:  2023.019P 
+# QC start: 2023.019P: proposal loaded (187 out of 203)
+# QCed:      2023.019P  with  262  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.020P )
+# LOADED:  2023.020P  DOCX with  262  errors/warnings
+# LOAD_PROPOSAL( 2023.020P , NA )
+# LOADED:  2023.020P  XLS with  262  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (262 rows)
+# LOADED:  2023.020P 
+# QC start: 2023.020P: proposal loaded (188 out of 203)
+# QCed:      2023.020P  with  262  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.021P )
+# LOADED:  2023.021P  DOCX with  262  errors/warnings
+# LOAD_PROPOSAL( 2023.021P , NA )
+# LOADED:  2023.021P  XLS with  262  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (262 rows)
+# LOADED:  2023.021P 
+# QC start: 2023.021P: proposal loaded (189 out of 203)
+# QCed:      2023.021P  with  262  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.022P )
+# LOADED:  2023.022P  DOCX with  262  errors/warnings
+# LOAD_PROPOSAL( 2023.022P , NA )
+# LOADED:  2023.022P  XLS with  262  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (262 rows)
+# LOADED:  2023.022P 
+# QC start: 2023.022P: proposal loaded (190 out of 203)
+# QCed:      2023.022P  with  262  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.023P )
+# LOADED:  2023.023P  DOCX with  262  errors/warnings
+# LOAD_PROPOSAL( 2023.023P , NA )
+# LOADED:  2023.023P  XLS with  262  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (262 rows)
+# LOADED:  2023.023P 
+# QC start: 2023.023P: proposal loaded (191 out of 203)
+# QCed:      2023.023P  with  262  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.024P )
+# LOADED:  2023.024P  DOCX with  262  errors/warnings
+# LOAD_PROPOSAL( 2023.024P , NA )
+# LOADED:  2023.024P  XLS with  262  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (262 rows)
+# LOADED:  2023.024P 
+# QC start: 2023.024P: proposal loaded (192 out of 203)
+# QCed:      2023.024P  with  262  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.025P )
+# LOADED:  2023.025P  DOCX with  262  errors/warnings
+# LOAD_PROPOSAL( 2023.025P , NA )
+# LOADED:  2023.025P  XLS with  262  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (262 rows)
+# LOADED:  2023.025P 
+# QC start: 2023.025P: proposal loaded (193 out of 203)
+# QCed:      2023.025P  with  262  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.027P )
+# LOADED:  2023.027P  DOCX with  262  errors/warnings
+# LOAD_PROPOSAL( 2023.027P , NA )
+# LOADED:  2023.027P  XLS with  262  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (262 rows)
+# LOADED:  2023.027P 
+# QC start: 2023.027P: proposal loaded (194 out of 203)
+# QCed:      2023.027P  with  262  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.028P )
+# LOADED:  2023.028P  DOCX with  262  errors/warnings
+# LOAD_PROPOSAL( 2023.028P , NA )
+# LOADED:  2023.028P  XLS with  262  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (262 rows)
+# LOADED:  2023.028P 
+# QC start: 2023.028P: proposal loaded (195 out of 203)
+# QCed:      2023.028P  with  262  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.029P )
+# LOADED:  2023.029P  DOCX with  262  errors/warnings
+# LOAD_PROPOSAL( 2023.029P , NA )
+# LOADED:  2023.029P  XLS with  262  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (262 rows)
+# LOADED:  2023.029P 
+# QC start: 2023.029P: proposal loaded (196 out of 203)
+# QCed:      2023.029P  with  262  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.030P )
+# LOADED:  2023.030P  DOCX with  262  errors/warnings
+# LOAD_PROPOSAL( 2023.030P , NA )
+# LOADED:  2023.030P  XLS with  262  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (262 rows)
+# LOADED:  2023.030P 
+# QC start: 2023.030P: proposal loaded (197 out of 203)
+# QCed:      2023.030P  with  262  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.031P )
+# LOADED:  2023.031P  DOCX with  262  errors/warnings
+# LOAD_PROPOSAL( 2023.031P , NA )
+# LOADED:  2023.031P  XLS with  262  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (262 rows)
+# LOADED:  2023.031P 
+# QC start: 2023.031P: proposal loaded (198 out of 203)
+# QCed:      2023.031P  with  262  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.032P )
+# LOADED:  2023.032P  DOCX with  262  errors/warnings
+# LOAD_PROPOSAL( 2023.032P , NA )
+# LOADED:  2023.032P  XLS with  262  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (262 rows)
+# LOADED:  2023.032P 
+# QC start: 2023.032P: proposal loaded (199 out of 203)
+# QCed:      2023.032P  with  262  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.033P )
+# LOADED:  2023.033P  DOCX with  262  errors/warnings
+# LOAD_PROPOSAL( 2023.033P , NA )
+# LOADED:  2023.033P  XLS with  262  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (262 rows)
+# LOADED:  2023.033P 
+# QC start: 2023.033P: proposal loaded (200 out of 203)
+# QCed:      2023.033P  with  262  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.035P )
+# LOADED:  2023.035P  DOCX with  262  errors/warnings
+# LOAD_PROPOSAL( 2023.035P , NA )
+# LOADED:  2023.035P  XLS with  262  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (262 rows)
+# LOADED:  2023.035P 
+# QC start: 2023.035P: proposal loaded (201 out of 203)
+# QCed:      2023.035P  with  262  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.036P )
+# LOADED:  2023.036P  DOCX with  262  errors/warnings
+# LOAD_PROPOSAL( 2023.036P , NA )
+# LOADED:  2023.036P  XLS with  262  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (262 rows)
+# LOADED:  2023.036P 
+# QC start: 2023.036P: proposal loaded (202 out of 203)
+# QCed:      2023.036P  with  262  errors/warnings
+# SKIPPED:  2023.002G  (no .xlsx)
+changeList:  2023.001S 2023.002S 2023.003S 2023.004S 2023.005S 2023.006S 2023.007S 2023.008S 2023.009S 2023.010S 2023.011S 2023.012S 2023.013S 2023.014S 2023.001D 2023.002D 2023.003D 2023.004D 2023.005D 2023.006D 2023.007D 2023.008D 2023.009D 2023.011D 2023.012D 2023.013D 2023.014D 2023.015D 2023.016D 2023.017D 2023.018D 2023.019D 2023.020D 2023.021D 2023.022D 2023.023D 2023.024D 2023.025D 2023.001M 2023.002M 2023.003M 2023.004M 2023.005M 2023.006M 2023.007M 2023.008M 2023.009M 2023.010M 2023.011M 2023.012M 2023.013M 2023.014M 2023.015M 2023.016M 2023.017M 2023.018M 2023.019M 2023.020M 2023.021M 2023.022M 2023.023M 2023.024M 2023.025M 2023.026M 2023.027M 2023.028M 2023.029M 2023.030M 2023.031M 2023.032M 2023.033M 2023.034M 2023.035M 2023.001A 2023.002A 2023.001B 2023.002B 2023.003B 2023.004B 2023.005B 2023.006B 2023.007B 2023.008B 2023.009B 2023.010B 2023.011B 2023.012B 2023.013B 2023.014B 2023.015B 2023.016B 2023.017B 2023.018B 2023.019B 2023.020B 2023.021B 2023.022B 2023.023B 2023.024B 2023.025B 2023.026B 2023.027B 2023.029B 2023.030B 2023.031B 2023.032B 2023.033B 2023.034B 2023.035B 2023.036B 2023.037B 2023.038B 2023.039B 2023.040B 2023.041B 2023.042B 2023.043B 2023.044B 2023.045B 2023.046B 2023.047B 2023.048B 2023.049B 2023.050B 2023.051B 2023.052B 2023.053B 2023.054B 2023.055B 2023.056B 2023.057B 2023.058B 2023.059B 2023.060B 2023.061B 2023.062B 2023.063B 2023.064B 2023.065B 2023.066B 2023.067B 2023.068B 2023.069B 2023.070B 2023.071B 2023.072B 2023.073B 2023.074B 2023.075B 2023.076B 2023.077B 2023.078B 2023.079B 2023.080B 2023.001F 2023.002F 2023.003F 2023.004F 2023.005F 2023.006F 2023.007F 2023.008F 2023.009F 2023.010F 2023.011F 2023.012F 2023.013F 2023.014F 2023.015F 2023.002P 2023.003P 2023.004P 2023.005P 2023.006P 2023.007P 2023.008P 2023.009P 2023.010P 2023.011P 2023.012P 2023.013P 2023.014P 2023.015P 2023.016P 2023.017P 2023.018P 2023.019P 2023.020P 2023.021P 2023.022P 2023.023P 2023.024P 2023.025P 2023.027P 2023.028P 2023.029P 2023.030P 2023.031P 2023.032P 2023.033P 2023.035P 2023.036P 
+Wrote: OUTDIR/QC.summary.tsv (262 rows)
+# MERGE PROC: 2023.001S with 13 changes  (1 out of 203)
+# MERGE PROC: 2023.002S with 7 changes  (2 out of 203)
+# MERGE PROC: 2023.003S with 158 changes  (3 out of 203)
+# MERGE PROC: 2023.004S with 22 changes  (4 out of 203)
+# MERGE PROC: 2023.005S with 13 changes  (5 out of 203)
+# MERGE PROC: 2023.006S with 32 changes  (6 out of 203)
+# MERGE PROC: 2023.007S with 2 changes  (7 out of 203)
+# MERGE PROC: 2023.008S with 14 changes  (8 out of 203)
+# MERGE PROC: 2023.009S with 12 changes  (9 out of 203)
+# MERGE PROC: 2023.010S with 9 changes  (10 out of 203)
+# MERGE PROC: 2023.011S with 1 changes  (11 out of 203)
+# MERGE PROC: 2023.012S with 54 changes  (12 out of 203)
+# MERGE PROC: 2023.013S with 27 changes  (13 out of 203)
+# MERGE PROC: 2023.014S with 1 changes  (14 out of 203)
+# MERGE PROC: 2023.001D with 1 changes  (15 out of 203)
+# MERGE PROC: 2023.002D with 3 changes  (16 out of 203)
+# MERGE PROC: 2023.003D with 2 changes  (17 out of 203)
+# MERGE PROC: 2023.004D with 1 changes  (18 out of 203)
+# MERGE PROC: 2023.005D with 20 changes  (19 out of 203)
+# MERGE PROC: 2023.006D with 2 changes  (20 out of 203)
+# MERGE PROC: 2023.007D with 14 changes  (21 out of 203)
+# MERGE PROC: 2023.008D with 109 changes  (22 out of 203)
+# MERGE PROC: 2023.009D with 68 changes  (23 out of 203)
+# MERGE PROC: 2023.011D with 59 changes  (24 out of 203)
+# MERGE PROC: 2023.012D with 22 changes  (25 out of 203)
+# MERGE PROC: 2023.013D with 1 changes  (26 out of 203)
+# MERGE PROC: 2023.014D with 27 changes  (27 out of 203)
+# MERGE PROC: 2023.015D with 28 changes  (28 out of 203)
+# MERGE PROC: 2023.016D with 2 changes  (29 out of 203)
+# MERGE PROC: 2023.017D with 55 changes  (30 out of 203)
+# MERGE PROC: 2023.018D with 19 changes  (31 out of 203)
+# MERGE PROC: 2023.019D with 15 changes  (32 out of 203)
+# MERGE PROC: 2023.020D with 49 changes  (33 out of 203)
+# MERGE PROC: 2023.021D with 64 changes  (34 out of 203)
+# MERGE PROC: 2023.022D with 25 changes  (35 out of 203)
+# MERGE PROC: 2023.023D with 111 changes  (36 out of 203)
+# MERGE PROC: 2023.024D with 99 changes  (37 out of 203)
+# MERGE PROC: 2023.025D with 158 changes  (38 out of 203)
+# MERGE PROC: 2023.001M with 1 changes  (39 out of 203)
+# MERGE PROC: 2023.002M with 4 changes  (40 out of 203)
+# MERGE PROC: 2023.003M with 8 changes  (41 out of 203)
+# MERGE PROC: 2023.004M with 12 changes  (42 out of 203)
+# MERGE PROC: 2023.005M with 4 changes  (43 out of 203)
+# MERGE PROC: 2023.006M with 3 changes  (44 out of 203)
+# MERGE PROC: 2023.007M with 1 changes  (45 out of 203)
+# MERGE PROC: 2023.008M with 12 changes  (46 out of 203)
+# MERGE PROC: 2023.009M with 1 changes  (47 out of 203)
+# MERGE PROC: 2023.010M with 1 changes  (48 out of 203)
+# MERGE PROC: 2023.011M with 5 changes  (49 out of 203)
+# MERGE PROC: 2023.012M with 1 changes  (50 out of 203)
+# MERGE PROC: 2023.013M with 1 changes  (51 out of 203)
+# MERGE PROC: 2023.014M with 2 changes  (52 out of 203)
+# MERGE PROC: 2023.015M with 17 changes  (53 out of 203)
+# MERGE PROC: 2023.016M with 11 changes  (54 out of 203)
+# MERGE PROC: 2023.017M with 10 changes  (55 out of 203)
+# MERGE PROC: 2023.018M with 98 changes  (56 out of 203)
+# MERGE PROC: 2023.019M with 3 changes  (57 out of 203)
+# MERGE PROC: 2023.020M with 4 changes  (58 out of 203)
+# MERGE PROC: 2023.021M with 37 changes  (59 out of 203)
+# MERGE PROC: 2023.022M with 33 changes  (60 out of 203)
+# MERGE PROC: 2023.023M with 21 changes  (61 out of 203)
+# MERGE PROC: 2023.024M with 16 changes  (62 out of 203)
+# MERGE PROC: 2023.025M with 2 changes  (63 out of 203)
+# MERGE PROC: 2023.026M with 9 changes  (64 out of 203)
+# MERGE PROC: 2023.027M with 6 changes  (65 out of 203)
+# MERGE PROC: 2023.028M with 10 changes  (66 out of 203)
+# MERGE PROC: 2023.029M with 7 changes  (67 out of 203)
+# MERGE PROC: 2023.030M with 2 changes  (68 out of 203)
+# MERGE PROC: 2023.031M with 8 changes  (69 out of 203)
+# MERGE PROC: 2023.032M with 1 changes  (70 out of 203)
+# MERGE PROC: 2023.033M with 39 changes  (71 out of 203)
+# MERGE PROC: 2023.034M with 58 changes  (72 out of 203)
+# MERGE PROC: 2023.035M with 15 changes  (73 out of 203)
+# MERGE PROC: 2023.001A with 111 changes  (74 out of 203)
+# MERGE PROC: 2023.002A with 15 changes  (75 out of 203)
+# MERGE PROC: 2023.001B with 2662 changes  (76 out of 203)
+# MERGE PROC: 2023.002B with 12 changes  (77 out of 203)
+# MERGE PROC: 2023.003B with 48 changes  (78 out of 203)
+# MERGE PROC: 2023.004B with 2 changes  (79 out of 203)
+# MERGE PROC: 2023.005B with 2 changes  (80 out of 203)
+# MERGE PROC: 2023.006B with 2 changes  (81 out of 203)
+# MERGE PROC: 2023.007B with 8 changes  (82 out of 203)
+# MERGE PROC: 2023.008B with 4 changes  (83 out of 203)
+# MERGE PROC: 2023.009B with 2 changes  (84 out of 203)
+# MERGE PROC: 2023.010B with 22 changes  (85 out of 203)
+# MERGE PROC: 2023.011B with 13 changes  (86 out of 203)
+# MERGE PROC: 2023.012B with 28 changes  (87 out of 203)
+# MERGE PROC: 2023.013B with 2 changes  (88 out of 203)
+# MERGE PROC: 2023.014B with 20 changes  (89 out of 203)
+# MERGE PROC: 2023.015B with 19 changes  (90 out of 203)
+# MERGE PROC: 2023.016B with 2 changes  (91 out of 203)
+# MERGE PROC: 2023.017B with 8 changes  (92 out of 203)
+# MERGE PROC: 2023.018B with 4 changes  (93 out of 203)
+# MERGE PROC: 2023.019B with 9 changes  (94 out of 203)
+# MERGE PROC: 2023.020B with 42 changes  (95 out of 203)
+# MERGE PROC: 2023.021B with 3 changes  (96 out of 203)
+# MERGE PROC: 2023.022B with 16 changes  (97 out of 203)
+# MERGE PROC: 2023.023B with 41 changes  (98 out of 203)
+# MERGE PROC: 2023.024B with 1 changes  (99 out of 203)
+# MERGE PROC: 2023.025B with 8 changes  (100 out of 203)
+# MERGE PROC: 2023.026B with 11 changes  (101 out of 203)
+# MERGE PROC: 2023.027B with 21 changes  (102 out of 203)
+# MERGE PROC: 2023.029B with 17 changes  (103 out of 203)
+# MERGE PROC: 2023.030B with 7 changes  (104 out of 203)
+# MERGE PROC: 2023.031B with 2 changes  (105 out of 203)
+# MERGE PROC: 2023.032B with 2 changes  (106 out of 203)
+# MERGE PROC: 2023.033B with 4 changes  (107 out of 203)
+# MERGE PROC: 2023.034B with 5 changes  (108 out of 203)
+# MERGE PROC: 2023.035B with 9 changes  (109 out of 203)
+# MERGE PROC: 2023.036B with 27 changes  (110 out of 203)
+# MERGE PROC: 2023.037B with 53 changes  (111 out of 203)
+# MERGE PROC: 2023.038B with 6 changes  (112 out of 203)
+# MERGE PROC: 2023.039B with 23 changes  (113 out of 203)
+# MERGE PROC: 2023.040B with 6 changes  (114 out of 203)
+# MERGE PROC: 2023.041B with 3 changes  (115 out of 203)
+# MERGE PROC: 2023.042B with 7 changes  (116 out of 203)
+# MERGE PROC: 2023.043B with 22 changes  (117 out of 203)
+# MERGE PROC: 2023.044B with 4 changes  (118 out of 203)
+# MERGE PROC: 2023.045B with 2 changes  (119 out of 203)
+# MERGE PROC: 2023.046B with 2 changes  (120 out of 203)
+# MERGE PROC: 2023.047B with 1 changes  (121 out of 203)
+# MERGE PROC: 2023.048B with 11 changes  (122 out of 203)
+# MERGE PROC: 2023.049B with 15 changes  (123 out of 203)
+# MERGE PROC: 2023.050B with 1 changes  (124 out of 203)
+# MERGE PROC: 2023.051B with 17 changes  (125 out of 203)
+# MERGE PROC: 2023.052B with 2 changes  (126 out of 203)
+# MERGE PROC: 2023.053B with 5 changes  (127 out of 203)
+# MERGE PROC: 2023.054B with 11 changes  (128 out of 203)
+# MERGE PROC: 2023.055B with 4 changes  (129 out of 203)
+# MERGE PROC: 2023.056B with 7 changes  (130 out of 203)
+# MERGE PROC: 2023.057B with 12 changes  (131 out of 203)
+# MERGE PROC: 2023.058B with 4 changes  (132 out of 203)
+# MERGE PROC: 2023.059B with 2 changes  (133 out of 203)
+# MERGE PROC: 2023.060B with 1 changes  (134 out of 203)
+# MERGE PROC: 2023.061B with 3 changes  (135 out of 203)
+# MERGE PROC: 2023.062B with 26 changes  (136 out of 203)
+# MERGE PROC: 2023.063B with 7 changes  (137 out of 203)
+# MERGE PROC: 2023.064B with 16 changes  (138 out of 203)
+# MERGE PROC: 2023.065B with 37 changes  (139 out of 203)
+# MERGE PROC: 2023.066B with 1 changes  (140 out of 203)
+# MERGE PROC: 2023.067B with 35 changes  (141 out of 203)
+# MERGE PROC: 2023.068B with 9 changes  (142 out of 203)
+# MERGE PROC: 2023.069B with 7 changes  (143 out of 203)
+# MERGE PROC: 2023.070B with 10 changes  (144 out of 203)
+# MERGE PROC: 2023.071B with 10 changes  (145 out of 203)
+# MERGE PROC: 2023.072B with 58 changes  (146 out of 203)
+# MERGE PROC: 2023.073B with 28 changes  (147 out of 203)
+# MERGE PROC: 2023.074B with 2 changes  (148 out of 203)
+# MERGE PROC: 2023.075B with 3 changes  (149 out of 203)
+# MERGE PROC: 2023.076B with 11 changes  (150 out of 203)
+# MERGE PROC: 2023.077B with 68 changes  (151 out of 203)
+# MERGE PROC: 2023.078B with 2 changes  (152 out of 203)
+# MERGE PROC: 2023.079B with 2 changes  (153 out of 203)
+# MERGE PROC: 2023.080B with 2 changes  (154 out of 203)
+# MERGE PROC: 2023.001F with 1 changes  (155 out of 203)
+# MERGE PROC: 2023.002F with 5 changes  (156 out of 203)
+# MERGE PROC: 2023.003F with 2 changes  (157 out of 203)
+# MERGE PROC: 2023.004F with 5 changes  (158 out of 203)
+# MERGE PROC: 2023.005F with 10 changes  (159 out of 203)
+# MERGE PROC: 2023.006F with 8 changes  (160 out of 203)
+# MERGE PROC: 2023.007F with 31 changes  (161 out of 203)
+# MERGE PROC: 2023.008F with 30 changes  (162 out of 203)
+# MERGE PROC: 2023.009F with 25 changes  (163 out of 203)
+# MERGE PROC: 2023.010F with 33 changes  (164 out of 203)
+# MERGE PROC: 2023.011F with 13 changes  (165 out of 203)
+# MERGE PROC: 2023.012F with 60 changes  (166 out of 203)
+# MERGE PROC: 2023.013F with 4 changes  (167 out of 203)
+# MERGE PROC: 2023.014F with 4 changes  (168 out of 203)
+# MERGE PROC: 2023.015F with 216 changes  (169 out of 203)
+# MERGE PROC: 2023.002P with 31 changes  (170 out of 203)
+# MERGE PROC: 2023.003P with 1 changes  (171 out of 203)
+# MERGE PROC: 2023.004P with 36 changes  (172 out of 203)
+# MERGE PROC: 2023.005P with 10 changes  (173 out of 203)
+# MERGE PROC: 2023.006P with 30 changes  (174 out of 203)
+# MERGE PROC: 2023.007P with 1 changes  (175 out of 203)
+# MERGE PROC: 2023.008P with 1 changes  (176 out of 203)
+# MERGE PROC: 2023.009P with 1 changes  (177 out of 203)
+# MERGE PROC: 2023.010P with 1 changes  (178 out of 203)
+# MERGE PROC: 2023.011P with 1 changes  (179 out of 203)
+# MERGE PROC: 2023.012P with 5 changes  (180 out of 203)
+# MERGE PROC: 2023.013P with 232 changes  (181 out of 203)
+# MERGE PROC: 2023.014P with 3 changes  (182 out of 203)
+# MERGE PROC: 2023.015P with 520 changes  (183 out of 203)
+# MERGE PROC: 2023.016P with 63 changes  (184 out of 203)
+# MERGE PROC: 2023.017P with 6 changes  (185 out of 203)
+# MERGE PROC: 2023.018P with 16 changes  (186 out of 203)
+# MERGE PROC: 2023.019P with 58 changes  (187 out of 203)
+# MERGE PROC: 2023.020P with 10 changes  (188 out of 203)
+# MERGE PROC: 2023.021P with 5 changes  (189 out of 203)
+# MERGE PROC: 2023.022P with 47 changes  (190 out of 203)
+# MERGE PROC: 2023.023P with 1 changes  (191 out of 203)
+# MERGE PROC: 2023.024P with 14 changes  (192 out of 203)
+# MERGE PROC: 2023.025P with 65 changes  (193 out of 203)
+# MERGE PROC: 2023.027P with 139 changes  (194 out of 203)
+# MERGE PROC: 2023.028P with 13 changes  (195 out of 203)
+# MERGE PROC: 2023.029P with 2 changes  (196 out of 203)
+# MERGE PROC: 2023.030P with 57 changes  (197 out of 203)
+# MERGE PROC: 2023.031P with 1 changes  (198 out of 203)
+# MERGE PROC: 2023.032P with 44 changes  (199 out of 203)
+# MERGE PROC: 2023.033P with 65 changes  (200 out of 203)
+# MERGE PROC: 2023.035P with 131 changes  (201 out of 203)
+# MERGE PROC: 2023.036P with 55 changes  (202 out of 203)
+# DONE. MERGED 202  proposal(s), skipped 1 ; total changes: 7663 
+Wrote: OUTDIR/QC.summary.tsv (264 rows)
+# APPLIED: 111 changes from 2023.001A.Archaeal_binomials  with SUCCESS:111 
+# APPLIED: 2662 changes from 2023.001B.Leviviricetes_reorg  with SUCCESS:2662 
+# APPLIED:   1 changes from 2023.001D.Circoviridae_1nsp  with SUCCESS:1 
+# APPLIED:   1 changes from 2023.001F.Botourmiaviridae_move_rename1sp  with SUCCESS:1 
+# APPLIED:   1 changes from 2023.001M.Almendravirus_1sp_rename  with SUCCESS:1 
+# APPLIED:  13 changes from 2023.001S.Caliciviridae_12sprenamed  with SUCCESS:13 
+# APPLIED:  15 changes from 2023.002A.Caudoviricetes_5nf_v2  with SUCCESS:15 
+# APPLIED:  12 changes from 2023.002B.Actinobacteriophage_Database_Cluster_FE_1nsf_5ng  with SUCCESS:12 
+# APPLIED:   3 changes from 2023.002D.Circoviridae_3nsp  with SUCCESS:3 
+# APPLIED:   5 changes from 2023.002F.Trichomonasvirus_1nsp_spren  with INFO:5 SUCCESS:5 
+# APPLIED:   4 changes from 2023.002M.Alpharhabdovirinae_2ngen_2nsp  with SUCCESS:4 
+# APPLIED:  31 changes from 2023.002P.Endornaviridae_rename_sp  with SUCCESS:31 
+# APPLIED:   7 changes from 2023.002S.Arteriviridae_7sprenamed  with SUCCESS:7 
+# APPLIED:  48 changes from 2023.003B.Actinobacteriophage_singletons_25ng  with SUCCESS:48 
+# APPLIED:   2 changes from 2023.003D.Circoviridae_2nsp  with SUCCESS:2 
+# APPLIED:   2 changes from 2023.003F.Narnaviridae_spren  with WARNING:2 SUCCESS:2 
+# APPLIED:   8 changes from 2023.003M.Alpharhabdovirinae_8nsp  with SUCCESS:8 
+# APPLIED:   1 changes from 2023.003P.Metaxyviridae_rename_1sp  with SUCCESS:1 
+# APPLIED: 158 changes from 2023.003S.Picornaviridae_158sprenamed  with SUCCESS:158 
+# APPLIED:   2 changes from 2023.004B.Ahotrevirus_ng  with SUCCESS:2 
+# APPLIED:   1 changes from 2023.004D.Anelloviride_1nsp  with SUCCESS:1 
+# APPLIED:   5 changes from 2023.004F.Marseilleviridae_1newgen_spren  with SUCCESS:5 
+# APPLIED:  12 changes from 2023.004M.Betarhabdovirinae_2ngen_9nsp_move1sp  with SUCCESS:12 
+# APPLIED:  36 changes from 2023.004P.Bromoviridae_rename_sp  with SUCCESS:36 
+# APPLIED:  22 changes from 2023.004S.Astroviridae_22sprenamed  with SUCCESS:22 
+# APPLIED:   2 changes from 2023.005B.Andromedavirus_2ns  with SUCCESS:2 
+# APPLIED:  20 changes from 2023.005D.Anelloviride_4ngen_16nsp  with SUCCESS:20 
+# APPLIED:  10 changes from 2023.005F.Polymycoviridae_spren  with SUCCESS:10 
+# APPLIED:   4 changes from 2023.005M.Bornaviridae_1ngen_3nsp  with SUCCESS:4 
+# APPLIED:  10 changes from 2023.005P.Bromoviridae_10ns  with SUCCESS:10 
+# APPLIED:  13 changes from 2023.005S.Tetraviridae_13sprenamed  with SUCCESS:13 
+# APPLIED:   2 changes from 2023.006B.Aquaneticvirus_ng  with SUCCESS:2 
+# APPLIED:   2 changes from 2023.006D.Redondoviride_2ren  with SUCCESS:2 
+# APPLIED:   8 changes from 2023.006F.Curvulaviridae_spren  with INFO:8 SUCCESS:8 
+# APPLIED:   3 changes from 2023.006M.Bunyavirales_1nfam_1ngen_1nsp  with INFO:3 SUCCESS:3 
+# APPLIED:  30 changes from 2023.006P.Alphasatellitidae_rename_30sp  with SUCCESS:30 
+# APPLIED:  32 changes from 2023.006S.Togaviridae_32sprenamed  with SUCCESS:32 
+# APPLIED:   8 changes from 2023.007B.Aquingentivirus_ng  with SUCCESS:8 
+# APPLIED:  14 changes from 2023.007D.Parvoviridae_12nsp  with SUCCESS:14 
+# APPLIED:  31 changes from 2023.007F.Ambiviricota_nphy  with SUCCESS:31 
+# APPLIED:   1 changes from 2023.007M.Coguvirus_1nsp  with INFO:1 SUCCESS:1 
+# APPLIED:   1 changes from 2023.007P.Serpentovirales_1nord_rename  with SUCCESS:1 
+# APPLIED:   2 changes from 2023.007S.Solinviviridae_2sprenamed  with SUCCESS:2 
+# APPLIED:   4 changes from 2023.008B.Athenavirus_Theosmithvirus_2ng  with SUCCESS:4 
+# APPLIED: 109 changes from 2023.008D.Adenoviridae_1reng_22ns_86rensp  with INFO:13 SUCCESS:109 
+# APPLIED:  30 changes from 2023.008F.Arfiviricetes_11ng_19nsp  with SUCCESS:30 
+# APPLIED:  12 changes from 2023.008M.Cytorhabdovirus_12nsp  with SUCCESS:12 
+# APPLIED:   1 changes from 2023.008P.Aspiviridae_1nsp  with INFO:1 SUCCESS:1 
+# APPLIED:  14 changes from 2023.008S.Polycipiviridae_14sprenamed  with SUCCESS:14 
+# APPLIED:   2 changes from 2023.009B.Bauervirus_ng  with SUCCESS:2 
+# APPLIED:  68 changes from 2023.009D.Retroviridae_68rensp  with SUCCESS:68 
+# APPLIED:  25 changes from 2023.009F.Virophages_reorg  with INFO:2 SUCCESS:25 
+# APPLIED:   1 changes from 2023.009M.Dichorhavirus_1nsp  with SUCCESS:1 
+# APPLIED:   1 changes from 2023.009P.Emaravirus_1nsp  with INFO:1 SUCCESS:1 
+# APPLIED:  12 changes from 2023.009S.Mesoniviridae_12sprenamed-  with SUCCESS:12 
+# APPLIED:  22 changes from 2023.010B.Bradleyvirinae_5ng  with INFO:3 SUCCESS:22 
+# APPLIED:  33 changes from 2023.010F.Phycodnaviridae_abolish19sp_spren  with SUCCESS:33 
+# APPLIED:   1 changes from 2023.010M.Ephemerovirus_1nsp  with SUCCESS:1 
+# APPLIED:   1 changes from 2023.010P.Emaravirus_1nsp  with INFO:1 SUCCESS:1 
+# APPLIED:   9 changes from 2023.010S.Nodaviridae_9sprenamed  with SUCCESS:9 
+# APPLIED:  13 changes from 2023.011B.Braunvirinae_3ng  with SUCCESS:13 
+# APPLIED:  59 changes from 2023.011D.Smacoviridae_59nsp  with SUCCESS:59 
+# APPLIED:  13 changes from 2023.011F.Pimascovirales_3newfam  with SUCCESS:13 
+# APPLIED:   5 changes from 2023.011M.Lispiviridae_1ngen_4nsp  with SUCCESS:5 
+# APPLIED:   1 changes from 2023.011P.Emaravirus_1nsp  with INFO:1 SUCCESS:1 
+# APPLIED:   1 changes from 2023.011S.Sarthroviridae_1sprenamed  with SUCCESS:1 
+# APPLIED:  28 changes from 2023.012B.Brockvirinae_28ns  with SUCCESS:28 
+# APPLIED:  22 changes from 2023.012D.Iridoviridae_22renam  with SUCCESS:22 
+# APPLIED:  60 changes from 2023.012F.Partitiviridae_abolish15sp_spren  with SUCCESS:60 
+# APPLIED:   1 changes from 2023.012M.Lyssavirus_1nsp  with SUCCESS:1 
+# APPLIED:   5 changes from 2023.012P.Potyviridae_5nsp  with SUCCESS:5 
+# APPLIED:  54 changes from 2023.012S.Coronaviridae_54sprenamed-  with SUCCESS:54 
+# APPLIED:   2 changes from 2023.013B.Bunatrivirus_ng  with SUCCESS:2 
+# APPLIED:   1 changes from 2023.013D.Polyomaviridae_1nsp  with SUCCESS:1 
+# APPLIED:   4 changes from 2023.013F.Deltaflexiviridae_1nsp_spren  with SUCCESS:4 
+# APPLIED:   1 changes from 2023.013M.Mammarenavirus_1nsp  with INFO:1 SUCCESS:1 
+# APPLIED: 232 changes from 2023.013P.Potyviridae_rename_sp  with WARNING:232 SUCCESS:232 
+# APPLIED:  27 changes from 2023.013S.Nidovirales_27sprenamed  with SUCCESS:27 
+# APPLIED:  20 changes from 2023.014B.Chaseviridae_4ng  with SUCCESS:20 
+# APPLIED:  27 changes from 2023.014D.Hepadnaviridae_19renam_9nsp  with WARNING:18 SUCCESS:27 
+# APPLIED:   4 changes from 2023.014F.Gammaflexiviridae_spren  with SUCCESS:4 
+# APPLIED:   2 changes from 2023.014M.Mammarenavirus_2nsp  with INFO:2 SUCCESS:2 
+# APPLIED:   3 changes from 2023.014P.Geminiviridae_1ng_2nsp  with SUCCESS:3 
+# APPLIED:   1 changes from 2023.014S.Senecavirus_nsp  with WARNING:1 SUCCESS:1 
+# APPLIED:  19 changes from 2023.015B.Chimalliviridae_nf  with SUCCESS:19 
+# APPLIED:  28 changes from 2023.015D.Poxviridae_ab_27sp_1g  with SUCCESS:28 
+# APPLIED: 216 changes from 2023.015F.Ghabrivirales_reorg  with INFO:118 SUCCESS:216 
+# APPLIED:  17 changes from 2023.015M.Alpharhabdovirinae_17nsp  with SUCCESS:17 
+# APPLIED: 520 changes from 2023.015P.Geminiviridae_rename_sp  with SUCCESS:520 
+# APPLIED:   2 changes from 2023.016B.Commandariavirus_ng  with SUCCESS:2 
+# APPLIED:   2 changes from 2023.016D.Poxviridae_1ng  with SUCCESS:2 
+# APPLIED:  11 changes from 2023.016M.Mymonaviridae_11nsp  with SUCCESS:11 
+# APPLIED:  63 changes from 2023.016P.Virgaviridae_and_Benyviridae_rename_sp  with SUCCESS:63 
+# APPLIED:   8 changes from 2023.017B.Cornellvirus_8ns  with SUCCESS:8 
+# APPLIED:  55 changes from 2023.017D.Poxviridae_55renam  with SUCCESS:55 
+# APPLIED:  10 changes from 2023.017M.Betarhabdovirinae_1ng_7nsp  with SUCCESS:10 
+# APPLIED:   6 changes from 2023.017P.Caulimoviridae_6nsp  with SUCCESS:6 
+# APPLIED:   4 changes from 2023.018B.Crassvirales_1ng_3ns  with SUCCESS:4 
+# APPLIED:  19 changes from 2023.018D.Mulpavirales_1nf_9ng_9nsp  with SUCCESS:19 
+# APPLIED:  98 changes from 2023.018M.Paramyxoviridae_reorg  with INFO:2 SUCCESS:98 
+# APPLIED:  16 changes from 2023.018P.Secoviridae_16nsp  with SUCCESS:16 
+# APPLIED:   9 changes from 2023.019B.Daemsvirinae_nsf  with SUCCESS:9 
+# APPLIED:  15 changes from 2023.019D.Cirlivirales_1nf_4ng_10nsp  with SUCCESS:15 
+# APPLIED:   3 changes from 2023.019M.Phenuiviridae_1ng_1nsp_1spmr  with INFO:4 SUCCESS:3 
+# APPLIED:  58 changes from 2023.019P.Solemoviridae_rename_sp  with SUCCESS:58 
+# APPLIED:  42 changes from 2023.020B.Dhillonvirus_42ns  with SUCCESS:42 
+# APPLIED:  49 changes from 2023.020D.Geplafuvirales_1nf_18ng_30nsp  with SUCCESS:49 
+# APPLIED:   4 changes from 2023.020M.Phenuiviridae_4nsp  with INFO:4 SUCCESS:4 
+# APPLIED:  10 changes from 2023.020P.Enamovirus_10nsp  with SUCCESS:10 
+# APPLIED:   3 changes from 2023.021B.Efunavirus_ng  with SUCCESS:3 
+# APPLIED:  64 changes from 2023.021D.Rohanvirales_2nf_28ng_34nsp  with SUCCESS:64 
+# APPLIED:  37 changes from 2023.021M.Rhabdoviridae_24nsp_5ngen_1nsf  with WARNING:38 INFO:6 SUCCESS:37 
+# APPLIED:   5 changes from 2023.021P.Sobemovirus_5nsp  with SUCCESS:5 
+# APPLIED:  16 changes from 2023.022B.Caudoviricetes_Pseudomonas_7ng  with SUCCESS:16 
+# APPLIED:  25 changes from 2023.022D.Ringavirales_1no_1nf_8ng_15nsp  with SUCCESS:25 
+# APPLIED:  33 changes from 2023.022M.Varicosavirus_32nsp  with SUCCESS:33 
+# APPLIED:  47 changes from 2023.022P.Polerovirus_47nsp  with SUCCESS:47 
+# APPLIED:  41 changes from 2023.023B.Epseptimavirus_41ns  with SUCCESS:41 
+# APPLIED: 111 changes from 2023.023D.Squillovirales_1no_1nf_42ng_67nsp  with SUCCESS:111 
+# APPLIED:  21 changes from 2023.023M.Xinmoviridae_10ng_11nsp  with SUCCESS:21 
+# APPLIED:   1 changes from 2023.023P.Nanovirus_1nsp  with SUCCESS:1 
+# APPLIED:   1 changes from 2023.024B.Error_correction_JasinSkavirinae  with SUCCESS:1 
+# APPLIED:  99 changes from 2023.024D.Gredzevirales_1no_1nf_38ng_58nsp  with SUCCESS:99 
+# APPLIED:  16 changes from 2023.024M.Bunyaviricetes  with INFO:22 SUCCESS:16 
+# APPLIED:  14 changes from 2023.024P.Nanoviridae_rename_sp  with SUCCESS:14 
+# APPLIED:   8 changes from 2023.025B.Caudoviricetes_Gordonia_2ng  with SUCCESS:8 
+# APPLIED: 158 changes from 2023.025D.Saturnivirales_1no_2nf_35ng_120nsp  with SUCCESS:158 
+# APPLIED:   2 changes from 2023.025M.Filoviridae_1ng_1nsp  with SUCCESS:2 
+# APPLIED:  65 changes from 2023.025P.Alphaflexiviridae_rename_sp  with SUCCESS:65 
+# APPLIED:  11 changes from 2023.026B.Gordonvirus_11ns  with SUCCESS:11 
+# APPLIED:   9 changes from 2023.026M.Kolmioviridae_3ng_6nsp  with SUCCESS:9 
+# APPLIED:  21 changes from 2023.027B.Gorskivirinae_nsf  with INFO:10 SUCCESS:21 
+# APPLIED:   6 changes from 2023.027M.Mammarenavirus_6nsp  with INFO:6 SUCCESS:6 
+# APPLIED: 139 changes from 2023.027P.Betaflexiviridae_rename  with SUCCESS:139 
+# APPLIED:  10 changes from 2023.028M.Nairoviridae_1ng_9nsp  with INFO:10 SUCCESS:10 
+# APPLIED:  13 changes from 2023.028P.Betaflexiviridae_13nsp  with SUCCESS:13 
+# APPLIED:  17 changes from 2023.029B.Guarnerosvirinae_nsf  with SUCCESS:17 
+# APPLIED:   7 changes from 2023.029M.Nyamiviridae_7nsp  with SUCCESS:7 
+# APPLIED:   2 changes from 2023.029P.Hubsclerovirus_1ng_1nsp  with SUCCESS:2 
+# APPLIED:   7 changes from 2023.030B.Guelinviridae_7ns  with WARNING:4 SUCCESS:7 
+# APPLIED:   2 changes from 2023.030M.Orthophasmavirus_2sp_name_switch  with ERROR:4 INFO:2 
+# APPLIED:  57 changes from 2023.030P.Closteroviridae_rename_sp  with SUCCESS:57 
+# APPLIED:   2 changes from 2023.031B.Hafyongvirus_ng  with SUCCESS:2 
+# APPLIED:   8 changes from 2023.031M.Peribunyaviridae_1ng_7nsp  with INFO:8 SUCCESS:8 
+# APPLIED:   1 changes from 2023.031P.Apscaviroid_1nsp  with SUCCESS:1 
+# APPLIED:   2 changes from 2023.032B.Halfdanvirus_ng  with SUCCESS:2 
+# APPLIED:   1 changes from 2023.032M.Phlebovirus_1nsp_rename  with INFO:1 SUCCESS:1 
+# APPLIED:  44 changes from 2023.032P.Avsunviroidae_and_Pospiviroidae_rename_sp  with SUCCESS:44 
+# APPLIED:   4 changes from 2023.033B.Heleneionescovirinae_nsf  with INFO:1 SUCCESS:4 
+# APPLIED:  39 changes from 2023.033M.Sedoreoviridae_sprenam  with SUCCESS:39 
+# APPLIED:  65 changes from 2023.033P.Pseudoviridae_Metaviridae_rename_sp  with SUCCESS:65 
+# APPLIED:   5 changes from 2023.034B.Hollowayvirus_5ns  with SUCCESS:5 
+# APPLIED:  58 changes from 2023.034M.Spinoreoviridae_sprenam  with SUCCESS:58 
+# APPLIED:   9 changes from 2023.035B.Ignaciovirus_ng  with SUCCESS:9 
+# APPLIED:  15 changes from 2023.035M.Hantaviridae_reorg  with INFO:12 SUCCESS:15 
+# APPLIED: 131 changes from 2023.035P.Tolecusatellitidae_rename  with SUCCESS:131 
+# APPLIED:  27 changes from 2023.036B.Jameshumphriesvirinae_8ng  with SUCCESS:27 
+# APPLIED:  55 changes from 2023.036P.Geminialphasatellitinae_rename  with SUCCESS:55 
+# APPLIED:  53 changes from 2023.037B.Jerseyvirus_52ns_ab1sp  with SUCCESS:53 
+# APPLIED:   6 changes from 2023.038B.Johnpaulvirinae_nsf  with SUCCESS:6 
+# APPLIED:  23 changes from 2023.039B.Jondennisvirinae_nsf  with INFO:18 SUCCESS:23 
+# APPLIED:   6 changes from 2023.040B.Kagunavirus_6ns  with SUCCESS:6 
+# APPLIED:   3 changes from 2023.041B.Keyvirus_ng  with SUCCESS:3 
+# APPLIED:   7 changes from 2023.042B.Konodaiviridae_nf  with SUCCESS:7 
+# APPLIED:  22 changes from 2023.043B.Kutznervirinae_nsf  with INFO:14 SUCCESS:22 
+# APPLIED:   4 changes from 2023.044B.Layangavirus_Layangbvirus_2ng  with SUCCESS:4 
+# APPLIED:   2 changes from 2023.045B.Layangcvirus_ng  with SUCCESS:2 
+# APPLIED:   2 changes from 2023.046B.Madridviridae_nf  with SUCCESS:2 
+# APPLIED:   1 changes from 2023.047B.Matsushitaviridae_error_correction  with SUCCESS:1 
+# APPLIED:  11 changes from 2023.048B.Munstervirinae_nsf  with SUCCESS:11 
+# APPLIED:  15 changes from 2023.049B.Caudoviricetes_Enterococcus_6ng  with SUCCESS:15 
+# APPLIED:   1 changes from 2023.050B.Pakpunavirus_1ns  with INFO:1 SUCCESS:1 
+# APPLIED:  17 changes from 2023.051B.Peduoviridae_reorg  with SUCCESS:17 
+# APPLIED:   2 changes from 2023.052B.Porunavirus_ng  with SUCCESS:2 
+# APPLIED:   5 changes from 2023.053B.Przondovirus_5ns  with SUCCESS:5 
+# APPLIED:  11 changes from 2023.054B.Queuovirinae_reorg  with SUCCESS:11 
+# APPLIED:   4 changes from 2023.055B.Rogunavirinae_2ns_1ng  with SUCCESS:4 
+# APPLIED:   7 changes from 2023.056B.Caudoviricetes_Serratia_2ng  with SUCCESS:7 
+# APPLIED:  12 changes from 2023.057B.Saffermanviridae_nf  with INFO:2 SUCCESS:12 
+# APPLIED:   4 changes from 2023.058B.Salasmaviridae_ng  with SUCCESS:4 
+# APPLIED:   2 changes from 2023.059B.Samaravirus_ng  with SUCCESS:2 
+# APPLIED:   1 changes from 2023.060B.Saphexavirus_1ns  with SUCCESS:1 
+# APPLIED:   3 changes from 2023.061B.Septuagintavirus_ng  with SUCCESS:3 
+# APPLIED:  26 changes from 2023.062B.Skurskavirinae_nsf  with INFO:22 SUCCESS:26 
+# APPLIED:   7 changes from 2023.063B.Stanbayleyvirinae_nsf  with SUCCESS:7 
+# APPLIED:  16 changes from 2023.064B.Sugarlandvirus_16ns  with SUCCESS:16 
+# APPLIED:  37 changes from 2023.065B.Tempevirinae_4ng_33ns  with SUCCESS:37 
+# APPLIED:   1 changes from 2023.066B.Tequatrovirus_1ns  with SUCCESS:1 
+# APPLIED:  35 changes from 2023.067B.Tequintavirus_35ns  with SUCCESS:35 
+# APPLIED:   9 changes from 2023.068B.Caudoviricetes_Serratia_3ng  with SUCCESS:9 
+# APPLIED:   7 changes from 2023.069B.Toyamaviridae_nf  with SUCCESS:7 
+# APPLIED:  10 changes from 2023.070B.Inoviridae_8ns_1ng  with SUCCESS:10 
+# APPLIED:  10 changes from 2023.071B.Tunavirinae_10ns  with SUCCESS:10 
+# APPLIED:  58 changes from 2023.072B.Umezonoviridae_nf  with SUCCESS:58 
+# APPLIED:  28 changes from 2023.073B.Vequintavirus_28ns  with SUCCESS:28 
+# APPLIED:   2 changes from 2023.074B.Vespunovirus_ng  with SUCCESS:2 
+# APPLIED:   3 changes from 2023.075B.Caudoviricetes_ab3sp  with SUCCESS:3 
+# APPLIED:  11 changes from 2023.076B.Wbetavirus_11ns  with SUCCESS:11 
+# APPLIED:  68 changes from 2023.077B.Webervirus_68ns  with SUCCESS:68 
+# APPLIED:   2 changes from 2023.078B.Xajduovirus_ng  with SUCCESS:2 
+# APPLIED:   2 changes from 2023.079B.Zhuquevirus_ng  with SUCCESS:2 
+# APPLIED:   2 changes from 2023.080B.Bglawtbvirus_ng  with SUCCESS:2 
+# TOTAL  : 7663 changes  from 202 proposals  with ERROR:7 WARNING:296 INFO:320 SUCCESS:7661 
+Wrote: OUTDIR/QC.summary.tsv (8284 rows)
+Writing  MSL39v4/results/proposalsFinal/msl.tsv 
+WROTE   MSL39v4/results/proposalsFinal/msl.tsv (18980 rows)
+Writing  MSL39v4/results/proposalsFinal/QC.docx_summary.tsv 
+WROTE   MSL39v4/results/proposalsFinal/QC.docx_summary.tsv (203)
+Writing  MSL39v4/results/proposalsFinal/msl_load.sql 
+factor:  is_hidden 
+factor:  in_change 
+factor:  out_change 
+Writing out_* updates for prevMSL
+factor:  out_change 
+WROTE    MSL39v4/results/proposalsFinal/msl_load.sql 
+# COMPLETED.

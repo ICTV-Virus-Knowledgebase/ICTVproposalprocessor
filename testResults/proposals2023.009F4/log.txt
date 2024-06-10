@@ -1,0 +1,19 @@
+# Rscript merge_proposal_zips.R --proposalsDir=testData/proposals2023.009F4 --outDir=testResults/proposals2023.009F4 --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v1.16.d722e4c
+Previous taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt 
+WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+# LOAD_PROPOSAL_DOCX( 2023.009F )
+# LOADED:  2023.009F  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 2023.009F , NA )
+# LOADED:  2023.009F  XLS with  0  errors/warnings
+# LOADED:  2023.009F 
+# QC start: 2023.009F: proposal loaded (1 out of 1)
+# QCed:      2023.009F  with  0  errors/warnings
+changeList:  2023.009F 
+Wrote: OUTDIR/QC.summary.tsv (0 rows)
+# MERGE PROC: 2023.009F with 25 changes  (1 out of 1)
+# DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 25 
+# APPLIED:  25 changes from 2023.009F.A.v4.Virophages_reorg.split_promote  with ERROR:1 INFO:1 SUCCESS:25 
+# TOTAL  :  25 changes  from 1 proposals  with ERROR:1 INFO:1 SUCCESS:25 
+Wrote: OUTDIR/QC.summary.tsv (27 rows)
+# COMPLETED.
