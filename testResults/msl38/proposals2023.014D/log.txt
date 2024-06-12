@@ -1,0 +1,19 @@
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposals2023.014D --outDir=testResults/msl38/proposals2023.014D --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v2.0.35063ff
+Previous taxa: 132852 34  from  current_msl/msl38/taxonomy_node_export.utf8.txt 
+WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+# LOAD_PROPOSAL_DOCX( 2023.014D )
+# LOADED:  2023.014D  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 2023.014D , NA )
+# LOADED:  2023.014D  XLS with  0  errors/warnings
+# LOADED:  2023.014D 
+# QC start: 2023.014D: proposal loaded (1 out of 1)
+# QCed:      2023.014D  with  0  errors/warnings
+changeList:  2023.014D 
+Wrote: OUTDIR/QC.summary.tsv (0 rows)
+# MERGE PROC: 2023.014D with 27 changes  (1 out of 1)
+# DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 27 
+# APPLIED:  27 changes from 2023.014D.A.v2.Hepadnaviridae_19renam_9nsp  with ERROR:4 WARNING:14 SUCCESS:23 
+# TOTAL  :  27 changes  from 1 proposals  with ERROR:4 WARNING:14 SUCCESS:23 
+Wrote: OUTDIR/QC.summary.tsv (41 rows)
+# COMPLETED.

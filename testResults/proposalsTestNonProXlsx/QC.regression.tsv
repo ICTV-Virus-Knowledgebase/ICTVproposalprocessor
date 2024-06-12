@@ -1,2 +1,0 @@
-subcommittee	code	docx	xlsx	row	change	rank	taxon	level	error	message	notes	scAbbrev	order
-NA	1	MISSING	variable_name_mapping.xlsx	0	OPEN_XLSX			ERROR	XLSX_NOT_PROPOSAL	XLS no acceptably named 'proposal' sheet	A worksheet name matching 'proposal*' was not found, only: 'Sheet1'	NA	0

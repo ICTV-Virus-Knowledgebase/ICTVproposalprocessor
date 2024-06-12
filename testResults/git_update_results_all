@@ -3,7 +3,11 @@
 # git add all current results & logs
 #
 #
-for test_case in proposals*; do
+FILT=".*"
+if [[ ! -z "$1" ]]; then FILT="$1"; shift; fi
+echo "FILT=$FILT"
+
+for test_case in $(ls -d msl*/proposals* | grep -e "$FILT"); do
     echo "#### $test_case ####"
-    eval "pushd $test_case; ../git_update_results; popd" 
+    eval "pushd $test_case; ../../git_update_results; popd" 
 done

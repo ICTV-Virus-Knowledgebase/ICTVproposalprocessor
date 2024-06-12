@@ -8,7 +8,7 @@
 # On MacOS, this runs R directly. 
 #
 
-# whcih tests to run 
+# which tests to run 
 TEST_PAT="*"
 if [ ! -z "$1" ]; then TEST_PAT="*$1*"; shift; fi
 echo TEST_PAT=$TEST_PAT
@@ -38,6 +38,7 @@ fi
 #
 # test cases location
 # 
+MSL_DIR=current_msl
 TEST_DIR=testData
 echo TEST_DIR=$TEST_DIR
 RESULTS_DIR=testResults
@@ -51,8 +52,8 @@ echo REPORT=$REPORT
 #
 # scan for test directories
 #
-echo "#$ find $TEST_DIR -type d -name "$TEST_PAT" -name "proposal*" \! -name "*result*" -exec basename {} \;"
-TESTS=$(find $TEST_DIR -type d -name "$TEST_PAT" -name "proposal*" \! -name "*result*" -exec basename {} \;)
+echo "# find $TEST_DIR -type d -name "$TEST_PAT" -name "proposal*" \! -name "*result*" | sed \"s|${TEST_DIR}.||\" "
+TESTS=$(find $TEST_DIR -type d -name "$TEST_PAT" -name "proposal*" \! -name "*result*" | sed "s|${TEST_DIR}.||" )
 echo TESTS=$TESTS
 
 #
@@ -62,8 +63,16 @@ for TEST in $TESTS; do
     #
     # input/output for script
     #
-    SRC_DIR=$TEST_DIR/$TEST
-    DEST_DIR=${RESULTS_DIR}/$TEST
+    TEST_MSL=.
+    TEST_CASE=$TEST
+    # support MSL-specific test cases
+    if [[ $TEST == msl* ]]; then
+	TEST_MSL=$(dirname $TEST)
+	TEST_CASE=$(basename $TEST)
+    fi
+    
+    SRC_DIR=$TEST_DIR/$TEST_MSL/$TEST_CASE
+    DEST_DIR=${RESULTS_DIR}/$TEST_MSL/$TEST_CASE
     RESULTS=${DEST_DIR}/QC.regression.new.tsv
     RESULTSBASE=${DEST_DIR}/QC.regression.tsv
     RESULTSDIFF=${DEST_DIR}/QC.regression.diff
@@ -90,12 +99,14 @@ for TEST in $TESTS; do
     #
     if [ -z "$CONTAINER" ]; then 
 	    echo "#" \
-	        Rscript merge_proposal_zips.R \
+	         Rscript merge_proposal_zips.R \
+		    --refDir=$MSL_DIR/$TEST_MSL \
 		    --proposalsDir=$SRC_DIR \
 		    --outDir=$DEST_DIR \
 		    --qcTsvRegression=$(basename $RESULTS) \
 		    '2>&1' | tee $LOG
 	    Rscript merge_proposal_zips.R \
+		    --refDir=$MSL_DIR/$TEST_MSL \
 		    --proposalsDir=$SRC_DIR \
 		    --outDir=$DEST_DIR \
 		    --qcTsvRegression=$(basename $RESULTS) \
@@ -103,21 +114,25 @@ for TEST in $TESTS; do
     else
 	    echo "#" \
 		sudo docker run -it \
-		    -v "$(pwd)/$TEST_DIR:/testData":ro \
-		    -v "$(pwd)/$RESULTS_DIR:/testResults":rw \
+		    -v "$(pwd)/${TEST_DIR}:/testData":ro \
+		    -v "$(pwd)/${RESULTS_DIR}:/testResults":rw \
+		    -v "$(pwd)/${MSL_DIR}/${TEST_MSL}:/testMsl":rw \
 	            $CONTAINER  \
 		    /merge_proposal_zips.R \
-		    --proposalsDir=$SRC_DIR \
-		    --outDir="testResults/$TEST" \
+		    --refDir=/testMsl \
+		    --proposalsDir="/testData/$TEST_MSL/$TEST_CASE" \
+		    --outDir="/testResults/$TEST_MSL/$TEST_CASE" \
 		    --qcTsvRegression=$(basename $RESULTS) \
 		    2>&1 | tee $LOG
 	    (sudo docker run -it \
 		    -v "$(pwd)/$TEST_DIR:/testData":ro \
 		    -v "$(pwd)/$RESULTS_DIR:/testResults":rw \
+		    -v "$(pwd)/$MSL_DIR/$TEST_MSL/testMsl":rw \
 	            $CONTAINER  \
 		    /merge_proposal_zips.R \
-		    --proposalsDir=$SRC_DIR \
-		    --outDir="testResults/$TEST" \
+		    --refDir=/testMsl \
+		    --proposalsDir="/testData/$TEST_MSL/$TEST_CASE" \
+		    --outDir="/testResults/$TEST_MSL/$TEST_CASE" \
 		    --qcTsvRegression=$(basename $RESULTS) \
 		    ) 2>&1 >> $LOG
     fi	

@@ -1,0 +1,3 @@
+subcommittee	code	docx	xlsx	row	change	rank	taxon	level	error	message	notes	scAbbrev	order
+NA	1	labels - 30 up - Confiture de FRAISE 2023-05-27.doc	NA	NA	NA	NA	NA	WARNING	DOCX_FILENAME_SPACES	filename contains a space: please replace with _ or -	labels[ ]-[ ]30[ ]up[ ]-[ ]Confiture[ ]de[ ]FRAISE[ ]2023-05-27.doc	NA	NA
+NA	NA	NA	NA	NA	NA	NA	NA	ERROR	NO_INPUT_FILES	found no .xls[x] files that passed filename QC	Input folder='testData/msl38/proposalsTest1Doc/'	NA	NA

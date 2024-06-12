@@ -1,3 +1,0 @@
-subcommittee	code	docx	xlsx	row	change	rank	taxon	level	error	message	notes	scAbbrev	order
-Plant virus (P) proposals	2023.026P	MISSING	2023.026P.v1.Viroids_rename_families.xlsx	5	Rename	family	Avsunviroidae	SUCCESS	RENAME.OK	Change=RENAME, applied successfully	RENAME family from 'Avsunviroidae' to 'Avsunviroididae' in '2022'	NA	1
-Plant virus (P) proposals	2023.026P	MISSING	2023.026P.v1.Viroids_rename_families.xlsx	6	Rename	family	Pospiviroidae	SUCCESS	RENAME.OK	Change=RENAME, applied successfully	RENAME family from 'Pospiviroidae' to 'Pospiviroididae' in '2022'	NA	2

@@ -162,7 +162,7 @@ option_list <- list(
 	      #default="testResults", 
 	      dest="out_dir",
               help = "Directory to write outputs to [default \"%default\"]"),
-  make_option(c("-r","--refDir"), default="current_msl", dest="ref_dir", 
+  make_option(c("-r","--refDir"), default="current_msl/msl39", dest="ref_dir", 
               help="Directory from which read current MSL and CV data from [default \"%default\"]"),
   
   # out filenames
@@ -194,11 +194,11 @@ option_list <- list(
               help="Reference filelisting allowable genomic molecules [default \"%default\"]"),
   make_option(c("--dbTaxa"), default="taxonomy_node_export.utf8.txt", dest="db_taxonomy_node_fname",
               help="Reference file listing all historic taxa [default \"%default\"]"),
-  make_option(c("--cvTemplate"), default="TP_Template_Excel_module_2023_v1.xlsx", dest="template_xlsx_fname",
+  make_option(c("--cvTemplate"), default="TP_Template.xlsx", dest="template_xlsx_fname",
               help="Template proposal xlsx, used to load CVs [default \"%default\"]"),
   make_option(c("--cvTemplateSheet"), default="Menu Items (Do not change)", dest="template_xlsx_sheet",
               help="Template proposal xlsx, used to load CVs [default \"%default\"]"),
-  make_option(c("--vmr"), default="VMR_MSL38_v1.xlsx", dest="vmr_fname",
+  make_option(c("--vmr"), default="VMR.xlsx", dest="vmr_fname",
               help="VMR to check for accession re-use [default \"%default\"]"),
   make_option(c("--templateURL"), default="https://ictv.global/taxonomy/templates", dest="template_url",
               help="URL for out-of-date template message [default \"%default\"]"),
@@ -235,34 +235,27 @@ if( interactive() ) {
   print("!!!!||||||||||||||||||||||||!!!!")
   options(error=recover)
   #options(error=browser)
-  params$debug=T
+  params$debug=F
   # WARNING - this will store all the other debug settings into the proposalDir/.RData file!
   params$load_proposal_cache = F
   params$save_proposal_cache = F
   # defeat auto-caching when debugging
   #rm(docxList,xlsxList,changeList)
-  params$verbose = T
-  params$tmi = T
+  params$verbose = F
+  params$tmi = F
   params$debug_on_error = F
-  params$processing_mode = 'draft'
+  params$processing_mode = 'final'
   #params$output_change_report = F
-  params$export_msl = T
+  params$export_msl = F
 #  params$test_case_dir = "crash"
 #  params$test_case_dir = "proposalsEC55.1"
-  params$test_case_dir = "proposals2024X"
-  params$test_case_dir = 'proposals2023merge-rename'
-  params$proposals_dir = paste0("testData/",params$test_case_dir)
-  params$out_dir       = paste0("testResults/",params$test_case_dir)
-  # MSL39v4 2024.03.12
-  #params$processing_mode = 'draft'
-  #params$proposals_dir = "./MSL39v4/Pending_Proposals"
-  #params$out_dir       = "./MSL39v4/results/Pending_Proposals"
-  # MERGE
-  #  params$proposals_dir = "./MSL39v2/Pending_Proposals/Plant virus (P) proposals/Proposals to be considered for EC55/2023.017P.N.v1.Caulimoviridae_6nsp.xlsx"
-  #params$proposals_dir = "./MSL39v2"
-  #params$out_dir       = "./MSL39v3_results"
+  # MSL39v2
+  params$test_case_dir = 'proposals_msl39v2'
+  params$proposals_dir = paste0("testData/msl39/",params$test_case_dir)
+  params$out_dir       = paste0("testResults/msl39/",params$test_case_dir)
+
   # fast debugging merge/chain
-#  params$processing_mode ="final"
+  params$processing_mode ="final"
 #  params$proposals_dir = "./MSL39v6/proposalsFinal"
 #  params$out_dir       = "./MSL39v6/results/proposalsFinal"
   #params$proposals_dir = "EC55"
@@ -653,12 +646,17 @@ load_reference=function() {
   )
   #taxonomyDf=read.delim(file=params$prev_taxa_fname,header=FALSE,col.names=names(taxonomy_node_names),stringsAsFactors=FALSE,na.strings="NULL")
   dbTaxonomyNodeFilename=file.path(params$ref_dir, params$db_taxonomy_node_fname)
-  taxonomyDt=fread(file=dbTaxonomyNodeFilename,
-                   header=TRUE,#header=FALSE,col.names=names(taxonomy_node_names),
-                   colClasses=as.character(taxonomy_node_names),
-                   stringsAsFactors=FALSE,na.strings=c("","NULL"),
-                   key=c("taxnode_id"), index=c("name","msl_release_num","parent_id"),
-                   nThread = 1
+  taxonomyDt=withCallingHandlers(
+    warning = function(cnd) {
+      stop(paste0("ERROR: bad export in ",dbTaxonomyNodeFilename,": ",cnd$message ))
+    },
+    fread(file=dbTaxonomyNodeFilename,
+                     header=TRUE,#header=FALSE,col.names=names(taxonomy_node_names),
+                     colClasses=as.character(taxonomy_node_names),
+                     stringsAsFactors=FALSE,na.strings=c("","NULL"),
+                     key=c("taxnode_id"), index=c("name","msl_release_num","parent_id"),
+                     nThread = 1
+    )
   )
   cat("Previous taxa:",dim(taxonomyDt), " from ",dbTaxonomyNodeFilename,"\n")
   if( !("host_source" %in% names(taxonomyDt)) ) {
@@ -702,7 +700,7 @@ load_reference=function() {
   rownames(moleculeCV) = moleculeCV$id
   .GlobalEnv$dbCvList[["molecule"]] = moleculeCV
   .GlobalEnv$dbCvMapList[["molecule"]] = moleculeCV$id
-  names(dbCvMapList[["molecule"]]) = moleculeCV$abbrev
+  names(.GlobalEnv$dbCvMapList[["molecule"]]) = moleculeCV$abbrev
   if( params$verbose) {cat("MoleculeCV: ", dim(moleculeCV), " from ",dbMoleculeFilename,"\n")}
   
   ##### CVs from Proposals Template #####

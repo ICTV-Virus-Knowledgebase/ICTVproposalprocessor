@@ -1,0 +1,25 @@
+host_source
+air (S)
+algae
+archaea
+bacteria
+freshwater (S)
+fungi
+invertebrates
+invertebrates (S)
+invertebrates, plants
+invertebrates, vertebrates
+marine (S)
+other (specify)
+oomycetes
+phytobiome (S)
+plants
+plants (S)
+plants, fungi
+protists
+protists (S)
+sewage (S)
+soil (S)
+vertebrates
+vertebrates (S)
+unknown (S)

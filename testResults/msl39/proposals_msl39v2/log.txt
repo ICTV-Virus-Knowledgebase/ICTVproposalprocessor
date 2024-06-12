@@ -1,0 +1,71 @@
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl39 --proposalsDir=testData/msl39/proposals_msl39v2 --outDir=testResults/msl39/proposals_msl39v2 --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v2.0.35063ff
+Previous taxa: 151832 34  from  current_msl/msl39/taxonomy_node_export.utf8.txt 
+WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+There were 50 or more warnings (use warnings() to see the first 50)
+# LOAD_PROPOSAL_DOCX( 2023.003SX )
+# LOADED:  2023.003SX  DOCX with  1  errors/warnings
+# LOAD_PROPOSAL( 2023.003SX , NA )
+# LOADED:  2023.003SX  XLS with  1  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (1 rows)
+# LOADED:  2023.003SX 
+# QC start: 2023.003SX: proposal loaded (1 out of 6)
+# QCed:      2023.003SX  with  1  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.006MX )
+# LOADED:  2023.006MX  DOCX with  2  errors/warnings
+# LOAD_PROPOSAL( 2023.006MX , NA )
+# LOADED:  2023.006MX  XLS with  2  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (2 rows)
+# LOADED:  2023.006MX 
+# QC start: 2023.006MX: proposal loaded (2 out of 6)
+# QCed:      2023.006MX  with  2  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.008DX )
+# LOADED:  2023.008DX  DOCX with  3  errors/warnings
+# LOAD_PROPOSAL( 2023.008DX , NA )
+# LOADED:  2023.008DX  XLS with  3  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (3 rows)
+# LOADED:  2023.008DX 
+# QC start: 2023.008DX: proposal loaded (3 out of 6)
+# QCed:      2023.008DX  with  3  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.009DX )
+# LOADED:  2023.009DX  DOCX with  4  errors/warnings
+# LOAD_PROPOSAL( 2023.009DX , NA )
+# LOADED:  2023.009DX  XLS with  4  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (4 rows)
+# LOADED:  2023.009DX 
+# QC start: 2023.009DX: proposal loaded (4 out of 6)
+# QCed:      2023.009DX  with  4  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.012DX )
+# LOADED:  2023.012DX  DOCX with  5  errors/warnings
+# LOAD_PROPOSAL( 2023.012DX , NA )
+# LOADED:  2023.012DX  XLS with  5  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (5 rows)
+# LOADED:  2023.012DX 
+# QC start: 2023.012DX: proposal loaded (5 out of 6)
+# QCed:      2023.012DX  with  5  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.015FX )
+# LOADED:  2023.015FX  DOCX with  6  errors/warnings
+# LOAD_PROPOSAL( 2023.015FX , NA )
+# LOADED:  2023.015FX  XLS with  6  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (6 rows)
+# LOADED:  2023.015FX 
+# QC start: 2023.015FX: proposal loaded (6 out of 6)
+# QCed:      2023.015FX  with  6  errors/warnings
+changeList:  2023.003SX 2023.006MX 2023.008DX 2023.009DX 2023.012DX 2023.015FX 
+Wrote: OUTDIR/QC.summary.tsv (6 rows)
+# MERGE PROC: 2023.003SX with 1 changes  (1 out of 6)
+# MERGE PROC: 2023.006MX with 1 changes  (2 out of 6)
+# MERGE PROC: 2023.008DX with 1 changes  (3 out of 6)
+# MERGE PROC: 2023.009DX with 19 changes  (4 out of 6)
+# MERGE PROC: 2023.012DX with 1 changes  (5 out of 6)
+# MERGE PROC: 2023.015FX with 1 changes  (6 out of 6)
+# DONE. MERGED 6  proposal(s), skipped 0 ; total changes: 24 
+# APPLIED:   1 changes from 2023.003SX.Picornaviridae_158sprenamed_Error_Correction  with ERROR:1 
+# APPLIED:   1 changes from 2023.006MX.Bunyavirales_1nfam_1ngen_1nsp_Error_Correction  with INFO:1 SUCCESS:1 
+# APPLIED:   1 changes from 2023.008DX.Adenoviridae_1reng_22ns_86rensp_Error_Correction  with ERROR:1 
+# APPLIED:  19 changes from 2023.009DX.Retroviridae_68rensp_Error_Correction  with SUCCESS:19 
+# APPLIED:   1 changes from 2023.012DX.Iridoviridae_22renam_Error_Correction  with SUCCESS:1 
+# APPLIED:   1 changes from 2023.015FX.Ghabrivirales_reorg_Error_correction  with ERROR:1 
+# TOTAL  :  24 changes  from 6 proposals  with ERROR:3 WARNING:6 INFO:1 SUCCESS:21 
+Wrote: OUTDIR/QC.summary.tsv (31 rows)
+# COMPLETED.

@@ -1,0 +1,19 @@
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposalsEC55.1 --outDir=testResults/msl38/proposalsEC55.1 --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v2.0.35063ff
+Previous taxa: 132852 34  from  current_msl/msl38/taxonomy_node_export.utf8.txt 
+WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+# LOAD_PROPOSAL_DOCX( 2023.026P )
+# LOADED:  2023.026P  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 2023.026P , NA )
+# LOADED:  2023.026P  XLS with  0  errors/warnings
+# LOADED:  2023.026P 
+# QC start: 2023.026P: proposal loaded (1 out of 1)
+# QCed:      2023.026P  with  0  errors/warnings
+changeList:  2023.026P 
+Wrote: OUTDIR/QC.summary.tsv (0 rows)
+# MERGE PROC: 2023.026P with 2 changes  (1 out of 1)
+# DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 2 
+# APPLIED:   2 changes from 2023.026P.v1.Viroids_rename_families  with SUCCESS:2 
+# TOTAL  :   2 changes  from 1 proposals  with SUCCESS:2 
+Wrote: OUTDIR/QC.summary.tsv (2 rows)
+# COMPLETED.

@@ -1,0 +1,17 @@
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposalsTestNonProXlsx --outDir=testResults/msl38/proposalsTestNonProXlsx --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v2.0.35063ff
+Previous taxa: 132852 34  from  current_msl/msl38/taxonomy_node_export.utf8.txt 
+WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+# LOAD_PROPOSAL_DOCX( 1 )
+# LOADED:  1  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 1 , NA )
+code 1: A worksheet name matching 'proposal*' was not found: logging error
+# LOADED:  1  XLS with  1  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (1 rows)
+# LOADED:  1 
+SKIP:  1 : proposal could not be loaded
+changeList:   
+Wrote: OUTDIR/QC.summary.tsv (1 rows)
+# DONE. MERGED 0  proposal(s), skipped 1 ; total changes: 0 
+Wrote: OUTDIR/QC.summary.tsv (1 rows)
+# COMPLETED.

@@ -21,6 +21,11 @@
 library(dplyr)
 
 MSL_dir = "MSL39v6"
+# if true, rebuild just zips
+# if false, rebuild from Pending_Proposals/
+preserve_final = F
+
+
 params = list(
   # inputs
   proposals_dir=file.path(MSL_dir,"Pending_Proposals"),
@@ -55,8 +60,14 @@ status2text = c(
 #
 # remove and re-create target directory structure
 #
-cat("CMD: rm -rf", params$dest_dir, "\n")
-system(paste0("rm -rf '",params$dest_dir,"'"), intern=F,ignore.stdout=F, ignore.stderr=F,wait=T)
+# remove dirs
+if( !preserve_final ) {
+  cat("CMD: rm -rf", params$dest_dir, "\n")
+  system(paste0("rm -rf '",params$dest_dir,"'"), intern=F,ignore.stdout=F, ignore.stderr=F,wait=T)
+}
+cat("CMD: rm -rf", params$download_dir, "\n")
+system(paste0("rm -rf '",params$download_dir,"'"), intern=F,ignore.stdout=F, ignore.stderr=F,wait=T)
+# re-create dirs
 for(dirPath in c(params$dest_dir, params$download_dir, params$tmp_dir, paste0(params$dest_dir,"/",sc2destFolder))) {
   if (!dir.exists(dirPath)){
       dir.create(dirPath)
@@ -123,9 +134,11 @@ for(curCode in allCodes$code) {
   
   for(fileRow in rownames(codeFiles)) {
     # copy to clean folders area
-    cmdStr = paste0("       cp -a '",codeFiles[fileRow,]$path, "' '", codeFiles[fileRow,]$cleanPath,"'")
-    print(paste0("   CMD: ", cmdStr))
-    system(cmdStr)
+    if(!preserve_final) {
+      cmdStr = paste0("       cp -a '",codeFiles[fileRow,]$path, "' '", codeFiles[fileRow,]$cleanPath,"'")
+      print(paste0("   CMD: ", cmdStr))
+      system(cmdStr)
+    }
 
     #  copy to tmp area with finalFilename, instead of cleanFilename
     cmdStr = paste0("       cp -a '",codeFiles[fileRow,]$path, "' '", codeFiles[fileRow,]$finalPath,"'")

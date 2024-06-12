@@ -1,0 +1,31 @@
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposals2024X --outDir=testResults/msl38/proposals2024X --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v2.0.35063ff
+Previous taxa: 132852 34  from  current_msl/msl38/taxonomy_node_export.utf8.txt 
+WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+Wrote: OUTDIR/QC.summary.tsv (1 rows)
+# LOAD_PROPOSAL_DOCX( 2023.003S )
+# LOADED:  2023.003S  DOCX with  1  errors/warnings
+# LOAD_PROPOSAL( 2023.003S , NA )
+# LOADED:  2023.003S  XLS with  1  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (1 rows)
+# LOADED:  2023.003S 
+# QC start: 2023.003S: proposal loaded (1 out of 2)
+# QCed:      2023.003S  with  1  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.015SX )
+# LOADED:  2023.015SX  DOCX with  2  errors/warnings
+# LOAD_PROPOSAL( 2023.015SX , NA )
+# LOADED:  2023.015SX  XLS with  2  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (2 rows)
+# LOADED:  2023.015SX 
+# QC start: 2023.015SX: proposal loaded (2 out of 2)
+# QCed:      2023.015SX  with  2  errors/warnings
+changeList:  2023.003S 2023.015SX 
+Wrote: OUTDIR/QC.summary.tsv (2 rows)
+# MERGE PROC: 2023.003S with 1 changes  (1 out of 2)
+# MERGE PROC: 2023.015SX with 1 changes  (2 out of 2)
+# DONE. MERGED 2  proposal(s), skipped 0 ; total changes: 2 
+# APPLIED:   1 changes from 2023.003S.Picornaviridae_158sprenamed  with SUCCESS:1 
+# APPLIED:   1 changes from 2023.015SX.Picornaviridae_correction_1sp  with SUCCESS:1 
+# TOTAL  :   2 changes  from 2 proposals  with WARNING:1 INFO:1 SUCCESS:2 
+Wrote: OUTDIR/QC.summary.tsv (4 rows)
+# COMPLETED.
