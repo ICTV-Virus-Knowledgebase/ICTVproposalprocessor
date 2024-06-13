@@ -64,7 +64,8 @@ suppressPackageStartupMessages(library(readr))  # also part of tidyverse
 
 suppressPackageStartupMessages(library(readxl))
 suppressPackageStartupMessages(library(writexl) )# another option library(openxlsx)
-suppressPackageStartupMessages(library(DescTools)) # AscToChar
+# this package is difficult to install for Dockerfile, use other methods
+#suppressPackageStartupMessages(library(DescTools)) # AscToChar
 suppressPackageStartupMessages(library(qdapTools)) # read docx
 suppressPackageStartupMessages(library(tools)) # file_ext()
 
@@ -773,11 +774,12 @@ load_reference=function() {
   }
   
   # clean UTF8-NB_space (mac) 
+  # pattern=paste0(AscToChar(194),AscToChar(160))
   for( cv in c("change","rank","scAbbrev","scName") ) {
     for( i in seq(1:length(cvList[[cv]])) ) {
       term = cvList[[cv]][i]
-      if( is.na(term) || regexpr(text=term, pattern=paste0(AscToChar(194),AscToChar(160))) > 0 ) {
-        term = gsub(paste0("(",AscToChar(194),AscToChar(160),")+")," ",term)
+      if( is.na(term) || regexpr(text=term, pattern="\xC2\xA0") > 0 ) {
+        term = gsub(paste0("(\xC2\xA0)+")," ",term)
         .GlobalEnv$cvList[[cv]][i] = term
       }
     }
@@ -2244,7 +2246,7 @@ qc_proposal = function(code, proposalDf) {
 
     # non-breaking spaces
     # Mac: AscToChar(202)
-    pattern=AscToChar(202); pat_warn="non-breaking space character"; pat_replace=" "
+    pattern="0xCA"; pat_warn="non-breaking space character"; pat_replace=" "
     qc.matches =grep(changeDf[,col],pattern=pattern)
     if(params$tmi && length(qc.matches)>0) { 
       cat("TMI:",code,"has",length(qc.matches),"cells with",pat_warn,"in column",col,"\n") 
