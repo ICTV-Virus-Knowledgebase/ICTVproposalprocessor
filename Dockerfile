@@ -64,7 +64,8 @@ RUN /usr/bin/R -e "install.packages('readr',dependencies=TRUE, repos='http://cra
 RUN /usr/bin/R -e "install.packages('readxl',dependencies=TRUE, repos='http://cran.rstudio.com/')"
 RUN /usr/bin/R -e "install.packages('writexl',dependencies=TRUE, repos='http://cran.rstudio.com/')"
 # fails (not available) on R 3.6.3 / ubuntu:20.04
-RUN /usr/bin/R -e "install.packages('DescTools',dependencies=TRUE, repos='http://cran.rstudio.com/')"
+#RUN /usr/bin/R -e "install.packages('DescTools',dependencies=TRUE, repos='http://cran.rstudio.com/')"
+# # read docx
 RUN /usr/bin/R -e "install.packages('qdapTools',dependencies=TRUE, repos='http://cran.rstudio.com/')"
 
 # UTF-8 mode
@@ -83,7 +84,7 @@ COPY version_git.txt .
 # copy in reference data
 #
 RUN mkdir -p ./current_msl
-COPY current_msl/* ./current_msl
+COPY current_msl/ ./current_msl
 
 # build cache of reference data
 #RUN ./merge_proposal_zips.R --buildCache --ref ./current_msl
