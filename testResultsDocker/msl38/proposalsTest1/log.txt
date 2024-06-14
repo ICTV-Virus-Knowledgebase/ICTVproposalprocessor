@@ -1,0 +1,1 @@
+../../../testResults/msl38/proposalsTest1/./log.txt

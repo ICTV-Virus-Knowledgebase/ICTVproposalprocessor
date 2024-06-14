@@ -1,1 +1,0 @@
-../../testResults/proposalsEC55.1/log.txt

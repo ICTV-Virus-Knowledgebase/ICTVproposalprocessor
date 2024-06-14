@@ -116,21 +116,19 @@ for TEST in $TESTS; do
 		sudo docker run -it \
 		    -v "$(pwd)/${TEST_DIR}:/testData":ro \
 		    -v "$(pwd)/${RESULTS_DIR}:/testResults":rw \
-		    -v "$(pwd)/${MSL_DIR}/${TEST_MSL}:/testMsl":rw \
 	            $CONTAINER  \
 		    /merge_proposal_zips.R \
-		    --refDir=/testMsl \
+		    --refDir=current_msl/${TEST_MSL} \
 		    --proposalsDir="/testData/$TEST_MSL/$TEST_CASE" \
 		    --outDir="/testResults/$TEST_MSL/$TEST_CASE" \
 		    --qcTsvRegression=$(basename $RESULTS) \
 		    2>&1 | tee $LOG
 	    (sudo docker run -it \
-		    -v "$(pwd)/$TEST_DIR:/testData":ro \
-		    -v "$(pwd)/$RESULTS_DIR:/testResults":rw \
-		    -v "$(pwd)/$MSL_DIR/$TEST_MSL/testMsl":rw \
+		    -v "$(pwd)/${TEST_DIR}:/testData":ro \
+		    -v "$(pwd)/${RESULTS_DIR}:/testResults":rw \
 	            $CONTAINER  \
 		    /merge_proposal_zips.R \
-		    --refDir=/testMsl \
+		    --refDir=current_msl/${TEST_MSL} \
 		    --proposalsDir="/testData/$TEST_MSL/$TEST_CASE" \
 		    --outDir="/testResults/$TEST_MSL/$TEST_CASE" \
 		    --qcTsvRegression=$(basename $RESULTS) \
@@ -140,27 +138,35 @@ for TEST in $TESTS; do
     #
     # check output
     #
-    echo "dwdiff --color  <(cut -f 5- $RESULTSBASE) <(cut -f 5- $RESULTS) #> $RESULTSDWDIFF" | tee $RESULTSDWDIFF
-    dwdiff --color <(cut -f 5- $RESULTSBASE) <(cut -f 5- $RESULTS) 2>&1 >> $RESULTSDWDIFF; RC=$?
-    echo "diff -yw -W 200 \<(cut -f 5- $RESULTS) \<(cut -f 5- $RESULTSBASE) \> $RESULTSDIFF" | tee $RESULTSDIFF
-    diff -yw -W 200 <(cut -f 5- $RESULTS) <(cut -f 5- $RESULTSBASE) 2>&1 >> $RESULTSDIFF; RC=$?
-    if [ $RC -eq "0" ]; then
-	echo "ok     OUT  $TEST" | tee -a $REPORT
+    if [[ ! -e $RESULTSBASE || ! -e $RESULTS ]]; then 
+	echo "*MISS  OUT  $TEST" | tee -a $REPORT
     else
-	echo "*FAIL  OUT  $TEST" | tee -a $REPORT
-    fi	
+        echo "dwdiff --color  <(cut -f 5- $RESULTSBASE) <(cut -f 5- $RESULTS) #> $RESULTSDWDIFF" | tee $RESULTSDWDIFF
+        dwdiff --color <(cut -f 5- $RESULTSBASE) <(cut -f 5- $RESULTS) 2>&1 >> $RESULTSDWDIFF; RC=$?
+        echo "diff -yw -W 200 \<(cut -f 5- $RESULTS) \<(cut -f 5- $RESULTSBASE) \> $RESULTSDIFF" | tee $RESULTSDIFF
+        diff -yw -W 200 <(cut -f 5- $RESULTS) <(cut -f 5- $RESULTSBASE) 2>&1 >> $RESULTSDIFF; RC=$?
+        if [ $RC -eq "0" ]; then
+            echo "ok     OUT  $TEST" | tee -a $REPORT
+        else
+            echo "*FAIL  OUT  $TEST" | tee -a $REPORT
+        fi	
+    fi
 
     #
     # check log
     #
     # use "tail -n +3" to skip date/version/etc in first 2 lines
     #
-    echo "diff -yw -W 200 \<(tail -n +3 $LOG|sed -e 's/\[?25h//g') \<(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g') \> $LOGDIFF" | tee $LOGDIFF
-    diff -yw -W 200 <(tail -n +3 $LOG|sed -e 's/\[?25h//g') <(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g') 2>&1 >> $LOGDIFF; RC=$?
-    if [ $RC -eq "0" ]; then
-	echo "ok     LOG  $TEST" | tee -a $REPORT
+    if [[ ! -e $LOGBASE || ! -e $LOG ]]; then 
+	echo "*MISS  OUT  $TEST" | tee -a $REPORT
     else
-	echo "*FAIL  LOG  $TEST" | tee -a $REPORT
+        echo "diff -yw -W 200 \<(tail -n +3 $LOG|sed -e 's/\[?25h//g') \<(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g') \> $LOGDIFF" | tee $LOGDIFF
+        diff -yw -W 200 <(tail -n +3 $LOG|sed -e 's/\[?25h//g') <(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g') 2>&1 >> $LOGDIFF; RC=$?
+        if [ $RC -eq "0" ]; then
+            echo "ok     LOG  $TEST" | tee -a $REPORT
+        else
+            echo "*FAIL  LOG  $TEST" | tee -a $REPORT
+        fi
     fi
     echo "#-------------------------" | tee -a $REPORT
 	

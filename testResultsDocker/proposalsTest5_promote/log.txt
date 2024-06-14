@@ -1,1 +1,0 @@
-../../testResults/proposalsTest5_promote/log.txt

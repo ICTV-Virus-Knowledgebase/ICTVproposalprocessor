@@ -1,1 +1,0 @@
-../../testResults/proposalsTest7_pleaseSelect/log.txt
