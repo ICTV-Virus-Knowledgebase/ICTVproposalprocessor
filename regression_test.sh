@@ -119,7 +119,7 @@ for TEST in $TESTS; do
 	            $CONTAINER  \
 		    /merge_proposal_zips.R \
 		    --refDir=current_msl/${TEST_MSL} \
-		    --proposalsDir="/testData/$TEST_MSL/$TEST_CASE" \
+		    --proposalsDir="testData/$TEST_MSL/$TEST_CASE" \
 		    --outDir="/testResults/$TEST_MSL/$TEST_CASE" \
 		    --qcTsvRegression=$(basename $RESULTS) \
 		    2>&1 | tee $LOG
@@ -129,10 +129,10 @@ for TEST in $TESTS; do
 	            $CONTAINER  \
 		    /merge_proposal_zips.R \
 		    --refDir=current_msl/${TEST_MSL} \
-		    --proposalsDir="/testData/$TEST_MSL/$TEST_CASE" \
+		    --proposalsDir="testData/$TEST_MSL/$TEST_CASE" \
 		    --outDir="/testResults/$TEST_MSL/$TEST_CASE" \
 		    --qcTsvRegression=$(basename $RESULTS) \
-		    ) 2>&1 >> $LOG
+		    ) 1>>$LOG 2>&1 
     fi	
 
     #
