@@ -1,10 +1,10 @@
-# sudo docker run -it -v /var/www/drupal/apps/proposal_validator/taxon_proposal_qc_and_load/testData:/testData:ro -v /var/www/drupal/apps/proposal_validator/taxon_proposal_qc_and_load/testResultsDocker:/testResults:rw ictv_proposal_processor /merge_proposal_zips.R --proposalsDir=testData/proposalsTest_createNew --outDir=testResults/proposalsTest_createNew --qcTsvRegression=QC.regression.new.tsv
-[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25hVERSION: v1.15.119e2b3
-[?25h[?25h[?25h[?25h[?25h[?25hPrevious taxa: 132852 34  from  current_msl/taxonomy_node_export.utf8.txt 
+# sudo docker run -it -v /var/www/drupal/apps/proposal_validator/taxon_proposal_qc_and_load/testData:/testData:ro -v /var/www/drupal/apps/proposal_validator/taxon_proposal_qc_and_load/testResultsDocker:/testResults:rw ictv_proposal_processor /merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposalsTest_createNew --outDir=/testResults/msl38/proposalsTest_createNew --qcTsvRegression=QC.regression.new.tsv
+[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25hVERSION: v2.0.db7c7a6
+[?25h[?25h[?25h[?25h[?25h[?25hPrevious taxa: 132852 34  from  current_msl/msl38/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 [?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h# LOAD_PROPOSAL_DOCX( 2022.002G )
 # LOADED:  2022.002G  DOCX with  0  errors/warnings
-# LOAD_PROPOSAL( 2022.002G )
+# LOAD_PROPOSAL( 2022.002G , NA )
 # LOADED:  2022.002G  XLS with  0  errors/warnings
 # LOADED:  2022.002G 
 # QC start: 2022.002G: proposal loaded (1 out of 1)
@@ -12,7 +12,7 @@ WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 changeList:  2022.002G 
 Wrote: OUTDIR/QC.summary.tsv (3 rows)
 [?25h[?25h[?25h[?25h[?25h[?25h# MERGE PROC: 2022.002G with 22 changes  (1 out of 1)
-[?25h# DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 22 
+[?25h[?25h[?25h# DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 22 
 [?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h# APPLIED:  22 changes from 2022.002G.Ud.v1.Orthornavirae_4nphy_9nsp  with WARNING:30 INFO:3 SUCCESS:22 
 # TOTAL  :  22 changes  from 1 proposals  with WARNING:30 INFO:3 SUCCESS:22 
 [?25hWrote: OUTDIR/QC.summary.tsv (55 rows)
