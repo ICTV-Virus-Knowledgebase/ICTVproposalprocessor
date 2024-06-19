@@ -1,6 +1,6 @@
-# Rscript merge_proposal_zips.R --refDir=current_msl/msl39 --proposalsDir=testData/msl39/proposals_msl39v2 --outDir=testResults/msl39/proposals_msl39v2 --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v2.0.35063ff
-Previous taxa: 151832 34  from  current_msl/msl39/taxonomy_node_export.utf8.txt 
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl39v2 --proposalsDir=testData/msl39v2/proposals_msl39v3 --outDir=testResults/msl39v2/proposals_msl39v3 --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v2.0.19c54a4
+Previous taxa: 151832 34  from  current_msl/msl39v2/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 There were 50 or more warnings (use warnings() to see the first 50)
 # LOAD_PROPOSAL_DOCX( 2023.003SX )
