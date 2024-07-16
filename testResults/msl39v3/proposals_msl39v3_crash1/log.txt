@@ -1,0 +1,20 @@
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl39v3 --proposalsDir=testData/msl39v3/proposals_msl39v3_crash1 --outDir=testResults/msl39v3/proposals_msl39v3_crash1 --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v2.0.b990b54
+Previous taxa: 151832 34  from  current_msl/msl39v3/taxonomy_node_export.utf8.txt 
+WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+There were 50 or more warnings (use warnings() to see the first 50)
+# LOAD_PROPOSAL_DOCX( 2024.029B )
+# LOADED:  2024.029B  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 2024.029B , NA )
+# LOADED:  2024.029B  XLS with  0  errors/warnings
+# LOADED:  2024.029B 
+# QC start: 2024.029B: proposal loaded (1 out of 1)
+# QCed:      2024.029B  with  1  errors/warnings
+changeList:  2024.029B 
+Wrote: OUTDIR/QC.summary.tsv (1 rows)
+# MERGE PROC: 2024.029B with 14 changes  (1 out of 1)
+# DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 14 
+# APPLIED:  14 changes from 2024.029B.N.v1.Rhodococcus_siphoviruses_7ng_7ns  with ERROR:3 WARNING:1 SUCCESS:12 
+# TOTAL  :  14 changes  from 1 proposals  with ERROR:4 WARNING:1 SUCCESS:12 
+Wrote: OUTDIR/QC.summary.tsv (17 rows)
+# COMPLETED.

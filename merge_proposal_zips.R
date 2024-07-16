@@ -2399,9 +2399,12 @@ qc_proposal = function(code, proposalDf) {
         !is.na(changeDf[,col])
       
       if(sum(qc.matches)>0) { 
-        if(params$verbose) { cat(value_validation[i,]$class,":",error,"has",sum(qc.matches),"cells with",value_validation[i,]$warn,"in column",col,"\n") }
+        if(params$verbose) { cat(value_validation[i,]$class,":",error,"has",sum(qc.matches),"cells with",value_validation[i,]$warn,"in column",col,
+                                 " in ", code, " on line(s) ", paste(rownames(changeDf)[qc.matches],collapse=","), "\n") 
+        }
+        # .action is not yet defined, because "change" column has not been QC'ed. Use original "change" text from xlsx
         log_error(code,linenum=rownames(changeDf)[qc.matches],
-                  action=changeDf$.action[qc.matches],actionOrder=actionOrder, 
+                  action=changeDf$change[qc.matches],actionOrder=actionOrder, 
                   rank=changeDf$rank[qc.matches], taxon=changeDf$.changeTaxon[qc.matches],
                   levelStr=value_validation[i,]$class,errorCode=error,errorStr=value_validation[i,]$warn,
                   notes=paste(col,gsub(value_validation[i,]$regex,"[\\1]",changeDf[qc.matches,col]),sep=":"))
