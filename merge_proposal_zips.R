@@ -163,7 +163,7 @@ option_list <- list(
 	      #default="testResults", 
 	      dest="out_dir",
               help = "Directory to write outputs to [default \"%default\"]"),
-  make_option(c("-r","--refDir"), default="current_msl/msl39v3", dest="ref_dir", 
+  make_option(c("-r","--refDir"), default="current_msl/msl39v4", dest="ref_dir", 
               help="Directory from which read current MSL and CV data from [default \"%default\"]"),
   
   # out filenames
