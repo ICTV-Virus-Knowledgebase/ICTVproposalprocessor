@@ -8,7 +8,7 @@
 FROM ubuntu:22.04
 
 # make sure installs dont hang on user input
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 
 
 # install r-base and pre-requisitis
