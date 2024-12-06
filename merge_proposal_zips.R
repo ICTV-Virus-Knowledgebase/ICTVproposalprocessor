@@ -251,9 +251,9 @@ if( interactive() ) {
 #  params$test_case_dir = "crash"
 #  params$test_case_dir = "proposalsEC55.1"
   # MSL39v2
-  params$test_case_dir = 'proposals_msl39v2'
-  params$proposals_dir = paste0("testData/msl39/",params$test_case_dir)
-  params$out_dir       = paste0("testResults/msl39/",params$test_case_dir)
+  params$test_case_dir = 'proposals_msl39v4_suffix_validation'
+  params$proposals_dir = paste0("testData/msl39v4/",params$test_case_dir)
+  params$out_dir       = paste0("testResults/msl39v4/",params$test_case_dir)
 
   # fast debugging merge/chain
   params$processing_mode ="final"
@@ -2543,7 +2543,57 @@ qc_proposal = function(code, proposalDf) {
               notes=paste("XLSX incorrect value [",badRows[,"change"],"]. Valid terms: [",paste0(names(cvList[[".change2action"]]),collapse=","),"]")
     ) 
   }
+  #
+  #### QC suffixes ####
+  #
+  ## need to check, in dbCvList[["rank"]][,c('suffix','suffix_viroid','suffix_nuc_acid','suffix_viriform')]
+  changeDf$.action = cvList[[".change2action"]][tolower(changeDf$change)]
   
+  # Filter changeDf based on suffix matches in cvLevels
+  cvLevels = dbCvList[["rank"]]
+  cvLevelsSuffixCols = grep(names(cvLevels),pattern="suffix", value=T)
+  
+  badRows <- changeDf[apply(changeDf, 1, function(changeRow) {
+    # Find the matching row in cvLevels based on rank
+    cvRow <- cvLevels[cvLevels$name == changeRow[".destRank"],]
+
+    suffixMatches = TRUE
+    if( !is.na(cvRow$suffix) ) {
+      # Check if changeDf$name contains any of the non-NA suffixes in cvRow
+      suffixMatches <- any(sapply(cvRow[, cvLevelsSuffixCols], function(suffix) {
+        !is.na(suffix) && grepl(paste0(suffix,"$"), changeRow[".destTaxon"],ignore.case=T)
+      }))
+    } 
+    # Keep rows where the condition is met
+    !suffixMatches
+  }), ]
+  
+  # View the filtered data frame
+  if( nrow(badRows) >0 ) {
+    validForRank = function(destRank) {
+      sapply(
+        cvLevels[cvLevels$name == destRank, cvLevelsSuffixCols], 
+        function(x) {
+          if (is.factor(x)) {
+            x <- levels(x)[x]  # Convert factor to its string label
+          } else {
+            x <- as.character(x)  # Convert non-factor to character
+          }})
+    }
+    validForRankStrs=sapply(badRows[,".destRank"],function(destRank) {
+        x=validForRank(destRank); 
+        paste(x[!is.na(x)],collapse=",")
+    })
+    
+    log_error(code,linenum=rownames(badRows),action=badRows$change,actionOrder=actionOrder, 
+              rank=badRows$rank,taxon=badRows$.changeTaxon,
+              levelStr="ERROR",errorCode="SUFFIX_RANK_MISMATCH",errorStr="Taxon name does not end with a valid suffix for it's rank",
+              notes=paste("New name: ",badRows[,".destTaxon"],"; Valid suffixes for rank [",badRows[,".destRank"],"]: ",validForRankStrs)
+    ) 
+    
+  }
+  
+    
   # return warnings, if any
   return(list(changeDf=changeDf))
 } # qc_proposal()
