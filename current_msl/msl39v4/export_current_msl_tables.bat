@@ -31,6 +31,15 @@ sqlcmd -s"	" -f o:65001 -W -Q "set nocount on; select * from [ICTVonline39].[dbo
 sqlcmd -s"	" -f o:65001 -W -Q "set nocount on; select * from [ICTVonline39].[dbo].[taxonomy_node_delta]"| findstr /v /c:"-" /b > "taxonomy_node_delta.utf8.txt"
 sqlcmd -s"	" -f o:65001 -W -Q "set nocount on; select * from [ICTVonline39].[dbo].[taxonomy_node_merge_split]"| findstr /v /c:"-" /b > "taxonomy_node_merge_split.utf8.txt"
 
+@REM exports
+
+@REM NCBI_linkout is special
+@REM each row is a single column with embedded char(10)+char(13) to make multiple lines
+@REM Strip column name and "underline" formatting: findstr /v /c:"#" /b | findstr /v /c:"------------" /x
+@REM Strip "Warning: Null value is eliminated by an aggregate": findstr /v /c:"Changed" /b
+sqlcmd -s"" -f o:65001 -W -Q "use ICTVonline39; set nocount on; DECLARE @nl varchar(10); SET @nl=char(13)+char(10);exec [NCBI_linkout_ft_export] NULL, @nl" | findstr /v /c:"#" /b | findstr /v /c:"------------" /x | findstr /v /c:"Changed" /b | findstr /v /c:Warning /b > "linkout.utf8.txt"
+
+
 @REM convenience views
 
 @REM copy back to laptop
