@@ -1,0 +1,19 @@
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl39v4 --proposalsDir=testData/msl39v4/proposals_msl39v4_suffix_validation --outDir=testResults/msl39v4/proposals_msl39v4_suffix_validation --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v2.2.99cd15e
+Previous taxa: 151832 34  from  current_msl/msl39v4/taxonomy_node_export.utf8.txt 
+WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+# LOAD_PROPOSAL_DOCX( 2024.000A )
+# LOADED:  2024.000A  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 2024.000A , NA )
+# LOADED:  2024.000A  XLS with  0  errors/warnings
+# LOADED:  2024.000A 
+# QC start: 2024.000A: proposal loaded (1 out of 1)
+# QCed:      2024.000A  with  41  errors/warnings
+changeList:  2024.000A 
+Wrote: OUTDIR/QC.summary.tsv (41 rows)
+# MERGE PROC: 2024.000A with 87 changes  (1 out of 1)
+# DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 87 
+# APPLIED:  87 changes from 2024.000A.N.v1.TestSuffixes  with ERROR:45 SUCCESS:87 
+# TOTAL  :  87 changes  from 1 proposals  with ERROR:107 SUCCESS:87 
+Wrote: OUTDIR/QC.summary.tsv (194 rows)
+# COMPLETED.

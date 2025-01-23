@@ -80,6 +80,7 @@ for TEST in $TESTS; do
     LOG=${DEST_DIR}/log.new.txt
     LOGBASE=${DEST_DIR}/log.txt
     LOGDIFF=${DEST_DIR}/log.diff
+    LOGDWDIFF=${DEST_DIR}/log.dwdiff
 
     mkdir -p $DEST_DIR
     #
@@ -160,6 +161,7 @@ for TEST in $TESTS; do
     if [[ ! -e $LOGBASE || ! -e $LOG ]]; then 
 	echo "*MISS  OUT  $TEST" | tee -a $REPORT
     else
+	# official diff
         echo "diff -yw -W 200 \<(tail -n +3 $LOG|sed -e 's/\[?25h//g') \<(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g') \> $LOGDIFF" | tee $LOGDIFF
         diff -yw -W 200 <(tail -n +3 $LOG|sed -e 's/\[?25h//g') <(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g') 2>&1 >> $LOGDIFF; RC=$?
         if [ $RC -eq "0" ]; then
@@ -167,6 +169,9 @@ for TEST in $TESTS; do
         else
             echo "*FAIL  LOG  $TEST" | tee -a $REPORT
         fi
+	# unofficial, prettier dwdiff
+	echo "dwdiff --color <(tail -n +3 $LOG|sed -e 's/^[\[?25h//g') <(tail -n +3 $LOGBASE|sed -e 's/^[\[?25h//g') 2>&1 #> $LOGDWDIFF" | tee $LOGDWDIFF
+	dwdiff --color <(tail -n +3 $LOG|sed -e 's/\[?25h//g') <(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g') 2>&1 >> $LOGDWDIFF
     fi
     echo "#-------------------------" | tee -a $REPORT
 	

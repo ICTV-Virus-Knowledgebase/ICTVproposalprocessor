@@ -242,8 +242,8 @@ if( interactive() ) {
   params$save_proposal_cache = F
   # defeat auto-caching when debugging
   #rm(docxList,xlsxList,changeList)
-  params$verbose = F
-  params$tmi = F
+  params$verbose = T
+  params$tmi = T
   params$debug_on_error = F
   params$processing_mode = 'final'
   #params$output_change_report = F
@@ -251,9 +251,10 @@ if( interactive() ) {
 #  params$test_case_dir = "crash"
 #  params$test_case_dir = "proposalsEC55.1"
   # MSL39v2
-  params$test_case_dir = 'proposals_msl39v4_suffix_validation'
-  params$proposals_dir = paste0("testData/msl39v4/",params$test_case_dir)
-  params$out_dir       = paste0("testResults/msl39v4/",params$test_case_dir)
+  params$test_case_msl = 'msl39v2'; params$test_case_dir = 'proposals_msl39v3'
+  params$test_case_msl = 'msl39v4'; params$test_case_dir = 'proposals_msl39v4_suffix_validation'
+  params$proposals_dir = paste0("testData/",params$test_case_msl,"/",params$test_case_dir)
+  params$out_dir       = paste0("testResults/",params$test_case_msl,"/",params$test_case_dir)
 
   # fast debugging merge/chain
   params$processing_mode ="final"
@@ -2547,50 +2548,141 @@ qc_proposal = function(code, proposalDf) {
   #### QC suffixes ####
   #
   ## need to check, in dbCvList[["rank"]][,c('suffix','suffix_viroid','suffix_nuc_acid','suffix_viriform')]
-  changeDf$.action = cvList[[".change2action"]][tolower(changeDf$change)]
   
   # Filter changeDf based on suffix matches in cvLevels
   cvLevels = dbCvList[["rank"]]
   cvLevelsSuffixCols = grep(names(cvLevels),pattern="suffix", value=T)
   
-  badRows <- changeDf[apply(changeDf, 1, function(changeRow) {
-    # Find the matching row in cvLevels based on rank
-    cvRow <- cvLevels[cvLevels$name == changeRow[".destRank"],]
+  suffixStatus = apply(changeDf, 1, function(changeRow) {
+    # assume the name is fine
+    errorStr = NA
+    suffixRank = NA
 
-    suffixMatches = TRUE
-    if( !is.na(cvRow$suffix) ) {
-      # Check if changeDf$name contains any of the non-NA suffixes in cvRow
-      suffixMatches <- any(sapply(cvRow[, cvLevelsSuffixCols], function(suffix) {
-        !is.na(suffix) && grepl(paste0(suffix,"$"), changeRow[".destTaxon"],ignore.case=T)
-      }))
+    # skip abolish (no dest)
+    #cat("DEBUG changeDf: ",dim(changeDf),"; changeRow: ",class(changeRow),"\n")
+    if( changeRow["change"]!="Abolish"
+        && !is.na(changeRow[".destRank"]) && !is.na(changeRow[".destTaxon"]) ) {
+
+      # Find the matching row in cvLevels based on rank
+      cvRow <- cvLevels[cvLevels$name == changeRow[".destRank"],]
+      
+      if( !is.na(cvRow$suffix) ) {
+        # if this Rank has suffixes defined, check that at one of them is used.
+        # Check if changeDf$name contains at least one of the non-NA suffixes in cvRow
+        suffixMatches <- any(sapply(cvRow[, cvLevelsSuffixCols], function(suffix) {
+          !is.na(suffix) && grepl(paste0(suffix,"$"), changeRow[".destTaxon"],ignore.case=T)
+        }))
+        if(!suffixMatches) { 
+          errorStr = "MISSING_RANK_SUFFIX"
+        }
+      } else {
+        # if this rank does NOT have suffixes (eg. species), then check that no other suffixes are used
+        # species: check if changeDf$name DOES NOT contain ANY of the non-NA suffixes in cvRow
+        for (i in seq_len(nrow(cvLevels))) {
+          # Extract suffix values from the row
+          suffixes <- unlist(cvLevels[i, cvLevelsSuffixCols], use.names = FALSE)
+          if( sum(!is.na(suffixes))>0 ) {
+            # Check if the target string ends with any of the suffixes
+            if (any(sapply(suffixes, function(suffix) grepl(paste0(suffix, "$"), changeRow[".destTaxon"], ignore.case = T)))) {
+              errorStr = "WRONG_RANK_SUFFIX" 
+              # record the rank
+              suffixRank = as.character(cvLevels$name[i])
+            }
+          }
+        }
+      }
+    }
+    # Keep rows where the condition is met
+    c(errorStr, suffixRank)
+  })
+  badRows <- changeDf[!is.na(suffixStatus[1,]), ]
+  badRows[,"errorCode"] = suffixStatus[1,!is.na(suffixStatus[1,])]
+  badRows[,"suffixRank"] = suffixStatus[2,!is.na(suffixStatus[1,])]
+  
+  # Report errors on the filtered data frame
+  if( nrow(badRows) >0 ) {
+  
+    missingSuffixRows = badRows[badRows$errorCode=="MISSING_RANK_SUFFIX",]
+    if( nrow(missingSuffixRows)>0) {
+      # usually rank>"species" that lacks one of it's required suffixes"
+      validForRank = function(destRank) {
+        sapply(
+          cvLevels[cvLevels$name == destRank, cvLevelsSuffixCols], 
+          function(x) {
+            # add rank names!
+            if (is.factor(x)) {
+              x <- levels(x)[x]  # Convert factor to its string label
+            } else {
+              x <- as.character(x)  # Convert non-factor to character
+            }})
+      }
+      validForRankStrs=sapply(missingSuffixRows[,".destRank"],function(destRank) {
+        x=validForRank(destRank); 
+        paste(x[!is.na(x)],collapse=",")
+      })
+      log_error(code,linenum=rownames(missingSuffixRows),action=missingSuffixRows$change,actionOrder=actionOrder, 
+                  rank=missingSuffixRows$rank,taxon=missingSuffixRows$.changeTaxon,
+                  levelStr="ERROR",errorCode="MISSING_RANK_SUFFIX",errorStr="Taxon name does not end with a valid suffix for it's rank",
+                  notes=paste("New name: ",missingSuffixRows[,".destTaxon"],"; Valid suffixes for rank [",missingSuffixRows[,".destRank"],"]: ",
+                              validForRankStrs)
+      )
+    } # if(missingSuffixRows)
+    
+    wrongSuffixRows = badRows[badRows$errorCode=="WRONG_RANK_SUFFIX",]
+    if( nrow(wrongSuffixRows)>0 ) {
+      # usually rank == "species" that has a suffix reserved for some other rank
+      validForRank = function(destRank) {
+        sapply(
+          cvLevels[cvLevels$name != destRank, cvLevelsSuffixCols], 
+          function(x) {
+            if (is.factor(x)) {
+              x <- levels(x)[x]  # Convert factor to its string label
+            } else {
+              x <- as.character(x)  # Convert non-factor to character
+            }})
+      }
+      validForRankStrs=sapply(wrongSuffixRows[,".destRank"],function(destRank) {
+        x=validForRank(destRank); 
+        paste(x[!is.na(x)],collapse=",")
+      })
+      log_error(code,linenum=rownames(wrongSuffixRows),action=wrongSuffixRows$change,actionOrder=actionOrder, 
+                rank=wrongSuffixRows$rank,taxon=wrongSuffixRows$.changeTaxon,
+                levelStr="ERROR",errorCode="SUFFIX_RANK_MISMATCH",errorStr="Taxon name does not end with a valid suffix for it's rank",
+                notes=paste0("New name: '",wrongSuffixRows[,".destTaxon"],"' has the suffix of a '",wrongSuffixRows$suffixRank,"' ",
+                "but is a '",wrongSuffixRows[,".destRank"],"';",
+                " *IN*valid suffixes for rank [",wrongSuffixRows[,".destRank"],"]: ",validForRankStrs)
+      ) 
+      
+    } # if(wrongSuffixRows)
+  } # if(badRows)
+  
+  #
+  #### QC capitalization ####
+  #
+  # Rank >= genus: initial capital, rest lower case
+  # 
+  badRows <- changeDf[apply(changeDf, 1, function(changeRow) {
+    # assume it's ok
+    isCapGood=T
+    # check upper ranks, exclude Abolish (no dest values)
+    if( changeRow["change"]!="Abolish" 
+        && !is.na(changeRow[".destRank"]) && !is.na(changeRow[".destTaxon"]) 
+        && changeRow[".destRank"] != "species" ) {
+      # Check if changeDf$.destTaxon is [Upper][lower]+ 
+      isCapGood <- grepl('^[A-Z][a-z0-9-]+$', changeRow[".destTaxon"],ignore.case=F)
+      #cat("CaseTest: ",changeRow[".destRank"],":",changeRow[".destTaxon"],"=>", isCapGood,"[notSpecies:",changeRow[".destRank"] != 'species',"]","\n")
     } 
     # Keep rows where the condition is met
-    !suffixMatches
+    !isCapGood
   }), ]
   
   # View the filtered data frame
   if( nrow(badRows) >0 ) {
-    validForRank = function(destRank) {
-      sapply(
-        cvLevels[cvLevels$name == destRank, cvLevelsSuffixCols], 
-        function(x) {
-          if (is.factor(x)) {
-            x <- levels(x)[x]  # Convert factor to its string label
-          } else {
-            x <- as.character(x)  # Convert non-factor to character
-          }})
-    }
-    validForRankStrs=sapply(badRows[,".destRank"],function(destRank) {
-        x=validForRank(destRank); 
-        paste(x[!is.na(x)],collapse=",")
-    })
-    
     log_error(code,linenum=rownames(badRows),action=badRows$change,actionOrder=actionOrder, 
               rank=badRows$rank,taxon=badRows$.changeTaxon,
-              levelStr="ERROR",errorCode="SUFFIX_RANK_MISMATCH",errorStr="Taxon name does not end with a valid suffix for it's rank",
-              notes=paste("New name: ",badRows[,".destTaxon"],"; Valid suffixes for rank [",badRows[,".destRank"],"]: ",validForRankStrs)
+              levelStr="ERROR",errorCode="TAXON_NAME_CASE",errorStr="Non-species taxa must be Capitalized.",
+              notes=paste0(badRows[,".destTaxon"],": Non-species taxa must start with a capital, followed by one or more lower-case letters, numbers or hyphens.")
     ) 
-    
   }
   
     
@@ -3330,7 +3422,7 @@ apply_changes = function(changesDf) {
     
     # debug
     #if(code=="2022.003M" && interactive()) {browser()}
-    
+
     #
     #### CREATE/SPLIT ####
     
@@ -3565,7 +3657,7 @@ apply_changes = function(changesDf) {
                           "CREATE:            ")
         cat(paste0(labelStr,toupper(curChangeDf$rank)," code:",code," line:",linenum," '",destTaxonName, "' findParent(",destParentName,destParentNameAlias,")=",sum(parentDestNewMatches)),"\n")
       }
-
+      
       # no parent found: skip record, otherwise, get parent
       if(sum(parentDestNewMatches)!=1) {
         next;
@@ -3642,7 +3734,7 @@ apply_changes = function(changesDf) {
     
       # get parent
       newTaxon = .GlobalEnv$newMSL[parentDestNewMatches,]
-  
+
       # WARN if PARENT_LINEAGE is not expected, AND USE PARENT LINEAGE
       if( !is.na(destParentLineage) && (newTaxon$lineage != destParentLineage) ) {
         # check if parent was known to be changed
@@ -3674,9 +3766,7 @@ apply_changes = function(changesDf) {
       
       # add new info - primary columns
       newTaxon[1,"in_change"]   = curChangeDf$.action
-      newTaxon[1,"in_filename"] = 
-        ifelse(is.na(newTaxon[1,"in_filename"]),proposalZip,
-               paste0(newTaxon[1,"in_filename"],";",proposalZip))
+      newTaxon[1,"in_filename"] = proposalZip
       newTaxon[1,"in_notes"]    = paste0("xlsx_row=",linenum)
       newTaxon[1,"in_target"]   = destLineage
       
@@ -4116,9 +4206,10 @@ apply_changes = function(changesDf) {
       # find the SRC target to MOVE in NEW and CUR
       #
       srcNewTarget =(.GlobalEnv$newMSL$name==as.character(srcTaxonName))
-      srcPrevTarget=(.GlobalEnv$curMSL$taxnode_id==.GlobalEnv$newMSL[srcNewTarget,]$.prev_taxnode_id)
+      srcPrevTaxnodeID = .GlobalEnv$newMSL[srcNewTarget,]$.prev_taxnode_id
+      srcPrevTarget=(.GlobalEnv$curMSL$taxnode_id==srcPrevTaxnodeID)
 
-      if(params$verbose) {cat(paste0("MOVE:              ",toupper(curChangeDf$rank)," code:",code," line:",linenum," '",srcTaxonName, "' findTarget(",srcTaxonName,")=",sum(srcNewTarget),"/",sum(srcPrevTarget)),"\n")}
+      if(params$verbose) {cat(paste0("MOVE:              ",toupper(curChangeDf$rank)," code:",code," line:",linenum," '",srcTaxonName, "' findTarget(",srcTaxonName,"): new=",sum(srcNewTarget),"/cur=",sum(srcPrevTarget,na.rm=T)),"\n")}
     
       if(sum(srcNewTarget,na.rm=TRUE)==0) {
         # check prevMSL, to see if something else already moved it
@@ -4149,7 +4240,19 @@ apply_changes = function(changesDf) {
                                       , " matches ", sum(srcNewTarget) ))
          next;
       }
-
+      
+      # ERROR taxon not linked to curMSL
+      if(is.na(srcPrevTaxnodeID)) {
+        # in general, people should NOT be moving/promoting, etc taxa creatd in this MSL
+        # issue a non-fatal ERROr
+        log_change_error(curChangeDf, "ERROR", "ALTER_NEW_TAXON", 
+                         errorStr=paste0("Change=",toupper(curChangeDf$.action),", but taxon was created in this MSL"), 
+                         notes=paste0(srcTaxonRank,":", srcTaxonName, " was ",toupper(.GlobalEnv$newMSL$in_change[srcNewTarget]), 
+                                      " by ",.GlobalEnv$newMSL$prev_proposals[srcNewTarget] )
+        )
+        # proceed anyways - non-fatal error.
+      }
+      
       #
       # check if same accession number already exists
       #
@@ -4385,20 +4488,30 @@ apply_changes = function(changesDf) {
         # of the current name in the new MSL. Here, we mark that we've seen the 
         # split directive with the same name, so we should NOT abolish this one.
         # admin; mark we kept the original name in the split
-        .GlobalEnv$curMSL[srcPrevTarget,".split_kept"] = TRUE # old copy, just to know
-        .GlobalEnv$newMSL[srcNewTarget,".split_kept"] = TRUE  # new copy - don't delete!
-        .GlobalEnv$newMSL[srcNewTarget,".split_code"] = code  
-        .GlobalEnv$newMSL[srcNewTarget,".split_actionOrder"] = actionOrder  
-        .GlobalEnv$newMSL[srcNewTarget,".split_linenum"] = curChangeDf$.linenum  # new copy - mark which line saved
-        
-        # set IN change for SPLIT
-        .GlobalEnv$newMSL[srcNewTarget,"in_change"] = curChangeDf$.action
-        .GlobalEnv$newMSL[srcNewTarget,"in_filename"] = 
+        if(!is.na(srcPrevTaxnodeID)) {
+          # SPLIT something that existed in prevMSL
+          .GlobalEnv$curMSL[srcPrevTarget,".split_kept"] = TRUE # old copy, just to know
+          .GlobalEnv$newMSL[srcNewTarget,".split_kept"] = TRUE  # new copy - don't delete!
+          .GlobalEnv$newMSL[srcNewTarget,".split_code"] = code  
+          .GlobalEnv$newMSL[srcNewTarget,".split_actionOrder"] = actionOrder  
+          .GlobalEnv$newMSL[srcNewTarget,".split_linenum"] = curChangeDf$.linenum  # new copy - mark which line saved
+          
+          # set IN change for SPLIT
+          .GlobalEnv$newMSL[srcNewTarget,"in_change"] = curChangeDf$.action
+          .GlobalEnv$newMSL[srcNewTarget,"in_filename"] = 
             ifelse(is.na(.GlobalEnv$newMSL[srcNewTarget,"in_filename"] ),proposalZip,
-            paste0(.GlobalEnv$newMSL[srcNewTarget,"in_filename"],";",proposalZip))
-        .GlobalEnv$newMSL[srcNewTarget,"in_target"] = srcLineage
-        .GlobalEnv$newMSL[srcNewTarget,"in_notes"] = paste0("linenum=",linenum) # add comments?
-      } 
+                   paste0(.GlobalEnv$newMSL[srcNewTarget,"in_filename"],";",proposalZip))
+          .GlobalEnv$newMSL[srcNewTarget,"in_target"] = srcLineage
+          .GlobalEnv$newMSL[srcNewTarget,"in_notes"] = paste0("linenum=",linenum) # add comments?
+        } else {
+          # SPLIT something that's is CREATED in newMSL - so it's a CREATE, not a SPLIT
+          # just hack the newMSL.in_* 
+          .GlobalEnv$newMSL[srcNewTarget,"in_filename"] = paste0(.GlobalEnv$newMSL[srcNewTarget,"in_filename"],";",proposalZip)
+          .GlobalEnv$newMSL[srcNewTarget,"in_notes"]    = paste0(.GlobalEnv$newMSL[srcNewTarget,"in_notes"],";linenum=",linenum)
+          .GlobalEnv$newMSL[srcNewTarget,"in_target"]   = destLineage
+          
+        }
+      } # end split
       else if( curChangeDf$.action == 'merge' ) {
         # MERGE=
         # if the list of split directives does NOT include the current name, 
@@ -4406,49 +4519,84 @@ apply_changes = function(changesDf) {
         # of the current name in the new MSL. Here, we mark that we've seen the 
         # split directive with the same name, so we should NOT abolish this one.
         # admin; mark we kept the original name in the split
-        .GlobalEnv$curMSL[srcPrevTarget,".merge_kept"] = TRUE # old copy, just to know
-        .GlobalEnv$newMSL[srcNewTarget, ".merge_kept"] = TRUE  # new copy - don't delete!
-        .GlobalEnv$newMSL[srcNewTarget, ".merge_code"] = code  
-        .GlobalEnv$newMSL[srcNewTarget, ".merge_actionOrder"] = actionOrder  
-        .GlobalEnv$newMSL[srcNewTarget, ".merge_linenum"] = curChangeDf$.linenum  # new copy - mark which line saved
-        
-        # set OUT change for MERGE
-        .GlobalEnv$curMSL[srcPrevTarget,"out_change"] = curChangeDf$.action
-        .GlobalEnv$curMSL[srcPrevTarget,"out_filename"] = 
-          ifelse(is.na(.GlobalEnv$curMSL[srcPrevTarget,"out_filename"]),proposalZip,
-                 paste0(.GlobalEnv$curMSL[srcPrevTarget,"out_filename"],";",proposalZip))
-        .GlobalEnv$curMSL[srcPrevTarget,"out_target"] = destLineage
-        .GlobalEnv$curMSL[srcPrevTarget,"out_notes"] = paste0("linenum=",linenum) # add comments?
-        .GlobalEnv$curMSL[srcPrevTarget,".actionOrder"] = actionOrder
-      } 
+        if(!is.na(srcPrevTaxnodeID)) {
+          # MERGE something that existed in prevMSL
+          .GlobalEnv$curMSL[srcPrevTarget,".merge_kept"] = TRUE # old copy, just to know
+          .GlobalEnv$newMSL[srcNewTarget, ".merge_kept"] = TRUE  # new copy - don't delete!
+          .GlobalEnv$newMSL[srcNewTarget, ".merge_code"] = code  
+          .GlobalEnv$newMSL[srcNewTarget, ".merge_actionOrder"] = actionOrder  
+          .GlobalEnv$newMSL[srcNewTarget, ".merge_linenum"] = curChangeDf$.linenum  # new copy - mark which line saved
+          
+          # set OUT change for MERGE
+          .GlobalEnv$curMSL[srcPrevTarget,"out_change"] = curChangeDf$.action
+          .GlobalEnv$curMSL[srcPrevTarget,"out_filename"] = 
+            ifelse(is.na(.GlobalEnv$curMSL[srcPrevTarget,"out_filename"]),proposalZip,
+                   paste0(.GlobalEnv$curMSL[srcPrevTarget,"out_filename"],";",proposalZip))
+          .GlobalEnv$curMSL[srcPrevTarget,"out_target"] = destLineage
+          .GlobalEnv$curMSL[srcPrevTarget,"out_notes"] = paste0("linenum=",linenum) # add comments?
+          .GlobalEnv$curMSL[srcPrevTarget,".actionOrder"] = actionOrder
+        } else {
+          # SPLIT something that's is CREATED in newMSL - so it's a CREATE, not a SPLIT
+          # just hack the newMSL.in_* 
+          .GlobalEnv$newMSL[srcNewTarget,"in_filename"] = paste0(.GlobalEnv$newMSL[srcNewTarget,"in_filename"],";",proposalZip)
+          .GlobalEnv$newMSL[srcNewTarget,"in_notes"]    = paste0(.GlobalEnv$newMSL[srcNewTarget,"in_notes"],";linenum=",linenum)
+          .GlobalEnv$newMSL[srcNewTarget,"in_target"]   = destLineage
+        }
+      } # end merge
       else {
-        # set OUT change for all others
-        .GlobalEnv$curMSL[srcPrevTarget,"out_updated"] = TRUE  # admin; mark this to save to db
-        .GlobalEnv$curMSL[srcPrevTarget,"out_change"] = curChangeDf$.action
-        .GlobalEnv$curMSL[srcPrevTarget,"out_filename"] = 
-          ifelse(is.na(.GlobalEnv$curMSL[srcPrevTarget,"out_filename"]),proposalZip,
-                 paste0(.GlobalEnv$curMSL[srcPrevTarget,"out_filename"],";",proposalZip))
-        .GlobalEnv$curMSL[srcPrevTarget,"out_target"] = destLineage
-        .GlobalEnv$curMSL[srcPrevTarget,"out_notes"] = paste0("linenum=",linenum) # add comments?
-        .GlobalEnv$curMSL[srcPrevTarget,".out_taxnode_id"] = .GlobalEnv$newMSL[srcNewTarget,"taxnode_id"] 
-        .GlobalEnv$curMSL[srcPrevTarget,".actionOrder"] = actionOrder
-      }
-      
+        # set OUT change for all others: MOVE, PROMOTE, DEMOTE, IF taxon existed in prevMSL
+        if(!is.na(srcPrevTaxnodeID)) {
+          # something that existed in prevMSL
+          .GlobalEnv$curMSL[srcPrevTarget,"out_updated"] = TRUE  # admin; mark this to save to db
+          .GlobalEnv$curMSL[srcPrevTarget,"out_change"] = curChangeDf$.action
+          .GlobalEnv$curMSL[srcPrevTarget,"out_filename"] = 
+            ifelse(is.na(.GlobalEnv$curMSL[srcPrevTarget,"out_filename"]),proposalZip,
+                   paste0(.GlobalEnv$curMSL[srcPrevTarget,"out_filename"],";",proposalZip))
+          .GlobalEnv$curMSL[srcPrevTarget,"out_target"] = destLineage
+          .GlobalEnv$curMSL[srcPrevTarget,"out_notes"] = paste0("linenum=",linenum) # add comments?
+          .GlobalEnv$curMSL[srcPrevTarget,".out_taxnode_id"] = .GlobalEnv$newMSL[srcNewTarget,"taxnode_id"] 
+          .GlobalEnv$curMSL[srcPrevTarget,".actionOrder"] = actionOrder
+        } else {
+          # something that's is CREATED in newMSL - so it's a CREATE, not a MOVE/DEMOTE/PROMOTE
+          # just hack the newMSL.in_* 
+          .GlobalEnv$newMSL[srcNewTarget,"in_filename"] = paste0(.GlobalEnv$newMSL[srcNewTarget,"in_filename"],";",proposalZip)
+          .GlobalEnv$newMSL[srcNewTarget,"in_notes"]    = paste0(.GlobalEnv$newMSL[srcNewTarget,"in_notes"],";linenum=",linenum)
+          .GlobalEnv$newMSL[srcNewTarget,"in_target"]   = destLineage
+        }
+      } # other: move, promote, demote
       # success note
       errorCodeMoveMap=c("move"="MOVE.OK","promote"="PROMOTE.OK","demote"="DEMOTE.OK","split"="SPLIT=.OK","merge"="MERGE=.OK")
-      log_change_error(curChangeDf, "SUCCESS",  errorCodeMoveMap[curChangeDf$.action], 
-                       errorStr=paste0("Change=",toupper(curChangeDf$.action),", applied successfully"), 
-                       notes=paste0(toupper(curChangeDf$.action)," ",
-                                    .GlobalEnv$curMSL$rank[srcPrevTarget], " named '", .GlobalEnv$curMSL[srcPrevTarget,"name"],    "'", 
-                                    " to ", .GlobalEnv$newMSL$rank[srcNewTarget], " named '", .GlobalEnv$newMSL[srcNewTarget,"name"],    "'", 
-                                    " PROPOSED//CUR=",  diff_lineages(
-                                      .GlobalEnv$newMSL[srcNewTarget, "lineage"],
-                                      .GlobalEnv$curMSL[srcPrevTarget,"lineage"]
-                                    )
-                                    
-                       )
-      )
-    } # MOVE/PROMOTE/DEMOTE/SPLIT=/MERGE=
+      if(!is.na(srcPrevTaxnodeID)) {
+        # moving something that existed in prev MSL
+        log_change_error(curChangeDf, "SUCCESS",  errorCodeMoveMap[curChangeDf$.action], 
+                         errorStr=paste0("Change=",toupper(curChangeDf$.action),", applied successfully"), 
+                         notes=paste0(toupper(curChangeDf$.action)," ",
+                                      .GlobalEnv$curMSL$rank[srcPrevTarget], " named '", .GlobalEnv$curMSL[srcPrevTarget,"name"],    "'", 
+                                      " to ", .GlobalEnv$newMSL$rank[srcNewTarget], " named '", .GlobalEnv$newMSL[srcNewTarget,"name"],    "'", 
+                                      " PROPOSED//CUR=",  diff_lineages(
+                                        .GlobalEnv$newMSL[srcNewTarget, "lineage"],
+                                        .GlobalEnv$curMSL[srcPrevTarget,"lineage"]
+                                      )
+                         )
+        )
+      } else {
+        # moving something that was creating by another line/proposal in this MSL (no prev_taxnode_id)
+        # just hack the newMSL.in_* 
+        log_change_error(curChangeDf, "SUCCESS",  errorCodeMoveMap[curChangeDf$.action], 
+                         errorStr=paste0("Change=",toupper(curChangeDf$.action),", applied successfully"), 
+                         notes=paste0(toupper(curChangeDf$.action)," ",
+                                      curChangeDf$.srcRank, ":'", curChangeDf$.srcTaxon,    "'", 
+                                      " to ", .GlobalEnv$newMSL$rank[srcNewTarget], ":'", .GlobalEnv$newMSL[srcNewTarget,"name"],    "'", 
+                                      " PROPOSED//CUR=",  diff_lineages(
+                                        curChangeDf$.destLineage, 
+                                        curChangeDf$.srcLineage
+                                      )
+                         )
+        )
+        
+      }
+      
+      } # MOVE/PROMOTE/DEMOTE/SPLIT=/MERGE=
     else if(curChangeDf$.action %in% c("merge") ) { 
       # ........................................................................
       #

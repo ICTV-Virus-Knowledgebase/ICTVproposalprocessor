@@ -1,5 +1,5 @@
 # Rscript merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposalsTest6_split --outDir=testResults/msl38/proposalsTest6_split --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v2.0.35063ff
+VERSION: v2.2.99cd15e
 Previous taxa: 132852 34  from  current_msl/msl38/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # LOAD_PROPOSAL_DOCX( 2023.007D )
@@ -16,14 +16,14 @@ WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 Wrote: OUTDIR/QC.summary.tsv (1 rows)
 # LOADED:  2023.907D 
 # QC start: 2023.907D: proposal loaded (2 out of 2)
-# QCed:      2023.907D  with  1  errors/warnings
+# QCed:      2023.907D  with  4  errors/warnings
 changeList:  2023.007D 2023.907D 
-Wrote: OUTDIR/QC.summary.tsv (1 rows)
+Wrote: OUTDIR/QC.summary.tsv (4 rows)
 # MERGE PROC: 2023.007D with 15 changes  (1 out of 2)
 # MERGE PROC: 2023.907D with 10 changes  (2 out of 2)
 # DONE. MERGED 2  proposal(s), skipped 0 ; total changes: 25 
 # APPLIED:  15 changes from 2023.007D.N.v1.Parvoviridae_12nsp  with ERROR:1 WARNING:2 INFO:1 SUCCESS:14 
-# APPLIED:  10 changes from 2023.907D.N.v1.Correct_split  with ERROR:2 INFO:1 SUCCESS:10 
-# TOTAL  :  25 changes  from 2 proposals  with ERROR:3 WARNING:2 INFO:2 SUCCESS:24 
-Wrote: OUTDIR/QC.summary.tsv (31 rows)
+# APPLIED:  10 changes from 2023.907D.N.v1.Correct_split  with ERROR:5 INFO:1 SUCCESS:10 
+# TOTAL  :  25 changes  from 2 proposals  with ERROR:6 WARNING:2 INFO:2 SUCCESS:24 
+Wrote: OUTDIR/QC.summary.tsv (34 rows)
 # COMPLETED.

@@ -1,5 +1,5 @@
 # Rscript merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposalsMultiFileLinking --outDir=testResults/msl38/proposalsMultiFileLinking --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v2.0.35063ff
+VERSION: v2.2.99cd15e
 Previous taxa: 132852 34  from  current_msl/msl38/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # LOAD_PROPOSAL_DOCX( 1 )
@@ -8,30 +8,32 @@ WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # LOADED:  1  XLS with  0  errors/warnings
 # LOADED:  1 
 # QC start: 1: proposal loaded (1 out of 3)
-# QCed:      1  with  0  errors/warnings
+# QCed:      1  with  2  errors/warnings
 # LOAD_PROPOSAL_DOCX( 2 )
-# LOADED:  2  DOCX with  0  errors/warnings
+# LOADED:  2  DOCX with  2  errors/warnings
 # LOAD_PROPOSAL( 2 , NA )
-# LOADED:  2  XLS with  0  errors/warnings
+# LOADED:  2  XLS with  2  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (2 rows)
 # LOADED:  2 
 # QC start: 2: proposal loaded (2 out of 3)
-# QCed:      2  with  0  errors/warnings
+# QCed:      2  with  5  errors/warnings
 # LOAD_PROPOSAL_DOCX( 3 )
-# LOADED:  3  DOCX with  0  errors/warnings
+# LOADED:  3  DOCX with  5  errors/warnings
 # LOAD_PROPOSAL( 3 , NA )
-# LOADED:  3  XLS with  0  errors/warnings
+# LOADED:  3  XLS with  5  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (5 rows)
 # LOADED:  3 
 # QC start: 3: proposal loaded (3 out of 3)
-# QCed:      3  with  0  errors/warnings
+# QCed:      3  with  6  errors/warnings
 changeList:  1 2 3 
-Wrote: OUTDIR/QC.summary.tsv (0 rows)
+Wrote: OUTDIR/QC.summary.tsv (6 rows)
 # MERGE PROC: 1 with 7 changes  (1 out of 3)
 # MERGE PROC: 2 with 5 changes  (2 out of 3)
 # MERGE PROC: 3 with 3 changes  (3 out of 3)
 # DONE. MERGED 3  proposal(s), skipped 0 ; total changes: 15 
-# APPLIED:   7 changes from 2023.10M.N.v1.CreateSpeciesFirst  with INFO:2 SUCCESS:5 
-# APPLIED:   5 changes from 2023.20M.N.v1.CreateGenusAfter  with SUCCESS:5 
-# APPLIED:   3 changes from 2023.30M.N.v1.RenameFutureGenus  with SUCCESS:3 
-# TOTAL  :  15 changes  from 3 proposals  with ERROR:1 INFO:2 SUCCESS:13 
-Wrote: OUTDIR/QC.summary.tsv (16 rows)
+# APPLIED:   7 changes from 2023.10M.N.v1.CreateSpeciesFirst  with ERROR:2 INFO:2 SUCCESS:5 
+# APPLIED:   5 changes from 2023.20M.N.v1.CreateGenusAfter  with ERROR:3 SUCCESS:5 
+# APPLIED:   3 changes from 2023.30M.N.v1.RenameFutureGenus  with ERROR:1 SUCCESS:3 
+# TOTAL  :  15 changes  from 3 proposals  with ERROR:7 INFO:2 SUCCESS:13 
+Wrote: OUTDIR/QC.summary.tsv (22 rows)
 # COMPLETED.
