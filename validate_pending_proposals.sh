@@ -12,6 +12,10 @@
 TEST_PAT="*revised"
 #TEST_PAT="2023.017P*.xlsx"
 echo TEST_PAT=$TEST_PAT
+if [[ "$1" == -p* && ! -z "$2" ]]; then
+    TEST_PAT="*$2*"
+    shift 2
+fi
 
 # pass-through args
 MSL_NOTES="DRAFT: EC 56, Bari, Italy, August 2024; Email ratification February 2025 (MSL #40)"
@@ -51,8 +55,9 @@ echo REPORT=$REPORT
 #echo "#$ find $TEST_DIR -type d -name "$TEST_PAT" -exec basename {} \;"
 #TESTS=$(find $TEST_DIR -type d -name "$TEST_PAT" -exec basename {} \;)
 echo "#$ find $TEST_DIR  -name \"$TEST_PAT\" -exec basename {} \;"
-TESTS=$(find $TEST_DIR -name "$TEST_PAT" -exec basename {} \;)
-echo TESTS=$TEST
+#TESTS=$(find $TEST_DIR -name "$TEST_PAT" -exec basename {} \;)
+TESTS=$(find $TEST_DIR -name "$TEST_PAT" | sed 's/^'$TEST_DIR'\///g')
+echo TESTS=$TESTS
 
 #
 # iterate
