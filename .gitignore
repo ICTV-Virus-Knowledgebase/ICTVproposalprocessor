@@ -7,6 +7,7 @@ tmp/
 pro_zips/
 .DS_Store
 .Rproj.user/
+pending/
 # source ZIPs - too big to put in github
 zips/
 .Rproj.user
