@@ -132,6 +132,14 @@ for TEST in $TESTS; do
 		    2>&1 >> $LOG
     fi	
 
+    # 
+    # check for crashes 
+    #
+    # test for sential value at end of log file...
+    #
+    IS_COMPLETE=$(egrep -c "# COMPLETED." $LOG)
+    echo IS_COMPLETE=$IS_COMPLETE
+
     #
     # check output
     #
@@ -140,9 +148,15 @@ for TEST in $TESTS; do
     echo "diff -yw -W 200 \<(cut -f 5- $RESULTS) \<(cut -f 5- $RESULTSBASE) \> $RESULTSDIFF" | tee $RESULTSDIFF
     diff -yw -W 200 <(cut -f 5- $RESULTS) <(cut -f 5- $RESULTSBASE) 2>&1 >> $RESULTSDIFF; RC=$?
     if [ $RC -eq "0" ]; then
-	echo "PASS  $TEST" | tee -a $REPORT
+	echo "PASS      $TEST" | tee -a $REPORT
     else
-	echo "FAIL$RC $TEST" | tee -a $REPORT
+	if [ $IS_COMPLETE -eq "0" ]; then
+	    # did not run to completion; therefore crashed
+	    echo "CRASH     $TEST" | tee -a $REPORT
+	else 	
+	    # ran to completion, but output didn't match
+	    echo "FAIL$RC     $TEST" | tee -a $REPORT
+	fi
     fi	
 
     #
@@ -155,7 +169,13 @@ for TEST in $TESTS; do
     if [ $RC -eq "0" ]; then
 	echo "LOG_PASS  $TEST" | tee -a $REPORT
     else
-	echo "LOG_FAIL$RC $TEST" | tee -a $REPORT
+	if [ $IS_COMPLETE -eq "0" ]; then
+		# did not run to completion; therefore crashed
+		echo LOG_CRASH $TEST | tee -a $REPORT
+	else 	
+		# ran to completion, but output didn't match
+		echo "LOG_FAIL$RC $TEST" | tee -a $REPORT
+	fi
     fi
     echo "#-------------------------" | tee -a $REPORT
 	
