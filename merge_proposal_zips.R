@@ -243,7 +243,6 @@ if( interactive() ) {
   # defeat auto-caching when debugging
   #rm(docxList,xlsxList,changeList)
   params$verbose = T
-  params$tmi = T
   params$debug_on_error = F
   params$processing_mode = 'final'
   #params$output_change_report = F
@@ -252,14 +251,13 @@ if( interactive() ) {
 #  params$test_case_dir = "proposalsEC55.1"
   # MSL39v2
   params$test_case_msl = 'msl39v2'; params$test_case_dir = 'proposals_msl39v3'
-  params$test_case_msl = 'msl39v4'; params$test_case_dir = 'proposals_msl39v4_suffix_validation'
   params$proposals_dir = paste0("testData/",params$test_case_msl,"/",params$test_case_dir)
   params$out_dir       = paste0("testResults/",params$test_case_msl,"/",params$test_case_dir)
 
   # fast debugging merge/chain
-  params$processing_mode ="final"
-#  params$proposals_dir = "./MSL39v6/proposalsFinal"
-#  params$out_dir       = "./MSL39v6/results/proposalsFinal"
+  params$processing_mode ="draft"
+  #params$proposals_dir = "./pending/B_revised/2024.045B.A.v2.Autographivirales.docx"
+  #params$out_dir       = "./pending_results/B_revised/2024.045B"
   #params$proposals_dir = "EC55"
   #params$out_dir       = "EC55_results"
   params$qc_regression_tsv_fname = "QC.regression.new.tsv"
@@ -949,7 +947,7 @@ scan_for_proposals = function() {
   ##### filter filenames #####
   # remove all *.Ud.* files, when in draft/final modes
   if( params$processing_mode %in% c("draft","final") ) {
-    filtered = grep(inputFiles$file, pattern=".*\\.Ud\\..*")
+    filtered = grep(inputFiles$file, pattern=".*\\.Ud\\..*", ignore.case = T)
     if( length(filtered)) {
       errorDf = inputFiles[filtered,]
       errorDf$level = "INFO"
@@ -959,12 +957,12 @@ scan_for_proposals = function() {
       write_error_summary(.GlobalEnv$allErrorDf)
       if(params$tmi) { cat(paste0("# .Ud. files filtered out: N=",length(filtered),"\n"))}
     }
-    inputFiles = inputFiles[grep(inputFiles$file, pattern=".*\\.Ud\\..*", invert=T),]
+    inputFiles = inputFiles[grep(inputFiles$file, pattern=".*\\.Ud\\..*", ignore.case=T, invert=T),]
     if(params$tmi) { cat("# xls|doc(x) files after .Ud. removal: N=",nrow(inputFiles),"\n")}
   }
   
   # ignore "Suppl" files 
-  filtered = grep(inputFiles$file,pattern=params$infile_suppl_pat)
+  filtered = grep(inputFiles$file,pattern=params$infile_suppl_pat,ignore.case = T)
   if( length(filtered) ) {
     errorDf = inputFiles[filtered,]
     errorDf$level = "INFO"
@@ -974,7 +972,7 @@ scan_for_proposals = function() {
     write_error_summary(.GlobalEnv$allErrorDf)
     if(params$tmi) { cat(paste0("# Suppl files filtered out: N=",length(filtered),"\n"))}
   }
-  inputFiles = inputFiles[grep(inputFiles$file,pattern=params$infile_suppl_pat, invert=T),]
+  inputFiles = inputFiles[grep(inputFiles$file,pattern=params$infile_suppl_pat,ignore.case=T, invert=T),]
   if(params$tmi) { cat("# xls|doc(x) files after Suppl/appendix removal: N=",nrow(inputFiles),"\n")}
   
   # ignore "appendix" files 
@@ -995,7 +993,7 @@ scan_for_proposals = function() {
   #
   # break filename into proposal code, filename and basename
   #
-  docxs          = inputFiles[grep(inputFiles$file,pattern="\\.docx*$"),,drop=FALSE]
+  docxs          = inputFiles[grep(inputFiles$file,pattern="\\.docx*$", ignore.case=T),,drop=FALSE]
   colnames(docxs)[which(colnames(docxs) %in% c("docpath","file") )] <- c("docxpath","docx")
   #names(docxs)   = c("docxpath","path","docx","basename","code","scAbbrev")
   
@@ -1032,12 +1030,12 @@ scan_for_proposals = function() {
     .GlobalEnv$allErrorDf = rbindlist(list(.GlobalEnv$allErrorDf, errorDf),fill=TRUE)
   }
   
-  docxBadFnameFormats = grep(docxs$docx, pattern=paste0(filenameFormatRegex,".docx$"), invert=T)
+  docxBadFnameFormats = grep(docxs$docx, pattern=paste0(filenameFormatRegex,".docx$"), ignore.case=T, invert=T)
   if( length(docxBadFnameFormats) > 0 ) {
     if( params$processing_mode %in% c("draft","final") ) {
       # supress picky error message
       errorDf= docxs[docxBadFnameFormats,c("scAbbrev","code","docx")]
-      errorDf$level= "WARNING"
+      errorDf$level= "ERROR"
       errorDf$error = "DOCX.BAD_FILENAME_FORMAT"
       errorDf$message = paste0("Should be '",filenameFormatMsg,".docx'")
       errorDf$notes= "####[A-Z]=year/study_section, ###[A-Z]=index/type, [A-Z]+=status, v#=version"
@@ -1048,7 +1046,7 @@ scan_for_proposals = function() {
   ##### SECTION: scan XLSX ##### 
   #
   
-  xlsxs          = inputFiles[grep(inputFiles$file,pattern="\\.xlsx*$"),,drop=FALSE]
+  xlsxs          = inputFiles[grep(inputFiles$file,pattern="\\.xlsx*$",ignore.case=T),,drop=FALSE]
   colnames(xlsxs)[which(colnames(xlsxs) %in% c("docpath","file") )] <- c("xlsxpath","xlsx")
   #names(xlsxs)   = c("xlsx path","path","xlsx","basename","code","scAbbrev")
   
@@ -1084,7 +1082,7 @@ scan_for_proposals = function() {
           if(params$tmi) { print(paste0("LOAD_CHECK_RESULT:  NOT PROPOSAL: ", xlsxs[row,"xlsx"])) }
           subErrorDf = xlsxs[row,]
           subErrorDf[,c("docpath","file")] = subErrorDf[,c("xlsxpath","xlsx")]
-          subErrorDf$level = "WARNING"
+          subErrorDf$level = "ERROR"
           subErrorDf$error = "NON_PROPOSAL_NOT_SUPPL"
           subErrorDf$message = paste0("Note a proposal XLSX: All supplemental XLSX files should have '_Suppl.' in the name!")
           .GlobalEnv$allErrorDf = rbindlist(list(.GlobalEnv$allErrorDf, subErrorDf),fill=TRUE)
@@ -1119,6 +1117,7 @@ scan_for_proposals = function() {
     if( !dups_ok ) {
       # terminate
       cat("ERROR: can not proceed with duplicated proposal IDs:", paste(levels(as.factor(xlsxs[dups,"code"])),collapse=","),"\n")
+      cat(paste('\t',xlsxs[!(rownames(xlsxs) %in% filter_rows),"xlsxpath"],'\n'))
       stop(1)
     } else {
       # remove the xlsxs rows that got filtered 
@@ -1131,12 +1130,12 @@ scan_for_proposals = function() {
   # check that xlsx names match format - move this out of DOCX/XLSX and into common
   #
   # production format (no version)
-  xlsxBadFnameFormats = grep(xlsxs$xlsx, pattern=paste0(filenameFormatRegex,".xlsx*$"), invert=T)
+  xlsxBadFnameFormats = grep(xlsxs$xlsx, pattern=paste0(filenameFormatRegex,".xlsx*$"),ignore.case=T, invert=T)
   if( length(xlsxBadFnameFormats) > 0 ) {
     if( params$processing_mode %in% c("draft","final") ) {
       # supress picky error message
       errorDf= xlsxs[xlsxBadFnameFormats,c("scAbbrev","code","xlsx")]
-      errorDf$level= "WARNING"
+      errorDf$level= "ERROR"
       errorDf$error = "XLSX.BAD_FILENAME_FORMAT"
       errorDf$message = paste0("Should be '",filenameFormatMsg,".xlsx'")
       errorDf$notes= "####[A-Z]=year/study_section, ###[A-Z]=index/type, [A-Z]+=status, v#=version"
@@ -1148,7 +1147,7 @@ scan_for_proposals = function() {
   spacedOut = grep(pattern=" ",xlsxs$xlsx)
   if(sum(spacedOut) > 0) {
     errorDf = xlsxs[spacedOut, c("scAbbrev", "code", "xlsx")]
-    errorDf$level = "WARNING"
+    errorDf$level = "ERROR"
     errorDf$error = "XLSX_FILENAME_SPACES"
     errorDf$message = "filename contains a space: please replace with _ or -"
     errorDf$notes = gsub("( )","[\\1]",xlsxs[spacedOut,]$xlsx)
@@ -1205,7 +1204,7 @@ scan_for_proposals = function() {
         proposalsDf[row,"xlsxpath"]=xlsxs[xlsxs$code==errorDf[row,"code"],"xlsxpath"]
         errorDf[row,]$xlsx = proposalsDf[row,"xlsx"]
         errorDf[row,]$row = NA
-        errorDf[row,]$level = "WARNING"
+        errorDf[row,]$level = "ERROR"
         errorDf[row,]$error = "xlsx.TYPO"
         errorDf[row,]$notes = paste("Using best guess:",proposalsDf[row,"xlsx"])
       } else if( guesses > 1 ) {
@@ -1249,7 +1248,7 @@ scan_for_proposals = function() {
     if( params$processing_mode %in% c("draft","final") ) {
       # supress picky error message
       errorDf = proposalsDf[badProposalAbbrevs, c("scAbbrev", "code", "xlsx", "docx")]
-      errorDf$level = "WARNING"
+      errorDf$level = "ERROR"
       errorDf$error = "CODE_BAD_SC_ABBREV"
       errorDf$message = "Last letter of CODE not a valid ICTV Subcommittee letter"
       errorDf$notes = paste0("'",proposalsDf[badProposalAbbrevs,"scAbbrev"],"' not in [",
@@ -1434,7 +1433,7 @@ xlsx_2023_change_cols =  c(
 value_validation = data.frame(
   pat_name = "remove-non-alpha-numeric",
   # non-species taxa
-  col = grep(xlsx_change_colnames[c(xlsx_change_srcCols,xlsx_change_destCols)],pattern="pecies",invert = T, value=T),
+  col = grep(xlsx_change_colnames[c(xlsx_change_srcCols,xlsx_change_destCols)],pattern="pecies",ignore.case=T, invert = T, value=T),
   regex = "([^[:alnum:]-]+)",
   type = "replace",
   class = "INFO",
@@ -1850,7 +1849,7 @@ load_proposal_docx = function(code) {
       # supress picky error message
       log_error(code,linenum=0,action="OPEN_DOCX",actionOrder=actionOrder,
                 rank="",taxon="",
-                levelStr = "WARNING",
+                levelStr = "ERROR",
                 errorCode = "DOCX_MISSING",
                 errorStr = ".docx file not available")
     }
@@ -1873,6 +1872,37 @@ load_proposal_docx = function(code) {
   # read DOCX file, no column names
   txt = read_docx(proposalsDf[code,"docxpath"])
   
+  # check original template version
+  if( length(grep(txt, pattern="Part 1: TITLE, AUTHORS, APPROVALS, etc", ignore.case=T)) < 1 ) {
+    if( grep(txt[3], pattern="Taxonomy Proposal Form, 2024", ignore.case = T) == 1 ) {
+      #
+      # not yet supporting 2024 DOCX templates
+      #
+      log_error(code,linenum=0,action="OPEN_DOCX",actionOrder=actionOrder,
+                rank="",taxon="",
+                levelStr = "INFO",
+                errorCode = "DOCX_2024_TEMPLATE",
+                errorStr = paste0("2024 version of DOCX proposal template (yet) supported."),
+                notes=paste0("DOCX_FILENAME=",proposalsDf[code,"docx"])
+      )
+      return(list(metaDf=metaDf))
+    } else {
+      #
+      # unknown template
+      #
+      log_error(code,linenum=0,action="OPEN_DOCX",actionOrder=actionOrder,
+                rank="",taxon="",
+                levelStr = "INFO",
+                errorCode = "DOCX_UNKNONW_TEMPLATE",
+                errorStr = paste0("Unrecognized version of DOCX proposal template. Not (yet) supported."),
+                notes=paste0("DOCX_FILENAME=",proposalsDf[code,"docx"])
+      )
+      return(list(metaDf=metaDf))
+    }
+  }
+  #
+  # parse older docx format
+  #
   
   # get title
   titlePattern="^Short title:"
@@ -2161,7 +2191,7 @@ qc_proposal = function(code, proposalDf) {
       } else {
         log_error(code,linenum=codeRow,action="OPEN_XLSX",actionOrder=actionOrder, 
                   rank="",taxon="",
-                  levelStr="WARNING", errorCode="XLSX.CODE_BAD",errorStr="XLSX code wrong", 
+                  levelStr="ERROR", errorCode="XLSX.CODE_BAD",errorStr="XLSX code wrong", 
                   notes=paste0("XLSX cell ",codeCell,
                                " does not match proposal code from filename: ", 
                                "'",codeValue, "' should be '", code,"' ")
@@ -2493,7 +2523,7 @@ qc_proposal = function(code, proposalDf) {
       if(cv %in% c("genomeCoverage","molecule","hostSource") ) {
         # remove value, issue WARNING
         changeDf[rownames(badTerms),cv] = NA
-        levelStr="WARNING"
+        levelStr="ERROR"
       } else {
         # skip line, issue ERROR
         changeDf[rownames(badTerms),".noErrors"] = FALSE
@@ -3289,7 +3319,7 @@ apply_changes = function(changesDf) {
     # rank
     isRankOk = tolower(curChangeDf$rank) %in% dbCvList[["rank"]]$name
     if( !isRankOk ) {
-        log_change_error(changeDf=change,levelStr="WARNING", errorCode="RANK.UNK",errorStr="Rank name unknown", 
+        log_change_error(changeDf=change,levelStr="ERROR", errorCode="RANK.UNK",errorStr="Rank name unknown", 
                   notes=paste0(", rank=", curChangeDf$rank, 
                                "; knownRanks=", paste(dbCvList[["rank"]]$name[-1],collapse = ","))
         )
@@ -3411,7 +3441,7 @@ apply_changes = function(changesDf) {
       }
       # WARN: check if taxon rank matches change rank
       if ( tolower(destTaxonRank) != tolower(curChangeDf$rank) ) {
-        log_change_error(curChangeDf, "WARNING", "DEST.RANK_MISMATCH", 
+        log_change_error(curChangeDf, "ERROR", "DEST.RANK_MISMATCH", 
                          errorStr=paste0("Change=",toupper(action)," but proposed taxon rank does not match [rank] column"), 
                          notes=paste0("rankColumn=", curChangeDf$rank,
                                       ", proposedTaxonRank=",destTaxonRank,
@@ -3431,7 +3461,7 @@ apply_changes = function(changesDf) {
     # Note: doesn't fix left_idx/right_idx, etc
     #
     # SPLIT (srcName != destName)
-    #     split (same name) is handled by "move" coe
+    #     split (same name) is handled by "move" code
     #     can be new name, new species
     #     can be in any order
     # if there isn't one with same name or same accession by end of proposal, 
@@ -3440,7 +3470,7 @@ apply_changes = function(changesDf) {
     #   curMSL$.split = T means this code saw a srcName!=destName split
     #
     if(    curChangeDf$.action %in% c("new")
-       || (curChangeDf$.action %in% c("split") && srcTaxonName != destTaxonName) 
+       || (curChangeDf$.action %in% c("split") && !identical(srcTaxonName,destTaxonName) ) 
     ) {
 
       # index of our "current"/src taxon,  in the newMSL
@@ -3458,19 +3488,26 @@ apply_changes = function(changesDf) {
           # by default, it's .srcTaxon, if not empty, but the warning here is that it IS not empty when 
           # it should be, so the .destTaxon is more informative, if this is actually a split
           curChangeDf$.changeTaxon = curChangeDf$.destTaxon
-          log_change_error(curChangeDf, "WARNING", "CREATE.W_SRC", 
+          log_change_error(curChangeDf, "ERROR", "CREATE.W_SRC", 
                            errorStr="Change=CREATE, but 'current taxonomy' is not empty; perhaps you meant SPLIT", 
                            notes=paste0("CURRENT//PROPOSED=", diff_lineages(curChangeDf$.srcLineage,curChangeDf$.destLineage))
           )
         }
-      } 
+      }  
       else if(curChangeDf$.action == "split" ) {
 #DEBUG        if(srcTaxonName == "Erythroparvovirus pinniped1"){browser()} #DEBUG
         if( is.na(srcTaxonName) ) {
-          # split MUST have a source taxon (curChangeDf$.destTaxon)
+          # split MUST have a source taxon (curChangeDf$.srcTaxon)
           log_change_error(curChangeDf, "ERROR", "SPLIT.NO_SRC", 
                            errorStr="Change=SPLIT, but 'current taxonomy' columns are empty", 
                            notes=paste0("proposedTaxonomy=",curChangeDf$.destLineage)
+          )
+          next;
+        } else if( is.na(destTaxonName) ) {
+          # split MUST have a dest taxon (curChangeDf$.destTaxon)
+          log_change_error(curChangeDf, "ERROR", "SPLIT.NO_DEST", 
+                           errorStr="Change=SPLIT, but 'proposed taxonomy' columns are empty", 
+                           notes=paste0("currentTaxonomy=",curChangeDf$.srcLineage)
           )
           next;
         } 
@@ -3547,7 +3584,7 @@ apply_changes = function(changesDf) {
           # this is ok for a split to re-use an accession under a new or same name, but just once
           if( !is.na(.GlobalEnv$curMSL$.split_acc_used[srcCurTaxonIdx]) ) {
              # can't use it more than once
-            log_change_error(curChangeDf, "WARNING", "SPLIT.REUSE_ACC", 
+            log_change_error(curChangeDf, "ERROR", "SPLIT.REUSE_ACC", 
                              errorStr=paste0("Change=",toupper(curChangeDf$.action),", accession re-used more than once in a split"), 
                              notes=paste0("accession=", curChangeDf$exemplarAccession,
                                     "; already reused on ", .GlobalEnv$curMSL$.split_acc_used[srcCurTaxonIdx])
@@ -3570,7 +3607,7 @@ apply_changes = function(changesDf) {
           # not in a split
           
           # Pending/dup is hard error in FINAL mode, otherwise WARNING
-          errLevel = ifelse(params$processing_mode=="final","ERROR","WARNING")
+          errLevel = "ERROR" #ifelse(params$processing_mode=="final","ERROR","WARNING")
           
           # this is a warning/error depending on mode
           if(  curChangeDf$exemplarAccession %in% c("pending","Pending") ) { 
@@ -3667,7 +3704,7 @@ apply_changes = function(changesDf) {
       
       # WARN: check if taxon rank matches change rank
       if ( tolower(destTaxonRank) != tolower(curChangeDf$rank) ) {
-        log_change_error(curChangeDf, "WARNING", "CREATE.RANK_MISMATCH", 
+        log_change_error(curChangeDf, "ERROR", "CREATE.RANK_MISMATCH", 
                          errorStr=paste0("Change=",toupper(curChangeDf$.action),", but proposed taxon rank does not match [rank] column"), 
                          notes=paste0("ankColumn=", curChangeDf$rank,
                                       ", proposedTaxonRank=",destTaxonRank,
@@ -3684,7 +3721,7 @@ apply_changes = function(changesDf) {
         # check hostSource
         #
         if( is.na(curChangeDf$hostSource) || grepl("please.*select",curChangeDf$hostSource, ignore.case=T) ) {
-          log_change_error(curChangeDf, "WARNING", "CREATE.SPECIES_NO_HOST_SOURCE", 
+          log_change_error(curChangeDf, "ERROR", "CREATE.SPECIES_NO_HOST_SOURCE", 
                            errorStr=paste0("Change=",toupper(curChangeDf$.action),", but proposed species must have a host/source value")
           )
         }
@@ -3888,7 +3925,7 @@ apply_changes = function(changesDf) {
       
       # check if renamed taxon has the same name (TP:Error-R1)
       if(srcTaxonName == destTaxonName) {
-        log_change_error(curChangeDf, "WARNING", "RENAME.SAME_NAME", 
+        log_change_error(curChangeDf, "ERROR", "RENAME.SAME_NAME", 
                          errorStr="Change=RENAME, but new name is the same; might this be a move?", 
                          notes=paste0("currentVsProposed=",diff_lineages(srcLineage, destLineage),
                                       ", currentTaxonomy=", srcLineage, ", destTaxonomy=", destLineage)
@@ -4150,7 +4187,7 @@ apply_changes = function(changesDf) {
         guessSource = (.GlobalEnv$newMSL$name==as.character(destTaxonName))
         if( sum(guessSource,na.rm=TRUE) == 1) {
           # found it, so WARNING
-          log_change_error(curChangeDf, "WARNING", "MOVE.NO_SRC_CAN_GUESS", "Change=MOVE, but 'current taxonomy' columns are empty", 
+          log_change_error(curChangeDf, "ERROR", "MOVE.NO_SRC_CAN_GUESS", "Change=MOVE, but 'current taxonomy' columns are empty", 
                            notes=paste0("destTaxonomy=", destLineage,
                                         "; we guess you meant=", .GlobalEnv$newMSL$lineage[guessSource])
           )
@@ -4160,7 +4197,7 @@ apply_changes = function(changesDf) {
         } 
         else {
           # didn't find it, or found multiple, so ERROR
-          log_change_error(curChangeDf, "WARNING", "MOVE.NO_SRC", "Change=MOVE, but 'current taxonomy' columns are empty", 
+          log_change_error(curChangeDf, "ERROR", "MOVE.NO_SRC", "Change=MOVE, but 'current taxonomy' columns are empty", 
                            notes=paste0("destTaxonomy=", destLineage,
                                         "; no existing taxon '",destTaxonName,"' found")
           )
@@ -4328,7 +4365,7 @@ apply_changes = function(changesDf) {
       #
       if( curChangeDf$.action %in% c("promote","demote") ) {
           if(srcTaxonName == destTaxonName) {
-            log_change_error(curChangeDf, "WARNING", "CHANGE_RANK.SAME_NAME", 
+            log_change_error(curChangeDf, "ERROR", "CHANGE_RANK.SAME_NAME", 
                              errorStr=paste0("Change=",toupper(curChangeDf$.action),", but current and proposed names are the same."), 
                              notes=paste0("current name=[",srcTaxonRank,"]", srcTaxonNameprevDestParent$out_filename, " and proposed name [",destTaxonRank,"]",destTaxonName)
             )
@@ -4901,7 +4938,7 @@ apply_changes = function(changesDf) {
           # have genus (parent or grandparent)
           # check binomial naming
           if( str_detect(destTaxonName,paste0(destParentGenusTaxon$name," ")) != TRUE ) {
-            errLevel = ifelse(params$processing_mode %in% c("draft","final"),"ERROR","WARNING")
+            errLevel = "ERROR"#ifelse(params$processing_mode %in% c("draft","final"),"ERROR","WARNING")
             log_change_error(curChangeDf, errLevel, "CREATE_RENAME.SPECIES_BINOMIAL_MISMATCH", 
                              errorStr="Change=RENAME, but proposed species names does not start with 'genus[space]' per binomial naming convention", 
                              notes=paste0("GENUS//SPECIES =", diff_strings(destParentGenusTaxon$name,destTaxonName))
