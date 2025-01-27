@@ -1,5 +1,5 @@
 # Rscript merge_proposal_zips.R --refDir=current_msl/msl39v2 --proposalsDir=testData/msl39v2/proposals_msl39v3 --outDir=testResults/msl39v2/proposals_msl39v3 --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v2.0.19c54a4
+VERSION: v2.3.f93fe58
 Previous taxa: 151832 34  from  current_msl/msl39v2/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 There were 50 or more warnings (use warnings() to see the first 50)
@@ -66,6 +66,6 @@ Wrote: OUTDIR/QC.summary.tsv (6 rows)
 # APPLIED:  19 changes from 2023.009DX.Retroviridae_68rensp_Error_Correction  with SUCCESS:19 
 # APPLIED:   1 changes from 2023.012DX.Iridoviridae_22renam_Error_Correction  with SUCCESS:1 
 # APPLIED:   1 changes from 2023.015FX.Ghabrivirales_reorg_Error_correction  with ERROR:1 
-# TOTAL  :  24 changes  from 6 proposals  with ERROR:3 WARNING:6 INFO:1 SUCCESS:21 
+# TOTAL  :  24 changes  from 6 proposals  with ERROR:3 INFO:7 SUCCESS:21 
 Wrote: OUTDIR/QC.summary.tsv (31 rows)
 # COMPLETED.

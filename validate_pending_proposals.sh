@@ -7,21 +7,33 @@
 # On Linux, this runs the docker container
 # On MacOS, this runs R directly. 
 #
+MSL_NOTES='DRAFT: EC 56, Bari, Italy, August 2024; Email ratification February 2025 (MSL #40)'
+SCRIPT_MODE='draft'
+SCRIPT_ARGS='--msl --newMslName=2024 '
 
 # which tests to run 
-TEST_PAT="*revised"
+TEST_PAT"*revised"
 #TEST_PAT="2023.017P*.xlsx"
-echo TEST_PAT=$TEST_PAT
+
+# check for -p PATTERN
 if [[ "$1" == -p* && ! -z "$2" ]]; then
     TEST_PAT="*$2*"
     shift 2
 fi
 
+# check for -all : load everything
+if [[ "$1" == -a* ]]; then
+    TEST_PAT="all_*"
+    shift 1
+fi
+
 # pass-through args
-MSL_NOTES="DRAFT: EC 56, Bari, Italy, August 2024; Email ratification February 2025 (MSL #40)"
-SCRIPT_ARGS='--msl --mode=draft --newMslName=2024 '
 if [ ! -z "$1" ]; then SCRIPT_ARGS="$SCRIPT_ARGS $*"; fi
+
+SCRIPT_ARGS="$SCRIPT_ARGS --mode $SCRIPT_MODE"
+
 echo SCRIPT_ARGS=$SCRIPT_ARGS
+echo TEST_PAT=$TEST_PAT
 
 # which docker container to run
 if [ "$(uname)" == "Linux" ]; then 
@@ -185,6 +197,7 @@ for TEST in $TESTS; do
     echo "#-------------------------" | tee -a $REPORT
 	
 done
+
 echo "#########################################"
 echo "############### SUMMARY ################# "
 echo "#########################################"

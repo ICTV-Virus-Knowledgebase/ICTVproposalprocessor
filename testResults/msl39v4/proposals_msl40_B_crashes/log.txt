@@ -1,0 +1,21 @@
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl39v4 --proposalsDir=testData/msl39v4/proposals_msl40_B_crashes --outDir=testResults/msl39v4/proposals_msl40_B_crashes --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v2.3.f93fe58
+Previous taxa: 151832 34  from  current_msl/msl39v4/taxonomy_node_export.utf8.txt 
+WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+Wrote: OUTDIR/QC.summary.tsv (1 rows)
+# LOAD_PROPOSAL_DOCX( 2024.045B )
+# LOADED:  2024.045B  DOCX with  2  errors/warnings
+# LOAD_PROPOSAL( 2024.045B , NA )
+# LOADED:  2024.045B  XLS with  2  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (2 rows)
+# LOADED:  2024.045B 
+# QC start: 2024.045B: proposal loaded (1 out of 1)
+# QCed:      2024.045B  with  2  errors/warnings
+changeList:  2024.045B 
+Wrote: OUTDIR/QC.summary.tsv (2 rows)
+# MERGE PROC: 2024.045B with 808 changes  (1 out of 1)
+# DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 808 
+# APPLIED: 808 changes from 2024.045B.A.v2.Autographivirales  with INFO:784 SUCCESS:808 
+# TOTAL  : 808 changes  from 1 proposals  with INFO:786 SUCCESS:808 
+Wrote: OUTDIR/QC.summary.tsv (1594 rows)
+# COMPLETED.

@@ -1,5 +1,5 @@
 # Rscript merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposalsTest2 --outDir=testResults/msl38/proposalsTest2 --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v2.0.35063ff
+VERSION: v2.3.f93fe58
 Previous taxa: 132852 34  from  current_msl/msl38/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 Wrote: OUTDIR/QC.summary.tsv (1 rows)
@@ -15,7 +15,7 @@ changeList:  1
 Wrote: OUTDIR/QC.summary.tsv (3 rows)
 # MERGE PROC: 1 with 2 changes  (1 out of 1)
 # DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 2 
-# APPLIED:   2 changes from 2023_Imitervirales_correction_move_ Mimivirus_bad  with ERROR:2 WARNING:2 
-# TOTAL  :   2 changes  from 1 proposals  with ERROR:2 WARNING:3 
+# APPLIED:   2 changes from 2023_Imitervirales_correction_move_ Mimivirus_bad  with ERROR:4 
+# TOTAL  :   2 changes  from 1 proposals  with ERROR:5 
 Wrote: OUTDIR/QC.summary.tsv (5 rows)
 # COMPLETED.

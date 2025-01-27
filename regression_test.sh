@@ -7,7 +7,9 @@
 # On Linux, this runs the docker container
 # On MacOS, this runs R directly. 
 #
-
+# TO DO
+# add -msl and diff msl.tsv vs ref MSL and add that to git.
+#
 # which tests to run 
 TEST_PAT="*"
 if [ ! -z "$1" ]; then TEST_PAT="*$1*"; shift; fi
@@ -142,8 +144,8 @@ for TEST in $TESTS; do
     if [[ ! -e $RESULTSBASE || ! -e $RESULTS ]]; then 
 	echo "*MISS  OUT  $TEST" | tee -a $REPORT
     else
-        echo "dwdiff --color  <(cut -f 5- $RESULTSBASE) <(cut -f 5- $RESULTS) #> $RESULTSDWDIFF" | tee $RESULTSDWDIFF
-        dwdiff --color <(cut -f 5- $RESULTSBASE) <(cut -f 5- $RESULTS) 2>&1 >> $RESULTSDWDIFF; RC=$?
+        echo "dwdiff --punctuation --color  <(cut -f 5- $RESULTSBASE) <(cut -f 5- $RESULTS) #> $RESULTSDWDIFF" | tee $RESULTSDWDIFF
+        dwdiff --punctuation --color <(cut -f 5- $RESULTSBASE) <(cut -f 5- $RESULTS) 2>&1 >> $RESULTSDWDIFF; RC=$?
         echo "diff -yw -W 200 \<(cut -f 5- $RESULTS) \<(cut -f 5- $RESULTSBASE) \> $RESULTSDIFF" | tee $RESULTSDIFF
         diff -yw -W 200 <(cut -f 5- $RESULTS) <(cut -f 5- $RESULTSBASE) 2>&1 >> $RESULTSDIFF; RC=$?
         if [ $RC -eq "0" ]; then
@@ -170,8 +172,8 @@ for TEST in $TESTS; do
             echo "*FAIL  LOG  $TEST" | tee -a $REPORT
         fi
 	# unofficial, prettier dwdiff
-	echo "dwdiff --color <(tail -n +3 $LOG|sed -e 's/^[\[?25h//g') <(tail -n +3 $LOGBASE|sed -e 's/^[\[?25h//g') 2>&1 #> $LOGDWDIFF" | tee $LOGDWDIFF
-	dwdiff --color <(tail -n +3 $LOG|sed -e 's/\[?25h//g') <(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g') 2>&1 >> $LOGDWDIFF
+	echo "dwdiff --punctuation --color <(tail -n +3 $LOG|sed -e 's/^[\[?25h//g') <(tail -n +3 $LOGBASE|sed -e 's/^[\[?25h//g') 2>&1 #> $LOGDWDIFF" | tee $LOGDWDIFF
+	dwdiff --punctuation --color <(tail -n +3 $LOG|sed -e 's/\[?25h//g') <(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g') 2>&1 >> $LOGDWDIFF
     fi
     echo "#-------------------------" | tee -a $REPORT
 	

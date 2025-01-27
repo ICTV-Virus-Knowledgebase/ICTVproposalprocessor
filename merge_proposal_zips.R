@@ -243,6 +243,7 @@ if( interactive() ) {
   # defeat auto-caching when debugging
   #rm(docxList,xlsxList,changeList)
   params$verbose = T
+  params$tmi = F
   params$debug_on_error = F
   params$processing_mode = 'final'
   #params$output_change_report = F
@@ -251,6 +252,8 @@ if( interactive() ) {
 #  params$test_case_dir = "proposalsEC55.1"
   # MSL39v2
   params$test_case_msl = 'msl39v2'; params$test_case_dir = 'proposals_msl39v3'
+  params$test_case_msl = 'msl39v4'; params$test_case_dir = 'proposals_P_crashes'
+  params$test_case_msl = 'msl38'; params$test_case_dir = 'proposalsTest6_split'
   params$proposals_dir = paste0("testData/",params$test_case_msl,"/",params$test_case_dir)
   params$out_dir       = paste0("testResults/",params$test_case_msl,"/",params$test_case_dir)
 
@@ -3470,7 +3473,7 @@ apply_changes = function(changesDf) {
     #   curMSL$.split = T means this code saw a srcName!=destName split
     #
     if(    curChangeDf$.action %in% c("new")
-       || (curChangeDf$.action %in% c("split") && !identical(srcTaxonName,destTaxonName) ) 
+       || (curChangeDf$.action %in% c("split") && (is.na(srcTaxonName) || is.na(destTaxonName) || srcTaxonName!=destTaxonName) ) 
     ) {
 
       # index of our "current"/src taxon,  in the newMSL
@@ -3495,6 +3498,7 @@ apply_changes = function(changesDf) {
         }
       }  
       else if(curChangeDf$.action == "split" ) {
+        # split  srcTaxonName!=destTaxonName
 #DEBUG        if(srcTaxonName == "Erythroparvovirus pinniped1"){browser()} #DEBUG
         if( is.na(srcTaxonName) ) {
           # split MUST have a source taxon (curChangeDf$.srcTaxon)
@@ -4166,8 +4170,8 @@ apply_changes = function(changesDf) {
       
     } # ABOLISH
     else if(curChangeDf$.action %in% c("move","promote","demote") 
-            || ( curChangeDf$.action =='split' && srcTaxonName == destTaxonName) 
-            || ( curChangeDf$.action =='merge' && srcTaxonName == destTaxonName) 
+            || ( curChangeDf$.action =='split' && !is.na(srcTaxonName) && !is.na(destTaxonName) && srcTaxonName == destTaxonName) 
+            || ( curChangeDf$.action =='merge' && !is.na(srcTaxonName) && !is.na(destTaxonName) && srcTaxonName == destTaxonName) 
     ) { 
       # ........................................................................
       #
@@ -5013,7 +5017,7 @@ apply_changes = function(changesDf) {
       # ........................................................................
       log_change_error(curChangeDf, "ERROR", "CHANGE.UNIMP", 
                        errorStr=paste0("Change=",toupper(action)," is NOT (yet) implemented"), 
-                       notes=paste0("lineageChange=", diffLineageString(srcLineage,destLineage))
+                       notes=paste0("lineageChange=", diff_lineages(srcLineage,destLineage))
       )
       next;
       
@@ -5028,7 +5032,80 @@ apply_changes = function(changesDf) {
   # ........................................................................
   .GlobalEnv$actionOrder = .GlobalEnv$actionOrder+1
   
+  ##### split taxa - delete #####
   #
+  # if a taxon is split, and no split keeps it's original name
+  # then quietly delete the original name from the new MSL
+  # (it would have been created when the curMSL was copied to create
+  # the new one)
+  #
+  # do this BEFORE the empty taxa scan, since we're deleting empty things.
+  #
+  splitDeleteIdx = .GlobalEnv$newMSL$.split & !.GlobalEnv$newMSL$.split_kept
+  splitKeepIdx   = .GlobalEnv$newMSL$.split & .GlobalEnv$newMSL$.split_kept
+  if( sum(splitDeleteIdx) > 0 ) {
+    # count these as actions
+    .GlobalEnv$actionOrder = .GlobalEnv$actionOrder+1
+    
+    # log that we're removing them
+    # function(errorDf,code,row,change,rank,taxon,levelStr,errorCode,errorStr,notes
+    log_error(code=.GlobalEnv$newMSL$.split_code[splitDeleteIdx],linenum=.GlobalEnv$newMSL$.split_linenum[splitDeleteIdx],
+              action="split_abolish",actionOrder=actionOrder,
+              rank=as.character(.GlobalEnv$newMSL$rank[splitDeleteIdx]), 
+              taxon=.GlobalEnv$newMSL$name[splitDeleteIdx],
+              levelStr="INFO", errorCode="SPLIT.IMPLICIT_ABOLISH", 
+              errorStr="Change=SPLIT, but no split line kept original name, so remove original name from new MSL", 
+              notes=paste0("removed ",.GlobalEnv$newMSL$rank[splitDeleteIdx]," ",.GlobalEnv$newMSL$name[splitDeleteIdx],
+                           " from ",.GlobalEnv$newMSL$lineage[splitDeleteIdx] )
+    )
+    
+    # check for kids - work back to front for rowIdx stability across row deletions
+    for(rowIdx in rev(which(splitDeleteIdx)) ) {
+      # count these as actions
+      .GlobalEnv$actionOrder = .GlobalEnv$actionOrder+1
+      
+      # get kid count for that taxon
+      srcKids=(.GlobalEnv$newMSL$parent_id==.GlobalEnv$newMSL$taxnode_id[rowIdx])
+      
+      if(sum(srcKids,na.rm=TRUE)>0) {
+        # error: can't abolish something with kids
+        log_error(code=.GlobalEnv$newMSL[rowIdx,]$.split_code,
+                  linenum=.GlobalEnv$newMSL[rowIdx,]$.split_linenum,
+                  action="split_abolish",actionOrder=actionOrder,
+                  rank=as.character(.GlobalEnv$newMSL[rowIdx,]$rank),.GlobalEnv$newMSL[rowIdx,]$name,
+                  levelStr= "ERROR", errorCode="SPLIT.IMPLICIT_ABOLISH_WITH_KIDS", 
+                  errorStr="Change=ABOLISH, taxon still has un-abolished/moved children", 
+                  notes=paste0("taxon=", .GlobalEnv$newMSL[rowIdx,]$name, ", lineage=",.GlobalEnv$newMSL[rowIdx,]$lineage,", kids: N=",sum(srcKids,na.rm=TRUE),
+                               ", NAMES=[",paste(.GlobalEnv$newMSL$rank[srcKids],.GlobalEnv$newMSL$name[srcKids],sep=":"),"]"
+                  ) 
+        )
+      } else {
+        # no kids, nuke it
+        # remove the rows from newMSL
+        .GlobalEnv$newMSL = .GlobalEnv$newMSL[-rowIdx,]
+        # and from the keep list
+        splitKeepIdx=splitKeepIdx[-rowIdx]
+      }
+    } # for taxon to split_abolish (implicit)
+  }
+  
+  if( sum(splitKeepIdx) > 0 && params$verbose ) {
+    # log that we're NOT removing them
+    # function(errorDf,code,row,change,rank,taxon,levelStr,errorCode,errorStr,notes
+    log_error(code=.GlobalEnv$newMSL$.split_code[splitKeepIdx],
+              linenum=.GlobalEnv$newMSL$.split_linenum[splitKeepIdx],
+              action="split_keep",actionOrder=actionOrder,
+              rank=.GlobalEnv$newMSL$rank[splitKeepIdx], 
+              taxon=.GlobalEnv$newMSL$name[splitKeepIdx],
+              levelStr="INFO",  errorCode="SPLIT.KEEP", 
+              errorStr="Change=SPLIT, but one split directive kept the original name", 
+              notes=paste0("split and keep ",.GlobalEnv$newMSL$rank[splitKeepIdx]," '",.GlobalEnv$newMSL$name[splitKeepIdx],
+                           "' from ",.GlobalEnv$newMSL$lineage[splitKeepIdx] )
+    )
+  }
+  
+  
+  
   ##### empty taxa #####
   # did proposal create empty (non-species) taxa? (global scan)
   #
@@ -5116,74 +5193,6 @@ apply_changes = function(changesDf) {
       )
     }
       
-  }
-  ##### split taxa - delete #####
-  #
-  # if a taxon is split, and no split keeps it's original name
-  # then quietly delete the original name from the new MSL
-  # (it would have been created when the curMSL was copied to create
-  # the new one)
-  splitDeleteIdx = .GlobalEnv$newMSL$.split & !.GlobalEnv$newMSL$.split_kept
-  splitKeepIdx   = .GlobalEnv$newMSL$.split & .GlobalEnv$newMSL$.split_kept
-  if( sum(splitDeleteIdx) > 0 ) {
-    # count these as actions
-    .GlobalEnv$actionOrder = .GlobalEnv$actionOrder+1
-
-        # log that we're removing them
-    # function(errorDf,code,row,change,rank,taxon,levelStr,errorCode,errorStr,notes
-    log_error(code=.GlobalEnv$newMSL$.split_code[splitDeleteIdx],linenum=.GlobalEnv$newMSL$.split_linenum[splitDeleteIdx],
-              action="split_abolish",actionOrder=actionOrder,
-              rank=as.character(.GlobalEnv$newMSL$rank[splitDeleteIdx]), 
-              taxon=.GlobalEnv$newMSL$name[splitDeleteIdx],
-              levelStr="INFO", errorCode="SPLIT.IMPLICIT_ABOLISH", 
-              errorStr="Change=SPLIT, but no split line kept original name, so remove original name from new MSL", 
-              notes=paste0("removed ",.GlobalEnv$newMSL$rank[splitDeleteIdx]," ",.GlobalEnv$newMSL$name[splitDeleteIdx],
-                           " from ",.GlobalEnv$newMSL$lineage[splitDeleteIdx] )
-    )
-    
-    # check for kids - work back to front for rowIdx stability across row deletions
-    for(rowIdx in rev(which(splitDeleteIdx)) ) {
-      # count these as actions
-      .GlobalEnv$actionOrder = .GlobalEnv$actionOrder+1
-      
-      # get kid count for that taxon
-      srcKids=(.GlobalEnv$newMSL$parent_id==.GlobalEnv$newMSL$taxnode_id[rowIdx])
-      
-      if(sum(srcKids,na.rm=TRUE)>0) {
-        # error: can't abolish something with kids
-        log_error(code=.GlobalEnv$newMSL[rowIdx,]$.split_code,
-                  linenum=.GlobalEnv$newMSL[rowIdx,]$.split_linenum,
-                  action="split_abolish",actionOrder=actionOrder,
-                  rank=as.character(.GlobalEnv$newMSL[rowIdx,]$rank),.GlobalEnv$newMSL[rowIdx,]$name,
-                  levelStr= "ERROR", errorCode="SPLIT.IMPLICIT_ABOLISH_WITH_KIDS", 
-                  errorStr="Change=ABOLISH, taxon still has un-abolished/moved children", 
-                  notes=paste0("taxon=", .GlobalEnv$newMSL[rowIdx,]$name, ", lineage=",.GlobalEnv$newMSL[rowIdx,]$lineage,", kids: N=",sum(srcKids,na.rm=TRUE),
-                               ", NAMES=[",paste(.GlobalEnv$newMSL$rank[srcKids],.GlobalEnv$newMSL$name[srcKids],sep=":"),"]"
-                  ) 
-        )
-      } else {
-        # no kids, nuke it
-        # remove the rows from newMSL
-        .GlobalEnv$newMSL = .GlobalEnv$newMSL[-rowIdx,]
-        # and from the keep list
-        splitKeepIdx=splitKeepIdx[-rowIdx]
-      }
-    } # for taxon to split_abolish (implicit)
-  }
-    
-  if( sum(splitKeepIdx) > 0 && params$verbose ) {
-    # log that we're NOT removing them
-    # function(errorDf,code,row,change,rank,taxon,levelStr,errorCode,errorStr,notes
-    log_error(code=.GlobalEnv$newMSL$.split_code[splitKeepIdx],
-              linenum=.GlobalEnv$newMSL$.split_linenum[splitKeepIdx],
-              action="split_keep",actionOrder=actionOrder,
-              rank=.GlobalEnv$newMSL$rank[splitKeepIdx], 
-              taxon=.GlobalEnv$newMSL$name[splitKeepIdx],
-              levelStr="INFO",  errorCode="SPLIT.KEEP", 
-              errorStr="Change=SPLIT, but one split directive kept the original name", 
-              notes=paste0("split and keep ",.GlobalEnv$newMSL$rank[splitKeepIdx]," '",.GlobalEnv$newMSL$name[splitKeepIdx],
-                           "' from ",.GlobalEnv$newMSL$lineage[splitKeepIdx] )
-    )
   }
   return(list(errorDf=errorDf))
 } # apply_changes()
