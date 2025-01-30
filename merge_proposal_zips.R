@@ -5614,9 +5614,6 @@ if(params$export_msl) {
   #
   curMslStr = as.data.frame(curMSL %>% filter(!is.na(out_change)) )
   for( col in curMslColList)  {
-    if( class(curMslStr[,col]) == 'factor' ) {
-      cat("factor: ",col, "\n")
-    }
     curMslStr[,col] = as.character(curMslStr[,col])
   }
   
