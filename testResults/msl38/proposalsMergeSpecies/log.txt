@@ -1,5 +1,5 @@
-# Rscript merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposalsMergeSpecies --outDir=testResults/msl38/proposalsMergeSpecies --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v2.0.35063ff
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposalsMergeSpecies --outDir=testResults/msl38/proposalsMergeSpecies --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v3.20250129.a3d55d9
 Previous taxa: 132852 34  from  current_msl/msl38/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 Wrote: OUTDIR/QC.summary.tsv (1 rows)
@@ -18,4 +18,12 @@ Wrote: OUTDIR/QC.summary.tsv (1 rows)
 # APPLIED:  13 changes from 2023.001S.A.v2.Caliciviridae_12sprenamed  with SUCCESS:13 
 # TOTAL  :  13 changes  from 1 proposals  with INFO:1 SUCCESS:13 
 Wrote: OUTDIR/QC.summary.tsv (14 rows)
+Writing  testResults/msl38/proposalsMergeSpecies/msl.tsv 
+WROTE   testResults/msl38/proposalsMergeSpecies/msl.tsv (14776 rows)
+Writing  testResults/msl38/proposalsMergeSpecies/QC.docx_summary.tsv 
+WROTE   testResults/msl38/proposalsMergeSpecies/QC.docx_summary.tsv (1)
+Writing  testResults/msl38/proposalsMergeSpecies/msl_load.sql 
+Writing out_* updates for prevMSL
+factor:  out_change 
+WROTE    testResults/msl38/proposalsMergeSpecies/msl_load.sql 
 # COMPLETED.

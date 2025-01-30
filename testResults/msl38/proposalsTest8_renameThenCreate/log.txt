@@ -1,5 +1,5 @@
-# Rscript merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposalsTest8_renameThenCreate --outDir=testResults/msl38/proposalsTest8_renameThenCreate --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v2.0.35063ff
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposalsTest8_renameThenCreate --outDir=testResults/msl38/proposalsTest8_renameThenCreate --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v3.20250129.a3d55d9
 Previous taxa: 132852 34  from  current_msl/msl38/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # LOAD_PROPOSAL_DOCX( 2023.024M )
@@ -16,4 +16,12 @@ Wrote: OUTDIR/QC.summary.tsv (1 rows)
 # APPLIED:  22 changes from 2023.024M.N.v1.Bunyaviricetes  with ERROR:1 INFO:28 SUCCESS:21 
 # TOTAL  :  22 changes  from 1 proposals  with ERROR:1 INFO:28 SUCCESS:21 
 Wrote: OUTDIR/QC.summary.tsv (50 rows)
+Writing  testResults/msl38/proposalsTest8_renameThenCreate/msl.tsv 
+WROTE   testResults/msl38/proposalsTest8_renameThenCreate/msl.tsv (14789 rows)
+Writing  testResults/msl38/proposalsTest8_renameThenCreate/QC.docx_summary.tsv 
+WROTE   testResults/msl38/proposalsTest8_renameThenCreate/QC.docx_summary.tsv (1)
+Writing  testResults/msl38/proposalsTest8_renameThenCreate/msl_load.sql 
+Writing out_* updates for prevMSL
+factor:  out_change 
+WROTE    testResults/msl38/proposalsTest8_renameThenCreate/msl_load.sql 
 # COMPLETED.

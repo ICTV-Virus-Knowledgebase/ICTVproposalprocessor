@@ -1,5 +1,5 @@
-# Rscript merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposalsTestEmpty --outDir=testResults/msl38/proposalsTestEmpty --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v2.0.35063ff
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposalsTestEmpty --outDir=testResults/msl38/proposalsTestEmpty --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v3.20250129.a3d55d9
 Previous taxa: 132852 34  from  current_msl/msl38/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 Wrote: OUTDIR/QC.summary.tsv (1 rows)

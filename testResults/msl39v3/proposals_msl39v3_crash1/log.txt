@@ -1,5 +1,5 @@
-# Rscript merge_proposal_zips.R --refDir=current_msl/msl39v3 --proposalsDir=testData/msl39v3/proposals_msl39v3_crash1 --outDir=testResults/msl39v3/proposals_msl39v3_crash1 --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v2.2.99cd15e
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl39v3 --proposalsDir=testData/msl39v3/proposals_msl39v3_crash1 --outDir=testResults/msl39v3/proposals_msl39v3_crash1 --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v3.20250129.a3d55d9
 Previous taxa: 151832 34  from  current_msl/msl39v3/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 There were 50 or more warnings (use warnings() to see the first 50)
@@ -17,4 +17,12 @@ Wrote: OUTDIR/QC.summary.tsv (2 rows)
 # APPLIED:  14 changes from 2024.029B.N.v1.Rhodococcus_siphoviruses_7ng_7ns  with ERROR:4 WARNING:1 SUCCESS:12 
 # TOTAL  :  14 changes  from 1 proposals  with ERROR:5 WARNING:1 SUCCESS:12 
 Wrote: OUTDIR/QC.summary.tsv (18 rows)
+Writing  testResults/msl39v3/proposals_msl39v3_crash1/msl.tsv 
+WROTE   testResults/msl39v3/proposals_msl39v3_crash1/msl.tsv (18992 rows)
+Writing  testResults/msl39v3/proposals_msl39v3_crash1/QC.docx_summary.tsv 
+WROTE   testResults/msl39v3/proposals_msl39v3_crash1/QC.docx_summary.tsv (1)
+Writing  testResults/msl39v3/proposals_msl39v3_crash1/msl_load.sql 
+Writing out_* updates for prevMSL
+factor:  out_change 
+WROTE    testResults/msl39v3/proposals_msl39v3_crash1/msl_load.sql 
 # COMPLETED.

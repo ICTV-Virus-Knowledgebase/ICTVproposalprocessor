@@ -12,7 +12,7 @@ SCRIPT_MODE='draft'
 SCRIPT_ARGS='--msl --newMslName=2024 '
 
 # which tests to run 
-TEST_PAT"*revised"
+TEST_PAT="*revised"
 #TEST_PAT="2023.017P*.xlsx"
 
 # check for -p PATTERN

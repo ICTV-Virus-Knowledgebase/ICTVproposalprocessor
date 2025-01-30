@@ -1,5 +1,5 @@
-# Rscript merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposals2024X --outDir=testResults/msl38/proposals2024X --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v2.3.f93fe58
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposals2024X --outDir=testResults/msl38/proposals2024X --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v3.20250129.a3d55d9
 Previous taxa: 132852 34  from  current_msl/msl38/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 Wrote: OUTDIR/QC.summary.tsv (1 rows)
@@ -28,4 +28,12 @@ Wrote: OUTDIR/QC.summary.tsv (2 rows)
 # APPLIED:   1 changes from 2023.015SX.Picornaviridae_correction_1sp  with SUCCESS:1 
 # TOTAL  :   2 changes  from 2 proposals  with INFO:2 SUCCESS:2 
 Wrote: OUTDIR/QC.summary.tsv (4 rows)
+Writing  testResults/msl38/proposals2024X/msl.tsv 
+WROTE   testResults/msl38/proposals2024X/msl.tsv (14777 rows)
+Writing  testResults/msl38/proposals2024X/QC.docx_summary.tsv 
+WROTE   testResults/msl38/proposals2024X/QC.docx_summary.tsv (2)
+Writing  testResults/msl38/proposals2024X/msl_load.sql 
+Writing out_* updates for prevMSL
+factor:  out_change 
+WROTE    testResults/msl38/proposals2024X/msl_load.sql 
 # COMPLETED.

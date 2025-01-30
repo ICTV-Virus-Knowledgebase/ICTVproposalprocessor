@@ -1,5 +1,5 @@
-# Rscript merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposalsTestNonProXlsx --outDir=testResults/msl38/proposalsTestNonProXlsx --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v2.0.35063ff
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposalsTestNonProXlsx --outDir=testResults/msl38/proposalsTestNonProXlsx --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v3.20250129.a3d55d9
 Previous taxa: 132852 34  from  current_msl/msl38/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # LOAD_PROPOSAL_DOCX( 1 )
@@ -14,4 +14,12 @@ changeList:
 Wrote: OUTDIR/QC.summary.tsv (1 rows)
 # DONE. MERGED 0  proposal(s), skipped 1 ; total changes: 0 
 Wrote: OUTDIR/QC.summary.tsv (1 rows)
+Writing  testResults/msl38/proposalsTestNonProXlsx/msl.tsv 
+WROTE   testResults/msl38/proposalsTestNonProXlsx/msl.tsv (14777 rows)
+Writing  testResults/msl38/proposalsTestNonProXlsx/QC.docx_summary.tsv 
+WROTE   testResults/msl38/proposalsTestNonProXlsx/QC.docx_summary.tsv (1)
+Writing  testResults/msl38/proposalsTestNonProXlsx/msl_load.sql 
+Writing out_* updates for prevMSL
+factor:  out_change 
+WROTE    testResults/msl38/proposalsTestNonProXlsx/msl_load.sql 
 # COMPLETED.

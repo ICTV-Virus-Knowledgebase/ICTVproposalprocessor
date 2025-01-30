@@ -9,3 +9,8 @@ git add  QC.regression.tsv
 
 cp log.new.txt log.txt
 git add log.txt
+
+MSLDIFF=$(ls msl.vs.*.new.txt)
+MSLDIFFBASE=$(basename $MSLDIFF .new.txt).txt
+#cp $MSLDIFF $MSLDIFFBASE
+#git add $MSLDIFFBASE

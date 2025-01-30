@@ -1,5 +1,5 @@
-# Rscript merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposalsTest2 --outDir=testResults/msl38/proposalsTest2 --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v2.3.f93fe58
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposalsTest2 --outDir=testResults/msl38/proposalsTest2 --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v3.20250129.a3d55d9
 Previous taxa: 132852 34  from  current_msl/msl38/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 Wrote: OUTDIR/QC.summary.tsv (1 rows)
@@ -18,4 +18,12 @@ Wrote: OUTDIR/QC.summary.tsv (3 rows)
 # APPLIED:   2 changes from 2023_Imitervirales_correction_move_ Mimivirus_bad  with ERROR:4 
 # TOTAL  :   2 changes  from 1 proposals  with ERROR:5 
 Wrote: OUTDIR/QC.summary.tsv (5 rows)
+Writing  testResults/msl38/proposalsTest2/msl.tsv 
+WROTE   testResults/msl38/proposalsTest2/msl.tsv (14777 rows)
+Writing  testResults/msl38/proposalsTest2/QC.docx_summary.tsv 
+WROTE   testResults/msl38/proposalsTest2/QC.docx_summary.tsv (1)
+Writing  testResults/msl38/proposalsTest2/msl_load.sql 
+Writing out_* updates for prevMSL
+factor:  out_change 
+WROTE    testResults/msl38/proposalsTest2/msl_load.sql 
 # COMPLETED.

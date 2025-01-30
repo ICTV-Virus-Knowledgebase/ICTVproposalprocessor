@@ -1,0 +1,28 @@
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl39v4 --proposalsDir=testData/msl39v4/proposals_msl40_create_hidden --outDir=testResults/msl39v4/proposals_msl40_create_hidden --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v3.20250129.a3d55d9
+Previous taxa: 151832 34  from  current_msl/msl39v4/taxonomy_node_export.utf8.txt 
+WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+# LOAD_PROPOSAL_DOCX( 2024.003A )
+# LOADED:  2024.003A  DOCX with  1  errors/warnings
+# LOAD_PROPOSAL( 2024.003A , NA )
+# LOADED:  2024.003A  XLS with  1  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (1 rows)
+# LOADED:  2024.003A 
+# QC start: 2024.003A: proposal loaded (1 out of 1)
+# QCed:      2024.003A  with  1  errors/warnings
+changeList:  2024.003A 
+Wrote: OUTDIR/QC.summary.tsv (1 rows)
+# MERGE PROC: 2024.003A with 15 changes  (1 out of 1)
+# DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 15 
+# APPLIED:  15 changes from 2024.003A.A.v1.Nipumfusiviridae_newfam  with SUCCESS:15 
+# TOTAL  :  15 changes  from 1 proposals  with INFO:1 SUCCESS:15 
+Wrote: OUTDIR/QC.summary.tsv (16 rows)
+Writing  testResults/msl39v4/proposals_msl40_create_hidden/msl.tsv 
+WROTE   testResults/msl39v4/proposals_msl40_create_hidden/msl.tsv (18995 rows)
+Writing  testResults/msl39v4/proposals_msl40_create_hidden/QC.docx_summary.tsv 
+WROTE   testResults/msl39v4/proposals_msl40_create_hidden/QC.docx_summary.tsv (1)
+Writing  testResults/msl39v4/proposals_msl40_create_hidden/msl_load.sql 
+Writing out_* updates for prevMSL
+factor:  out_change 
+WROTE    testResults/msl39v4/proposals_msl40_create_hidden/msl_load.sql 
+# COMPLETED.

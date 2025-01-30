@@ -252,8 +252,8 @@ if( interactive() ) {
 #  params$test_case_dir = "proposalsEC55.1"
   # MSL39v2
   params$test_case_msl = 'msl39v2'; params$test_case_dir = 'proposals_msl39v3'
-  params$test_case_msl = 'msl39v4'; params$test_case_dir = 'proposals_P_crashes'
-  params$test_case_msl = 'msl38'; params$test_case_dir = 'proposalsTest6_split'
+  params$test_case_msl = 'msl39v4'; params$test_case_dir = 'proposals_msl40_binomial_subgenus'
+  #params$test_case_msl = 'msl38'; params$test_case_dir = 'proposalsTest6_split'
   params$proposals_dir = paste0("testData/",params$test_case_msl,"/",params$test_case_dir)
   params$out_dir       = paste0("testResults/",params$test_case_msl,"/",params$test_case_dir)
 
@@ -3772,7 +3772,6 @@ apply_changes = function(changesDf) {
       # 
       #####  create new taxon #####
       #
-    
       # get parent
       newTaxon = .GlobalEnv$newMSL[parentDestNewMatches,]
 
@@ -3804,6 +3803,20 @@ apply_changes = function(changesDf) {
         }
         destLineage=paste0(newTaxon$lineage,";",destTaxonName)
       }
+      #
+      # set primary info
+      #
+      
+      # assign next taxnode_id
+      newTaxon[1,"taxnode_id"]  = max(.GlobalEnv$newMSL$taxnode_id)+1
+      # set parent_id 
+      newTaxon[1,"parent_id"]   = .GlobalEnv$newMSL[parentDestNewMatches,"taxnode_id"]
+      # define self as taxnode_id (founder)
+      newTaxon[1,"ictv_id"]     = newTaxon$taxnode_id
+      newTaxon[1,"name"]        = destTaxonName
+      newTaxon[1,"cleaned_name"]= destTaxonName
+      newTaxon[1,"level_id"]    = dbCvList[["rank"]]$id[dbCvList[["rank"]]$name==destTaxonRank]
+      newTaxon[1,"rank"]        = destTaxonRank
       
       # add new info - primary columns
       newTaxon[1,"in_change"]   = curChangeDf$.action
@@ -3811,13 +3824,20 @@ apply_changes = function(changesDf) {
       newTaxon[1,"in_notes"]    = paste0("xlsx_row=",linenum)
       newTaxon[1,"in_target"]   = destLineage
       
-      newTaxon[1,"name"]        = destTaxonName
-      newTaxon[1,"cleaned_name"]= destTaxonName
-      newTaxon[1,"level_id"]    = dbCvList[["rank"]]$id[dbCvList[["rank"]]$name==destTaxonRank]
-      newTaxon[1,"rank"]        = destTaxonRank
-      newTaxon[1,"parent_id"]   = newTaxon[1,"taxnode_id"]
-      newTaxon[1,"taxnode_id"]  = max(.GlobalEnv$newMSL$taxnode_id)+1
-      newTaxon[1,"ictv_id"]     = newTaxon$taxnode_id
+      # clear any fields that should NOT be "inherited"
+      # (tried to do this with grep(colnames(newTaxon),"^in_",values=T)
+      # but that didn't work. not sure why)
+      newTaxon[1,"out_change"] = NA
+      newTaxon[1,"out_target"] = ""
+      newTaxon[1,"out_filename"] = ""
+      newTaxon[1,"out_notes"] = ""
+      newTaxon[1,"out_updated"] = F
+      newTaxon[1,"is_ref"] = "0"
+      newTaxon[1,"is_offical"] = "0"
+      newTaxon[1,"is_hidden"] = "0"
+      newTaxon[1,"is_deleted"] = "0"
+      newTaxon[1,"is_typo"] = "0"
+      newTaxon[1,"is_obsolete"] = "0"
       
       # propagate alternate names/lineages
       if( !is.na(destParentTaxon$.otherLineage) ) {
@@ -5276,7 +5296,7 @@ if(params$export_msl) {
     "msl_release_num",
     "level_id",
     "name",
-    #"ictv_id",
+    "ictv_id",
     "molecule_id",
     "abbrev_csv",
     "genbank_accession_csv",
@@ -5301,7 +5321,7 @@ if(params$export_msl) {
     "out_target",
     "out_filename", # will be stripped to just  code
     "out_notes",
-    #"lineage", # computed by trigger in db
+    "lineage", # computed by trigger in db
     #"cleaned_name", # computed by trigger in db
     #"rank", # should be in level_id
     # "molecule", # should be in molecule_id
@@ -5333,7 +5353,8 @@ if(params$export_msl) {
   # body
   for(i in seq(1,nrow(tsvDf))) {
     cat(paste0(
-      tsvDf[i,tsvColList],
+      # map NA's to NULL's
+      ifelse(is.na(tsvDf[i,tsvColList]),"NULL",tsvDf[i,tsvColList]),
       collapse="\t"
     ),
     "\n",
@@ -5492,9 +5513,6 @@ if(params$export_msl) {
   #
   newMslStr = as.data.frame(newMSL)
   for( col in sqlColList)  {
-    if( class(newMslStr[,col]) == 'factor' ) {
-      cat("factor: ",col, "\n")
-    }
     newMslStr[,col] = as.character(newMslStr[,col])
   }
   
@@ -5635,7 +5653,7 @@ if(params$export_msl) {
   }
   # QC SQL
   cat("\n-- build deltas (~7min) \n
-  EXEC rebuild_delta_nodes_2 NULL
+  EXEC [dbo].[rebuild_delta_nodes_2] NULL
   
   -- rebuild merge/split (seconds) \n
   EXEC [dbo].[rebuild_node_merge_split] 
@@ -5643,24 +5661,27 @@ if(params$export_msl) {
   ", file=sqlout)
   cat(paste("
   -- NOW check if all newMSL have delta in, and prevMSL have delta out
-  select 'prevMSL w/o delta to new', count(*) from taxonomy_node
-  where msl_release_num = ",sql_msl_num-1,"
-  and taxnode_id not in (select prev_taxid from taxonomy_node_delta)
-  union all
-  select  'newMSL w/o delta to prev',  count(*) from taxonomy_node
-  where msl_release_num = ",sql_msl_num,"
-  and taxnode_id not in (select new_taxid from taxonomy_node_delta)
+  SELECT 'prevMSL w/o delta to new', COUNT(*) FROM taxonomy_node
+  WHERE msl_release_num = ",sql_msl_num-1,"
+  AND taxnode_id NOT IN (SELECT prev_taxid FROM taxonomy_node_delta)
+  UNION ALL
+  SELECT  'newMSL w/o delta to prev',  COUNT(*) FROM taxonomy_node
+  WHERE msl_release_num = ",sql_msl_num,"
+  AND taxnode_id NOT IN (SELECT new_taxid FROM taxonomy_node_delta)
   "),
   file=sqlout)
   
   # QC query
   cat(paste("-- QC Query
-  select 
-       level_id,out_change, ct=count(*)
-  from taxonomy_node
-  where msl_release_num = ",sql_msl_num-1,"
-  group by level_id,out_change
-  order by level_id,out_change
+  SELECT 
+       level_id,out_change, ct=COUNT(*)
+  FROM taxonomy_node
+  WHERE msl_release_num = ",sql_msl_num-1,"
+  GROUP BY level_id,out_change
+  ORDER BY level_id,out_change
+  
+  -- QC SPs
+  EXEC [dbo].[QC_run_modules]
   
   "), file=sqlout)
   #

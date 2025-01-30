@@ -1,5 +1,5 @@
-# Rscript merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposalsMultiFileLinking --outDir=testResults/msl38/proposalsMultiFileLinking --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v2.2.99cd15e
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposalsMultiFileLinking --outDir=testResults/msl38/proposalsMultiFileLinking --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v3.20250129.a3d55d9
 Previous taxa: 132852 34  from  current_msl/msl38/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # LOAD_PROPOSAL_DOCX( 1 )
@@ -36,4 +36,12 @@ Wrote: OUTDIR/QC.summary.tsv (6 rows)
 # APPLIED:   3 changes from 2023.30M.N.v1.RenameFutureGenus  with ERROR:1 SUCCESS:3 
 # TOTAL  :  15 changes  from 3 proposals  with ERROR:7 INFO:2 SUCCESS:13 
 Wrote: OUTDIR/QC.summary.tsv (22 rows)
+Writing  testResults/msl38/proposalsMultiFileLinking/msl.tsv 
+WROTE   testResults/msl38/proposalsMultiFileLinking/msl.tsv (14785 rows)
+Writing  testResults/msl38/proposalsMultiFileLinking/QC.docx_summary.tsv 
+WROTE   testResults/msl38/proposalsMultiFileLinking/QC.docx_summary.tsv (3)
+Writing  testResults/msl38/proposalsMultiFileLinking/msl_load.sql 
+Writing out_* updates for prevMSL
+factor:  out_change 
+WROTE    testResults/msl38/proposalsMultiFileLinking/msl_load.sql 
 # COMPLETED.

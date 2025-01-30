@@ -1,5 +1,5 @@
-# Rscript merge_proposal_zips.R --refDir=current_msl/msl39v4 --proposalsDir=testData/msl39v4/proposals_msl39v4_suffix_validation --outDir=testResults/msl39v4/proposals_msl39v4_suffix_validation --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v2.2.99cd15e
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl39v4 --proposalsDir=testData/msl39v4/proposals_msl39v4_suffix_validation --outDir=testResults/msl39v4/proposals_msl39v4_suffix_validation --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v3.20250129.a3d55d9
 Previous taxa: 151832 34  from  current_msl/msl39v4/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # LOAD_PROPOSAL_DOCX( 2024.000A )
@@ -16,4 +16,12 @@ Wrote: OUTDIR/QC.summary.tsv (41 rows)
 # APPLIED:  87 changes from 2024.000A.N.v1.TestSuffixes  with ERROR:45 SUCCESS:87 
 # TOTAL  :  87 changes  from 1 proposals  with ERROR:107 SUCCESS:87 
 Wrote: OUTDIR/QC.summary.tsv (194 rows)
+Writing  testResults/msl39v4/proposals_msl39v4_suffix_validation/msl.tsv 
+WROTE   testResults/msl39v4/proposals_msl39v4_suffix_validation/msl.tsv (19061 rows)
+Writing  testResults/msl39v4/proposals_msl39v4_suffix_validation/QC.docx_summary.tsv 
+WROTE   testResults/msl39v4/proposals_msl39v4_suffix_validation/QC.docx_summary.tsv (1)
+Writing  testResults/msl39v4/proposals_msl39v4_suffix_validation/msl_load.sql 
+Writing out_* updates for prevMSL
+factor:  out_change 
+WROTE    testResults/msl39v4/proposals_msl39v4_suffix_validation/msl_load.sql 
 # COMPLETED.

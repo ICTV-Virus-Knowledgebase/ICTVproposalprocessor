@@ -1,0 +1,28 @@
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl39v4 --proposalsDir=testData/msl39v4/proposals_msl40_abolish_family_with_kids --outDir=testResults/msl39v4/proposals_msl40_abolish_family_with_kids --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v3.20250129.a3d55d9
+Previous taxa: 151832 34  from  current_msl/msl39v4/taxonomy_node_export.utf8.txt 
+WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+# LOAD_PROPOSAL_DOCX( 2024.005B )
+# LOADED:  2024.005B  DOCX with  1  errors/warnings
+# LOAD_PROPOSAL( 2024.005B , NA )
+# LOADED:  2024.005B  XLS with  1  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (1 rows)
+# LOADED:  2024.005B 
+# QC start: 2024.005B: proposal loaded (1 out of 1)
+# QCed:      2024.005B  with  1  errors/warnings
+changeList:  2024.005B 
+Wrote: OUTDIR/QC.summary.tsv (1 rows)
+# MERGE PROC: 2024.005B with 39 changes  (1 out of 1)
+# DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 39 
+# APPLIED:  39 changes from 2024.005B.Uc.v2.Casidaviridae_1nf_9ng_23ns  with ERROR:1 INFO:11 SUCCESS:39 
+# TOTAL  :  39 changes  from 1 proposals  with ERROR:1 INFO:12 SUCCESS:39 
+Wrote: OUTDIR/QC.summary.tsv (52 rows)
+Writing  testResults/msl39v4/proposals_msl40_abolish_family_with_kids/msl.tsv 
+WROTE   testResults/msl39v4/proposals_msl40_abolish_family_with_kids/msl.tsv (19012 rows)
+Writing  testResults/msl39v4/proposals_msl40_abolish_family_with_kids/QC.docx_summary.tsv 
+WROTE   testResults/msl39v4/proposals_msl40_abolish_family_with_kids/QC.docx_summary.tsv (1)
+Writing  testResults/msl39v4/proposals_msl40_abolish_family_with_kids/msl_load.sql 
+Writing out_* updates for prevMSL
+factor:  out_change 
+WROTE    testResults/msl39v4/proposals_msl40_abolish_family_with_kids/msl_load.sql 
+# COMPLETED.

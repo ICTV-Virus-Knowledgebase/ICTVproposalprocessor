@@ -1,5 +1,5 @@
-# Rscript merge_proposal_zips.R --refDir=current_msl/msl39v2 --proposalsDir=testData/msl39v2/proposals_msl39v3 --outDir=testResults/msl39v2/proposals_msl39v3 --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v2.3.f93fe58
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl39v2 --proposalsDir=testData/msl39v2/proposals_msl39v3 --outDir=testResults/msl39v2/proposals_msl39v3 --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v3.20250129.a3d55d9
 Previous taxa: 151832 34  from  current_msl/msl39v2/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 There were 50 or more warnings (use warnings() to see the first 50)
@@ -68,4 +68,12 @@ Wrote: OUTDIR/QC.summary.tsv (6 rows)
 # APPLIED:   1 changes from 2023.015FX.Ghabrivirales_reorg_Error_correction  with ERROR:1 
 # TOTAL  :  24 changes  from 6 proposals  with ERROR:3 INFO:7 SUCCESS:21 
 Wrote: OUTDIR/QC.summary.tsv (31 rows)
+Writing  testResults/msl39v2/proposals_msl39v3/msl.tsv 
+WROTE   testResults/msl39v2/proposals_msl39v3/msl.tsv (18980 rows)
+Writing  testResults/msl39v2/proposals_msl39v3/QC.docx_summary.tsv 
+WROTE   testResults/msl39v2/proposals_msl39v3/QC.docx_summary.tsv (6)
+Writing  testResults/msl39v2/proposals_msl39v3/msl_load.sql 
+Writing out_* updates for prevMSL
+factor:  out_change 
+WROTE    testResults/msl39v2/proposals_msl39v3/msl_load.sql 
 # COMPLETED.

@@ -1,5 +1,5 @@
-# Rscript merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposalsTest5_promote --outDir=testResults/msl38/proposalsTest5_promote --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v2.0.35063ff
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposalsTest5_promote --outDir=testResults/msl38/proposalsTest5_promote --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v3.20250129.a3d55d9
 Previous taxa: 132852 34  from  current_msl/msl38/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # LOAD_PROPOSAL_DOCX( 2023.009F )
@@ -16,4 +16,12 @@ Wrote: OUTDIR/QC.summary.tsv (0 rows)
 # APPLIED:  23 changes from 2023.009F.v1.Virophages_reorg  with INFO:3 SUCCESS:23 
 # TOTAL  :  23 changes  from 1 proposals  with ERROR:2 INFO:3 SUCCESS:23 
 Wrote: OUTDIR/QC.summary.tsv (28 rows)
+Writing  testResults/msl38/proposalsTest5_promote/msl.tsv 
+WROTE   testResults/msl38/proposalsTest5_promote/msl.tsv (14796 rows)
+Writing  testResults/msl38/proposalsTest5_promote/QC.docx_summary.tsv 
+WROTE   testResults/msl38/proposalsTest5_promote/QC.docx_summary.tsv (1)
+Writing  testResults/msl38/proposalsTest5_promote/msl_load.sql 
+Writing out_* updates for prevMSL
+factor:  out_change 
+WROTE    testResults/msl38/proposalsTest5_promote/msl_load.sql 
 # COMPLETED.

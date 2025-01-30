@@ -70,6 +70,8 @@ for TEST in $TESTS; do
     # support MSL-specific test cases
     if [[ $TEST == msl* ]]; then
 	TEST_MSL=$(dirname $TEST)
+	REF_MSL=current_msl/$TEST_MSL/taxonomy_node_export.utf8.txt
+	TEST_MSL_NUM=$(echo $TEST_MSL | sed 's/msl//;s/v.*//;') # msl39v4 -> 39
 	TEST_CASE=$(basename $TEST)
     fi
     
@@ -83,7 +85,12 @@ for TEST in $TESTS; do
     LOGBASE=${DEST_DIR}/log.txt
     LOGDIFF=${DEST_DIR}/log.diff
     LOGDWDIFF=${DEST_DIR}/log.dwdiff
-
+    MSL=${DEST_DIR}/msl.tsv
+    MSLREFLOCAL=${DEST_DIR}/$TEST_MSL.tsv
+    MSLDIFF=${DEST_DIR}/msl.vs.${TEST_MSL}.new.txt
+    MSLDIFFBASE=${DEST_DIR}/msl.vs.${TEST_MSL}.txt
+    MSLDIFFDIFF=${DEST_DIR}/msl.diff.txt
+    
     mkdir -p $DEST_DIR
     #
     # header
@@ -95,6 +102,7 @@ for TEST in $TESTS; do
     echo DEST_DIR=$DEST_DIR
     echo RESULTS=$RESULTS
     echo RESULTSBASE=$RESULTSBASE
+    echo MSLDIFFBASE=$MSLDIFFBASE
     echo LOG=$LOG
 
     #
@@ -106,12 +114,14 @@ for TEST in $TESTS; do
 		    --refDir=$MSL_DIR/$TEST_MSL \
 		    --proposalsDir=$SRC_DIR \
 		    --outDir=$DEST_DIR \
+		    --msl \
 		    --qcTsvRegression=$(basename $RESULTS) \
 		    '2>&1' | tee $LOG
 	    Rscript merge_proposal_zips.R \
 		    --refDir=$MSL_DIR/$TEST_MSL \
 		    --proposalsDir=$SRC_DIR \
 		    --outDir=$DEST_DIR \
+		    --msl \
 		    --qcTsvRegression=$(basename $RESULTS) \
 		    1>> $LOG 2>&1
     else
@@ -124,6 +134,7 @@ for TEST in $TESTS; do
 		    --refDir=current_msl/${TEST_MSL} \
 		    --proposalsDir="testData/$TEST_MSL/$TEST_CASE" \
 		    --outDir="/testResults/$TEST_MSL/$TEST_CASE" \
+		    --msl \
 		    --qcTsvRegression=$(basename $RESULTS) \
 		    2>&1 | tee $LOG
 	    (sudo docker run -it \
@@ -134,6 +145,7 @@ for TEST in $TESTS; do
 		    --refDir=current_msl/${TEST_MSL} \
 		    --proposalsDir="testData/$TEST_MSL/$TEST_CASE" \
 		    --outDir="/testResults/$TEST_MSL/$TEST_CASE" \
+		    --msl \
 		    --qcTsvRegression=$(basename $RESULTS) \
 		    ) 1>>$LOG 2>&1 
     fi	
@@ -154,6 +166,28 @@ for TEST in $TESTS; do
             echo "*FAIL  OUT  $TEST" | tee -a $REPORT
         fi	
     fi
+
+    #
+    # taxonomy output - not working yet
+    #
+    # row order of msl.tsv vs msl39v4.tsv might be ONE of the issues
+    #
+    # get just the needed columns from REF_MSL, then strip MSL number off
+    echo "cut -f 4-14,23-31 $REF_MSL | egrep \"^$TEST_MSL_NUM\\t\" > $MSLREFLOCAL" |tee $MSLREFLOCAL
+    cut -f 4-14,23-31 $REF_MSL | egrep "^$TEST_MSL_NUM\\t" >> $MSLREFLOCAL
+    echo "diff <(cut -f 2-19 $MSL) <(cut -f 2- $MSLREFLOCAL) 2>&1 >> $MSLDIFF" >> $MSLDIFF
+    diff <(cut -f 2-19 $MSL) <(cut -f 2- $MSLREFLOCAL) 2>&1 >> $MSLDIFF
+#    if [[ ! -e $MSLDIFFBASE || ! -e $MSLDIFF ]]; then 
+#	echo "*MISS  MSL  $TEST" | tee -a $REPORT
+#    else
+#        echo "diff -u \<(cut -f 1- $MSLDIFF) \<(cut -f 1- $MSLDIFFBASE) | dwdiff -u --color \> $MSLDIFFDIFF" | tee $MSLDIFFDIFF
+#        diff -u <(cut -f 1- $MSLDIFF) <(cut -f 1- $MSLDIFFBASE) | dwdiff -u --color 2>&1 >> $MSLDIFFDIFF; RC=$?
+#        if [ $RC -eq "0" ]; then
+#            echo "ok     MSL  $TEST" | tee -a $REPORT
+#        else
+#            echo "*FAIL  MSL  $TEST" | tee -a $REPORT
+#        fi	
+#    fi
 
     #
     # check log

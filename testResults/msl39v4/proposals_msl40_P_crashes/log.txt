@@ -1,5 +1,5 @@
-# Rscript merge_proposal_zips.R --refDir=current_msl/msl39v4 --proposalsDir=testData/msl39v4/proposals_P_crashes --outDir=testResults/msl39v4/proposals_P_crashes --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v2.3.f93fe58
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl39v4 --proposalsDir=testData/msl39v4/proposals_msl40_P_crashes --outDir=testResults/msl39v4/proposals_msl40_P_crashes --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v3.20250129.a3d55d9
 Previous taxa: 151832 34  from  current_msl/msl39v4/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # LOAD_PROPOSAL_DOCX( 2024.015P )
@@ -17,4 +17,12 @@ Wrote: OUTDIR/QC.summary.tsv (1 rows)
 # APPLIED: 157 changes from 2024.015P.A.v2.Rhabdoviridae_Cytorhabdovirus_splitgen  with ERROR:1 SUCCESS:156 
 # TOTAL  : 157 changes  from 1 proposals  with ERROR:2 INFO:1 SUCCESS:156 
 Wrote: OUTDIR/QC.summary.tsv (159 rows)
+Writing  testResults/msl39v4/proposals_msl40_P_crashes/msl.tsv 
+WROTE   testResults/msl39v4/proposals_msl40_P_crashes/msl.tsv (19077 rows)
+Writing  testResults/msl39v4/proposals_msl40_P_crashes/QC.docx_summary.tsv 
+WROTE   testResults/msl39v4/proposals_msl40_P_crashes/QC.docx_summary.tsv (1)
+Writing  testResults/msl39v4/proposals_msl40_P_crashes/msl_load.sql 
+Writing out_* updates for prevMSL
+factor:  out_change 
+WROTE    testResults/msl39v4/proposals_msl40_P_crashes/msl_load.sql 
 # COMPLETED.
