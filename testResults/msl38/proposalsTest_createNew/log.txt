@@ -1,5 +1,5 @@
 # Rscript merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposalsTest_createNew --outDir=testResults/msl38/proposalsTest_createNew --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v3.20250129.a3d55d9
+VERSION: v3.20250130.dc36f55
 Previous taxa: 132852 34  from  current_msl/msl38/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # LOAD_PROPOSAL_DOCX( 2022.002G )
@@ -22,6 +22,5 @@ Writing  testResults/msl38/proposalsTest_createNew/QC.docx_summary.tsv
 WROTE   testResults/msl38/proposalsTest_createNew/QC.docx_summary.tsv (1)
 Writing  testResults/msl38/proposalsTest_createNew/msl_load.sql 
 Writing out_* updates for prevMSL
-factor:  out_change 
 WROTE    testResults/msl38/proposalsTest_createNew/msl_load.sql 
 # COMPLETED.
