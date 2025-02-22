@@ -36,11 +36,11 @@ option_list <- list(
   make_option(c("-s","--src"), default="pending/all_proposals", dest="src_dir",
               help="source proposals dir"),
   # outputs
-  make_option(c("-o","--out"), default="pending_results/proposalsFinal", dest="dest_dir",
+  make_option(c("-o","--out"), default="pending/proposalsFinal", dest="dest_dir",
               help="output (renamed) proposals dir"),
-  make_option(c("-z","--zip"), default="pending_results/proposalsFinalZips", dest="zips_dir",
+  make_option(c("-z","--zip"), default="pending/proposalsFinalZips", dest="zips_dir",
               help="output (renamed) proposals dir"),
-  make_option(c("-t","--tmp"), default="pending_results/proposalsFinalZips/tmp", dest="ztmp_dir",
+  make_option(c("-t","--tmp"), default="pending/proposalsFinalZips/tmp", dest="ztmp_dir",
               help="temp dir for staging files to zip")
   
 )
