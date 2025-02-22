@@ -27,7 +27,7 @@ suppressPackageStartupMessages(library("optparse"))
 option_list <- list( 
   make_option(c("-v", "--verbose"), action="store_true", default=FALSE,
               help="Print extra output"),
-  make_option(c("-m","--mode"), default="build", dest="mode",
+  make_option(c("-m","--mode"), default="scan", dest="mode",
               help=paste("build mode: scan, build, rezip", 
                          "\n\t\t\tscan: just look for files",
                          "\n\t\t\tbuild: copy and rename files, then zip",
