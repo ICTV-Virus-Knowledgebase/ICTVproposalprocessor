@@ -2,18 +2,27 @@
 #
 # QC proposals for new MSL (in ./pending)
 #
-# USAGE: ./validate_pending_proposals.sh [test_pattern] [container_version]
+# USAGE: ./validate_pending_proposals.sh [-p pat] [-all] [-mode draft|final]
 #
 # On Linux, this runs the docker container
 # On MacOS, this runs R directly. 
 #
-MSL_NOTES='DRAFT: EC 56, Bari, Italy, August 2024; Email ratification February 2025 (MSL #40)'
 SCRIPT_MODE='draft'
+MSL_NOTES='EC 56, Bari, Italy, August 2024; Email ratification February 2025 (MSL #40)'
 SCRIPT_ARGS='--msl --newMslName=2024 '
 
 # which tests to run 
 TEST_PAT="*revised"
 #TEST_PAT="2023.017P*.xlsx"
+
+# help/syntax message
+if [[ "$1" == -h* ]]; then
+    echo "SYNTAX: $0 [-p pat] [-all] [-mode draft|final]"
+    echo "default mode: $SCRIPT_MODE"
+    echo "default note: $MSL_NOTES"
+    echo "default args: $SCRIPT_ARGS"
+    exit 0
+fi
 
 # check for -p PATTERN
 if [[ "$1" == -p* && ! -z "$2" ]]; then
@@ -27,19 +36,30 @@ if [[ "$1" == -a* ]]; then
     shift 1
 fi
 
+# check for mode "final"  : load everything
+if [[ "$1" == -m* && ! -z "$2" ]]; then
+    SCRIPT_MODE=$(echo "$2" | tr 'A-Z' 'a-z')
+    if [ $SCRIPT_MODE != 'final' ]; then
+	MSL_NOTES="$(echo $SCRIPT_MODE|tr 'a-z' 'A-Z'):$MSL_NOTES"
+    fi
+    echo "# SCRIPT_MODE: $SCRIPT_MODE"
+    echo "# MSL_NOTES:   $MSL_NOTES"
+    shift 2
+fi
+
 # pass-through args
 if [ ! -z "$1" ]; then SCRIPT_ARGS="$SCRIPT_ARGS $*"; fi
 
 SCRIPT_ARGS="$SCRIPT_ARGS --mode $SCRIPT_MODE"
 
-echo SCRIPT_ARGS=$SCRIPT_ARGS
-echo TEST_PAT=$TEST_PAT
+echo "# SCRIPT_ARGS=$SCRIPT_ARGS"
+echo "# TEST_PAT=$TEST_PAT"
 
 # which docker container to run
 if [ "$(uname)" == "Linux" ]; then 
 	CONTAINER=ictv_proposal_processor
 	if [ ! -z "$1" ]; then CONTAINER="curtish/${CONTAINER}:$1"; shift; fi
-	echo "CONTAINER=$CONTAINER"
+	echo "# CONTAINER=$CONTAINER"
 
 	# 
 	# update docker image, just incase
@@ -53,12 +73,12 @@ fi
 # test cases location
 # 
 TEST_DIR=pending
-echo TEST_DIR=$TEST_DIR
+echo "# TEST_DIR=$TEST_DIR"
 RESULTS_DIR=pending_results
-echo RESULTS_DIR=$RESULTS_DIR
+echo "# RESULTS_DIR=$RESULTS_DIR"
 
 REPORT=pending.summary.txt
-echo REPORT=$REPORT
+echo "# REPORT=$REPORT"
 (date; hostname) > $REPORT
 
 #
@@ -95,11 +115,11 @@ for TEST in $TESTS; do
     echo "#########################################"
     echo "###### $TEST "
     echo "#########################################"
-    echo SRC_DIR=$SRC_DIR
-    echo DEST_DIR=$DEST_DIR
-    echo RESULTS=$RESULTS
-    echo RESULTSBASE=$RESULTSBASE
-    echo LOG=$LOG
+    echo "# SRC_DIR=$SRC_DIR"
+    echo "# DEST_DIR=$DEST_DIR"
+    echo "# RESULTS=$RESULTS"
+    echo "# RESULTSBASE=$RESULTSBASE"
+    echo "# LOG=$LOG"
 
     #
     # run script
