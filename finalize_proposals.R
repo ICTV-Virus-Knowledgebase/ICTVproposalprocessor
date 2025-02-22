@@ -13,7 +13,9 @@
 #    Year.ProposalNumberSC.status.version.TaxonName_SummaryChanges
 # where
 #   N: New
-#   U: Unaccepted (but may be reconsidered)            
+#   U: Unaccepted (but may be reconsidered)
+#   Ud: Unaccepted (denied?)
+#   Uc: Completed (previously un acceptd)
 #   A: Accepted
 #   R: Ratified
 # -------------------------------------------------------
@@ -25,7 +27,7 @@ suppressPackageStartupMessages(library("optparse"))
 option_list <- list( 
   make_option(c("-v", "--verbose"), action="store_true", default=FALSE,
               help="Print extra output"),
-  make_option(c("-m","--mode"), default="scan", dest="mode",
+  make_option(c("-m","--mode"), default="build", dest="mode",
               help=paste("build mode: scan, build, rezip", 
                          "\n\t\t\tscan: just look for files",
                          "\n\t\t\tbuild: copy and rename files, then zip",
@@ -34,11 +36,11 @@ option_list <- list(
   make_option(c("-s","--src"), default="pending/all_proposals", dest="src_dir",
               help="source proposals dir"),
   # outputs
-  make_option(c("-o","--out"), default="pending/proposalsFinal", dest="dest_dir",
+  make_option(c("-o","--out"), default="pending_results/proposalsFinal", dest="dest_dir",
               help="output (renamed) proposals dir"),
-  make_option(c("-z","--zip"), default="pending/proposalsFinalZips", dest="zips_dir",
+  make_option(c("-z","--zip"), default="pending_results/proposalsFinalZips", dest="zips_dir",
               help="output (renamed) proposals dir"),
-  make_option(c("-t","--tmp"), default="pending/proposalsFinalZips/tmp", dest="ztmp_dir",
+  make_option(c("-t","--tmp"), default="pending_results/proposalsFinalZips/tmp", dest="ztmp_dir",
               help="temp dir for staging files to zip")
   
 )
@@ -59,7 +61,8 @@ sc2destFolder = c(
 status2text = c(
   "N"="New",
   "U"="Unaccepted (but may be reconsidered)" ,          
-  "Ud"="Unaccepted (diferred)" ,          
+  "Ud"="Unaccepted (diferred)",   
+  "Uc"="Completed (previously Unaccepted)",
   "A"="Accepted",
   "R"="Ratified"
 )
@@ -67,51 +70,83 @@ status2text = c(
 #
 # scan for proposal codes
 #
-proposals = data.frame(path=list.files(path=params$src_dir,pattern="2[0-9][0-9][0-9]\\.[0-9]{3}[A-Z][X]{0,1}\\..*\\.(doc|docx|xls|ppt|xlsx|pptx|pdf|png|zip)$", recursive=T, full.names=TRUE) )
-cat(paste0("SCANNED ",params$src_dir, "/ FOUND ",dim(proposals)[1]," proposal documents\n"))
+proposals = data.frame(path=list.files(path=params$src_dir,pattern="[0-9]{4}\\.[0-9]{3}[A-Z][X]{0,1}\\..*\\.(doc|docx|xls|ppt|xlsx|pptx|pdf|png|zip)$", recursive=T, full.names=TRUE) )
+cat(paste0("SCANNED ",params$src_dir, "/ FOUND ",dim(proposals)[1]," RAW proposal documents\n"))
 proposals$filename = gsub("^.*/","",proposals$path)
 
 # filter editor temp files
 proposals = proposals[grep("^~",proposals$filename, invert=T),]
 
 # extract code
-proposals$code = gsub("^([0-9]+\\.[0-9]+[A-Z]X*)\\.([NUAR]).*$","\\1",proposals$filename)
-proposals$status = gsub("^([0-9]+\\.[0-9]+[A-Z]X*)\\.([NUAR]).*$","\\2",proposals$filename)
-proposals$sc =   gsub("^2[0-9][0-9][0-9]\\.[0-9]{3}([A-Z])[X]{0,1}$","\\1",proposals$code)
+proposals$code   = gsub("^([0-9]{4}\\.[0-9]{3}[A-Z]X{0,1})\\.([NARU][cd]{0,1})\\..*$","\\1",proposals$filename)
+proposals$status = gsub("^([0-9]{4}\\.[0-9]{3}[A-Z]X{0,1})\\.([NARU][cd]{0,1})\\..*$","\\2",proposals$filename)
+proposals$sc     = gsub("^[0-9]{4}\\.[0-9]{3}([A-Z])[X]{0,1}$","\\1",proposals$code)
 
-# get list of uniq codes
-allCodes = unique(proposals[,c("code","sc")])
-allCodes$sc = gsub("^.*([A-Z])X*$","\\1",allCodes$code)
-rownames(allCodes)=allCodes$code
-
+#
 # QC
+#
+
+cat("QC: fitler Unaccepted proposals (status=U,Ud)\n")
+# filter out "Unaccepted*"
+proposals =  proposals %>% filter( !(status %in% c("U","Ud")) )
+unaccepted = proposals %>% filter(  (status %in% c("U","Ud")) )
+if( nrow(unaccepted) > 0) {
+  cat(paste0("FILTERED: Unaccepted proposal: ", unaccepted$filename,"\n"))
+}
+
+cat(paste0("QC: fitler unrecongized study sections ls (",paste0(names(sc2destFolder),collapse=", "),")\n"))
 badSC = ! proposals$sc %in% names(sc2destFolder)
 if( sum(badSC) > 0) {
   cat(paste0("### ERROR: ",sum(badSC)," codes include terminal letters that aren't Study Section abbreviations:","\n"))
   cat(paste0(proposals[badSC,c("sc","code","filename","path")],"\n"))
   return(1)     
 }
+cat(paste0("QC: fitler unrecongized status (",paste0(names(status2text),collapse=", "),")\n"))
 badStatus = ! proposals$status %in% names(status2text)
 if( sum(badStatus) > 0) {
   cat(paste0("### ERROR: ",sum(badStatus)," filenames include invalid status lettters (valid status:", paste(paste0(names(status2text),"='",status2text,"'"),collapse=","),"):","\n"))
   cat(paste0(proposals[badStatus,c("status","code","filename","path")],"\n"))
   return(1)     
 }
-# filter out "Unaccepted*"
-proposals = proposals %>% filter(!(status %in% c("U","Ud")))
+
+
+# catch non-Suppl named supplemental files
+missingSuppl  = proposals %>% filter(
+  !grepl("\\.xls[x]*$", filename, ignore.case = TRUE),
+  !grepl("\\.doc[x]*$", filename, ignore.case = TRUE),
+  !grepl("_suppl", filename, ignore.case = TRUE)
+)
+if( nrow(missingSuppl) > 0 ) {
+  cat(paste0("MISSING_SUPPL: ", missingSuppl$filename,"\n"))
+}
+
+# get list of uniq codes
+allCodes = unique(proposals[,c("code","sc")])
+allCodes$sc = gsub("^.*([A-Z])X*$","\\1",allCodes$code)
+rownames(allCodes)=allCodes$code
+
+
 # generate "cleaned" filenames
 # remove .A. 
 # remove .v#
 # remove .fix
 #proposals$cleanFilename = gsub("^([0-9]+\\.[0-9]+[A-Z]X*\\.[A-Z]+)\\.v[0-9]+(\\.fix)*(\\..*)$","\\1\\3",proposals$filename)
-proposals$finalFilename = gsub("^([0-9]+\\.[0-9]+[A-Z]X*)\\.[A-Z]+(\\.v[0-9]+)*(\\.fix)*(\\..*)$","\\1\\4",proposals$filename)
+#proposals$finalFilename = gsub("^([0-9]+\\.[0-9]+[A-Z]X*)\\.[A-Zc]+(\\.v[0-9]+)*(\\.fix)*(\\..*)$","\\1\\4",proposals$filename)
+proposals$finalFilename = gsub("^([0-9]{4}\\.[0-9]{3}[A-Z]X{0,1})\\.[NARU][cd]{0,1}(\\.v[0-9]+)*(\\.fix)*(\\..*)$","\\1\\4",proposals$filename)
 
+browser()
+# 
+# report
+# 
+cat(paste0("POST-QC:  ", dim(proposals)[1]," retained proposal documents\n"))
+cat(paste0("POST-QC:  ", nrow(allCodes)," unique proposals\n"))
 #
 # END SCAN
 # 
 if( params$mode == "scan" ) {
-  print("#SCAN complete.")
-  return(0)
+  cat("#SCAN complete.\n")
+  if(interactive()) { stop("End of Scan") }
+  else { quit(save = "no", status = 1) }
 }
 
 #
@@ -165,7 +200,14 @@ for(curCode in allCodes$code) {
   # -j : filename only, no path stored
   # -df : [MacOS] store only data-fork of file, for export to other FS.
   primaryFile = codeFiles[grep(pattern="Suppl", codeFiles$filename, invert = T),]
-  primaryFile = primaryFile[grep(pattern=".docx$",primaryFile$filename),]
+  primaryFile = primaryFile[grep(pattern=".doc[x]*$",primaryFile$filename),]
+  if( nrow(primaryFile) != 1) {
+    cat(paste0("# ERROR: code=", curCode,", ",length(primaryFile)," primary file(s):\n"))
+    cat(paste0("\t",primaryFile,"\n"))
+    browser()
+    if(interactive()) { stop("PRIMARY_FILE_ERROR") }
+    else { quit(save = "no", status = 1) }
+  }
   zipFilename = paste0(params$zips_dir,"/",sub(".docx$",".zip",primaryFile$finalFilename))
   cmdStr = paste0("zip -j '",zipFilename,"' '",
                   paste0(codeFiles$finalPath,collapse="' '"),
