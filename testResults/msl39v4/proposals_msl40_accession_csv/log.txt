@@ -1,0 +1,26 @@
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl39v4 --proposalsDir=testData/msl39v4/proposals_msl40_accession_csv --outDir=testResults/msl39v4/proposals_msl40_accession_csv --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v3.20250130.dc36f55
+Previous taxa: 151832 34  from  current_msl/msl39v4/taxonomy_node_export.utf8.txt 
+WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+# LOAD_PROPOSAL_DOCX( 2024.013M )
+# LOADED:  2024.013M  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 2024.013M , NA )
+# LOADED:  2024.013M  XLS with  0  errors/warnings
+# LOADED:  2024.013M 
+# QC start: 2024.013M: proposal loaded (1 out of 1)
+# QCed:      2024.013M  with  3  errors/warnings
+changeList:  2024.013M 
+Wrote: OUTDIR/QC.summary.tsv (3 rows)
+# MERGE PROC: 2024.013M with 9 changes  (1 out of 1)
+# DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 9 
+# APPLIED:   9 changes from 2024.013M.A.v1.Phasmaviridae.4nsp_3ab_2rn  with ERROR:3 SUCCESS:9 
+# TOTAL  :   9 changes  from 1 proposals  with ERROR:3 SUCCESS:9 
+Wrote: OUTDIR/QC.summary.tsv (12 rows)
+Writing  testResults/msl39v4/proposals_msl40_accession_csv/msl.tsv 
+WROTE   testResults/msl39v4/proposals_msl40_accession_csv/msl.tsv (18981 rows)
+Writing  testResults/msl39v4/proposals_msl40_accession_csv/QC.docx_summary.tsv 
+WROTE   testResults/msl39v4/proposals_msl40_accession_csv/QC.docx_summary.tsv (1)
+Writing  testResults/msl39v4/proposals_msl40_accession_csv/msl_load.sql 
+Writing out_* updates for prevMSL
+WROTE    testResults/msl39v4/proposals_msl40_accession_csv/msl_load.sql 
+# COMPLETED.

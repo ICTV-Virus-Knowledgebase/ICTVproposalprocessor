@@ -1515,15 +1515,27 @@ value_validation = rbind(value_validation, data.frame(
   replace = "\\2:\\1"
 ))
 
+# Accession:  CSV -> Semicolon separated list
+value_validation = rbind(value_validation, data.frame(
+  pat_name = "accession.convert_csv_to_scsv",
+  col = c("exemplarAccession"),
+  regex = "(,)",
+  type = "replace",
+  class = "ERROR",
+  code = "XLSX.ACCESSION.CONVERT_COMMA_TO_SEMICOLON",
+  warn = "commas: should be a semicolon-separated list, with optional colon-separated name prefixes: convert commas to semicolons",
+  replace = ";"
+))
+
 # Accession:  semi-colon separated list, with colon-separated labels
 value_validation = rbind(value_validation, data.frame(
   pat_name = "accession.remove-non-semi-colon-sep-list",
   col = c("exemplarAccession"),
   regex = "([^[:alnum:]:;_/. -]+)",
   type = "replace",
-  class = "INFO",
+  class = "ERROR",
   code = "XLSX.ACCESSION.REMOVED_ILLEGAL_CHARS",
-  warn = "Should be semicolon-separated list, with optional colon-separated name prefixes",
+  warn = "unexpected characters in accession list: should be a semi-colon separated list, with optional colon-separated name prefixes",
   replace = ""
 ))
 
