@@ -134,7 +134,6 @@ rownames(allCodes)=allCodes$code
 #proposals$finalFilename = gsub("^([0-9]+\\.[0-9]+[A-Z]X*)\\.[A-Zc]+(\\.v[0-9]+)*(\\.fix)*(\\..*)$","\\1\\4",proposals$filename)
 proposals$finalFilename = gsub("^([0-9]{4}\\.[0-9]{3}[A-Z]X{0,1})\\.[NARU][cd]{0,1}(\\.v[0-9]+)*(\\.fix)*(\\..*)$","\\1\\4",proposals$filename)
 
-browser()
 # 
 # report
 # 
@@ -143,10 +142,9 @@ cat(paste0("POST-QC:  ", nrow(allCodes)," unique proposals\n"))
 #
 # END SCAN
 # 
+cat("#SCAN complete.\n")
 if( params$mode == "scan" ) {
-  cat("#SCAN complete.\n")
-  if(interactive()) { stop("End of Scan") }
-  else { quit(save = "no", status = 1) }
+  stop("End of Scan")
 }
 
 #
@@ -204,9 +202,8 @@ for(curCode in allCodes$code) {
   if( nrow(primaryFile) != 1) {
     cat(paste0("# ERROR: code=", curCode,", ",length(primaryFile)," primary file(s):\n"))
     cat(paste0("\t",primaryFile,"\n"))
-    browser()
-    if(interactive()) { stop("PRIMARY_FILE_ERROR") }
-    else { quit(save = "no", status = 1) }
+
+    stop("PRIMARY_FILE_ERROR")
   }
   zipFilename = paste0(params$zips_dir,"/",sub(".docx$",".zip",primaryFile$finalFilename))
   cmdStr = paste0("zip -j '",zipFilename,"' '",
@@ -216,8 +213,18 @@ for(curCode in allCodes$code) {
   system(cmdStr)
 }
 
+
+# 
+# done
 #
+
+cat("# Build done\n")
+
 # clean up tmp dir
-#
-cat(paste0("CMD: rm -rf ", params$ztmp_dir),"\n")
+
+cat(paste0("# CLEANUP TMP: ",params$ztmp_dir,"\n"))
+if( params$verbose ) { cat(paste0("CMD: rm -rf ", params$ztmp_dir),"\n") }
 system(paste0("rm -rf '",params$ztmp_dir,"'"), intern=F,ignore.stdout=F, ignore.stderr=F,wait=T)
+
+cat(paste0("# FINAL NAMES: ",params$dest_dir,"\n"))
+cat(paste0("# FINAL ZIPS:  ",params$zips_dir,"\n"))
