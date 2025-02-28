@@ -193,7 +193,12 @@ for(curCode in allCodes$code) {
     if(params$verbose) {cat(paste0("   CMD: ", cmdStr,"\n"))}
     system(cmdStr)
   }
-  
+  if( nrow(codeFiles) < 1) {
+    stop("ERROR [", curCode, "] no files.")
+  }
+  if( nrow(codeFiles) < 2) {
+    cat("WARNING [", curCode, "] only ",nrow(codeFiles), " files in proposal.")
+  }
   # create zip files
   # -j : filename only, no path stored
   # -df : [MacOS] store only data-fork of file, for export to other FS.
@@ -205,12 +210,21 @@ for(curCode in allCodes$code) {
 
     stop("PRIMARY_FILE_ERROR")
   }
-  zipFilename = paste0(params$zips_dir,"/",sub(".docx$",".zip",primaryFile$finalFilename))
-  cmdStr = paste0("zip -j '",zipFilename,"' '",
-                  paste0(codeFiles$finalPath,collapse="' '"),
-                  "'")
-  if(params$verbose) {cat(paste0(" CMD: ", cmdStr, "\n"))}
-  system(cmdStr)
+  zipFilename = paste0(params$zips_dir,"/",sub(".doc[x]*$",".zip",primaryFile$finalFilename))
+  if( nrow(codeFiles) == 1) {
+    # if only 1 file, so don't zip
+    zipFilename=paste0(params$zips_dir,"/",primaryFile$finalFilename)
+    cmdStr = paste0("       cp -a '",codeFiles$finalPath, "' '", zipFilename,"'")
+    if(params$verbose) {cat(paste0("   CMD: ", cmdStr,"\n"))}
+    system(cmdStr)
+  } else {
+    # > 1 file: zip them up
+    cmdStr = paste0("zip -j '",zipFilename,"' '",
+                    paste0(codeFiles$finalPath,collapse="' '"),
+                    "'")
+    if(params$verbose) {cat(paste0(" CMD: ", cmdStr, "\n"))}
+    system(cmdStr)
+  }
 }
 
 
