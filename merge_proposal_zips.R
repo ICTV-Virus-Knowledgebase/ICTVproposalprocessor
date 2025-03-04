@@ -1456,11 +1456,11 @@ value_validation = rbind(value_validation, data.frame(
   replace = ""
 ))
 
-# Species name must be "word[space]word"
+# Species name must be "word[space]word": only two words!
 value_validation = rbind(value_validation, data.frame(
   pat_name = "species 2 words with a space",
   col = c("species"),
-  regex = "^([[:alnum:]-]+ [[:alnum:] -]+)$",
+  regex = "^([[:alnum:]-]+ [[:alnum:]-]+)$",
   type = "required",
   class = "ERROR",
   code = "XLSX.SPECIES_BAD_NAME",
