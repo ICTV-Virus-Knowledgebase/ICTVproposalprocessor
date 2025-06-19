@@ -51,6 +51,19 @@ REPORT=QC.regression_test.summary.txt
 echo REPORT=$REPORT
 (date; hostname) > $REPORT
 
+# linux cmdline colors
+GREEN='\033[1;32m' # use bold version for legibility
+#GREEN='\033[0;32m'
+RED='\033[0;31m'
+MAGENTA='\033[0;35m'
+BLUE='\033[0;34m'
+BLACK='\033[0;30m'
+YELLOW='\033[0;33m'
+CYAN='\033[0;36m'
+WHITE='\033[0;37m'
+RESET="\033[0m"
+
+
 #
 # scan for test directories
 #
@@ -97,9 +110,9 @@ for TEST in $TESTS; do
     #
     # header
     #
-    echo "#########################################"
-    echo "###### $TEST "
-    echo "#########################################"
+    echo -e "${BLUE}#########################################${RESET}"
+    echo -e "${BLUE}###### $TEST ${RESET}"
+    echo -e "${BLUE}#########################################${RESET}"
     echo SRC_DIR=$SRC_DIR
     echo DEST_DIR=$DEST_DIR
     echo RESULTS=$RESULTS
@@ -156,7 +169,7 @@ for TEST in $TESTS; do
     # check output
     #
     if [[ ! -e $RESULTSBASE || ! -e $RESULTS ]]; then 
-	echo "*MISS  OUT  $TEST" | tee -a $REPORT
+	echo -e "${ORANGE}*MISS  OUT  $TEST${RESET}" | tee -a $REPORT
     else
 	# dwdiff (short): diff -w -u | dwdiff -u
         echo "diff -w -u <(cut -f 5- $RESULTSBASE) <(cut -f 5- $RESULTS) | dwdiff -u --delimiters='$DWDIFF_DELIM' --color #> $RESULTSDWDIFFSHORT" | tee $RESULTSDWDIFFSHORT
@@ -168,9 +181,9 @@ for TEST in $TESTS; do
         echo "diff -yw --color -W 200 \<(cut -f 5- $RESULTSBASE) \<(cut -f 5- $RESULTS) \> $RESULTSDIFF" | tee $RESULTSDIFF
         diff -yw --color -W 200 <(cut -f 5- $RESULTSBASE) <(cut -f 5- $RESULTS) 2>&1 >> $RESULTSDIFF; RC=$?
         if [ $RC -eq "0" ]; then
-            echo "ok     OUT  $TEST" | tee -a $REPORT
+            echo -e "${GREEN}ok     OUT  $TEST${RESET}" | tee -a $REPORT
         else
-            echo "*FAIL  OUT  $TEST" | tee -a $REPORT
+            echo -e "${RED}*FAIL  OUT  $TEST${RESET}" | tee -a $REPORT
         fi	
     fi
 
@@ -208,9 +221,9 @@ for TEST in $TESTS; do
         echo "diff -yw --color -W 200 \<(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g') \<(tail -n +3 $LOG|sed -e 's/\[?25h//g') \> $LOGDIFF" | tee $LOGDIFF
         diff -yw --color -W 200 <(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g') <(tail -n +3 $LOG|sed -e 's/\[?25h//g') 2>&1 >> $LOGDIFF; RC=$?
         if [ $RC -eq "0" ]; then
-            echo "ok     LOG  $TEST" | tee -a $REPORT
+            echo -e "${GREEN}ok     LOG  $TEST${RESET}" | tee -a $REPORT
         else
-            echo "*FAIL  LOG  $TEST" | tee -a $REPORT
+            echo -e "${RED}*FAIL  LOG  $TEST${RESET}" | tee -a $REPORT
         fi
 	# unofficial, prettier dwdiff
 	echo "dwdiff --delimiters='$DWDIFF_DELIM' --color <(tail -n +3 $LOGBASE|sed -e 's/^[\[?25h//g') <(tail -n +3 $LOG|sed -e 's/^[\[?25h//g') 2>&1 #> $LOGDWDIFF" | tee $LOGDWDIFF
@@ -219,8 +232,8 @@ for TEST in $TESTS; do
     echo "#-------------------------" | tee -a $REPORT
 	
 done
-echo "#########################################"
-echo "############### SUMMARY ################# "
-echo "#########################################"
+echo -e "${BLUE}#########################################${RESET}"
+echo -e "${BLUE}############### SUMMARY #################${RESET}"
+echo -e "${BLUE}#########################################${RESET}"
 cat $REPORT
    
