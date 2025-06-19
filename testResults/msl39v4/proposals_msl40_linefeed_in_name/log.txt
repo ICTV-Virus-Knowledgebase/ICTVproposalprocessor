@@ -1,5 +1,5 @@
 # Rscript merge_proposal_zips.R --refDir=current_msl/msl39v4 --proposalsDir=testData/msl39v4/proposals_msl40_linefeed_in_name --outDir=testResults/msl39v4/proposals_msl40_linefeed_in_name --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v3.20250130.dc36f55
+VERSION: v3.20250222.34b9f9e
 Previous taxa: 151832 34  from  current_msl/msl39v4/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # LOAD_PROPOSAL_DOCX( 2024.037B )
@@ -13,8 +13,8 @@ changeList:  2024.037B
 Wrote: OUTDIR/QC.summary.tsv (3 rows)
 # MERGE PROC: 2024.037B with 23 changes  (1 out of 1)
 # DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 23 
-# APPLIED:  23 changes from 2024.037B.A.v2.Vandenendeviridae_1nf_2msf_8ng_1mg_11ns  with ERROR:2 INFO:18 SUCCESS:23 
-# TOTAL  :  23 changes  from 1 proposals  with ERROR:2 INFO:18 SUCCESS:23 
+# APPLIED:  23 changes from 2024.037B.A.v2.Vandenendeviridae_1nf_2msf_8ng_1mg_11ns  with ERROR:3 INFO:17 SUCCESS:23 
+# TOTAL  :  23 changes  from 1 proposals  with ERROR:3 INFO:17 SUCCESS:23 
 Wrote: OUTDIR/QC.summary.tsv (43 rows)
 Writing  testResults/msl39v4/proposals_msl40_linefeed_in_name/msl.tsv 
 WROTE   testResults/msl39v4/proposals_msl40_linefeed_in_name/msl.tsv (19000 rows)

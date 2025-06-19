@@ -1,0 +1,4 @@
+NOT YET IMPLEMENTED
+subcommittee	code	docx	xlsx	row	change	rank	taxon	level	error	message	notes	scAbbrev	order
+Plant virus (P) proposals	2024.001P	2024.001P.A.v2.Fimoviridae_1nsp.docx	2024.001P.A.v2.Fimoviridae_1nsp.xlsx	0	OPEN_DOCX			INFO	DOCX_2024_TEMPLATE	2024 version of DOCX proposal template (yet) supported.	DOCX_FILENAME=2024.001P.A.v2.Fimoviridae_1nsp.docx	NA	0
+Plant virus (P) proposals	2024.001P	2024.001P.A.v2.Fimoviridae_1nsp.docx	2024.001P.A.v2.Fimoviridae_1nsp.xlsx	5	Create new	species	Emaravirus clematis	SUCCESS	CREATE.OK	Change=NEW, applied successfully	Create species of 'Riboviria;Orthornavirae;Negarnaviricota;Polyploviricotina;Bunyaviricetes;Elliovirales;Fimoviridae;Emaravirus;Emaravirus clematis'	NA	1

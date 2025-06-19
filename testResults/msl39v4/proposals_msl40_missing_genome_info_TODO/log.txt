@@ -1,0 +1,35 @@
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl39v4 --proposalsDir=testData/msl39v4/proposals_msl40_missing_genome_info --outDir=testResults/msl39v4/proposals_msl40_missing_genome_info --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v3.20250222.34b9f9e
+Previous taxa: 151832 34  from  current_msl/msl39v4/taxonomy_node_export.utf8.txt 
+WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+# LOAD_PROPOSAL_DOCX( 2024.008F )
+# LOADED:  2024.008F  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 2024.008F , NA )
+# LOADED:  2024.008F  XLS with  0  errors/warnings
+# LOADED:  2024.008F 
+# QC start: 2024.008F: proposal loaded (1 out of 2)
+# QCed:      2024.008F  with  0  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2024.030B )
+# LOADED:  2024.030B  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 2024.030B , NA )
+# LOADED:  2024.030B  XLS with  0  errors/warnings
+# LOADED:  2024.030B 
+# QC start: 2024.030B: proposal loaded (2 out of 2)
+# QCed:      2024.030B  with  0  errors/warnings
+changeList:  2024.008F 2024.030B 
+Wrote: OUTDIR/QC.summary.tsv (0 rows)
+# MERGE PROC: 2024.008F with 40 changes  (1 out of 2)
+# MERGE PROC: 2024.030B with 11 changes  (2 out of 2)
+# DONE. MERGED 2  proposal(s), skipped 0 ; total changes: 51 
+# APPLIED:  40 changes from 2024.008F.Uc.v2.Orpoviricetes_newclass  with SUCCESS:40 
+# APPLIED:  11 changes from 2024.030B.A.v2.Trautnerviridae_1nf_1nsf_3ng_6ns  with SUCCESS:11 
+# TOTAL  :  51 changes  from 2 proposals  with SUCCESS:51 
+Wrote: OUTDIR/QC.summary.tsv (51 rows)
+Writing  testResults/msl39v4/proposals_msl40_missing_genome_info/msl.tsv 
+WROTE   testResults/msl39v4/proposals_msl40_missing_genome_info/msl.tsv (19031 rows)
+Writing  testResults/msl39v4/proposals_msl40_missing_genome_info/QC.docx_summary.tsv 
+WROTE   testResults/msl39v4/proposals_msl40_missing_genome_info/QC.docx_summary.tsv (2)
+Writing  testResults/msl39v4/proposals_msl40_missing_genome_info/msl_load.sql 
+Writing out_* updates for prevMSL
+WROTE    testResults/msl39v4/proposals_msl40_missing_genome_info/msl_load.sql 
+# COMPLETED.

@@ -1,21 +1,22 @@
 # Rscript merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposalsTest3_binomial --outDir=testResults/msl38/proposalsTest3_binomial --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v3.20250130.dc36f55
+VERSION: v3.20250222.34b9f9e
 Previous taxa: 132852 34  from  current_msl/msl38/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+[1] "# SKIP VMR LOAD: current_msl/msl38/species_isolates.utf8.txt"
 # LOAD_PROPOSAL_DOCX( 2023.002A )
 # LOADED:  2023.002A  DOCX with  0  errors/warnings
 # LOAD_PROPOSAL( 2023.002A , NA )
 # LOADED:  2023.002A  XLS with  0  errors/warnings
 # LOADED:  2023.002A 
 # QC start: 2023.002A: proposal loaded (1 out of 1)
-# QCed:      2023.002A  with  9  errors/warnings
+# QCed:      2023.002A  with  11  errors/warnings
 changeList:  2023.002A 
-Wrote: OUTDIR/QC.summary.tsv (9 rows)
+Wrote: OUTDIR/QC.summary.tsv (11 rows)
 # MERGE PROC: 2023.002A with 8 changes  (1 out of 1)
 # DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 8 
-# APPLIED:   8 changes from 2023.002A.N.v4.create_subgenus_move_sp_create_sp  with ERROR:27 SUCCESS:6 
-# TOTAL  :   8 changes  from 1 proposals  with ERROR:28 SUCCESS:6 
-Wrote: OUTDIR/QC.summary.tsv (34 rows)
+# APPLIED:   8 changes from 2023.002A.N.v4.create_subgenus_move_sp_create_sp  with ERROR:29 SUCCESS:6 
+# TOTAL  :   8 changes  from 1 proposals  with ERROR:30 SUCCESS:6 
+Wrote: OUTDIR/QC.summary.tsv (36 rows)
 Writing  testResults/msl38/proposalsTest3_binomial/msl.tsv 
 WROTE   testResults/msl38/proposalsTest3_binomial/msl.tsv (14780 rows)
 Writing  testResults/msl38/proposalsTest3_binomial/QC.docx_summary.tsv 

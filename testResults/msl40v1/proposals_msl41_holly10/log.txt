@@ -1,0 +1,108 @@
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl40v1 --proposalsDir=testData/msl40v1/proposals_msl41_holly10 --outDir=testResults/msl40v1/proposals_msl41_holly10 --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v3.20250222.34b9f9e
+Previous taxa: 172682 34  from  current_msl/msl40v1/taxonomy_node_export.utf8.txt 
+WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+# LOAD_PROPOSAL_DOCX( 2025.001M )
+# LOADED:  2025.001M  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 2025.001M , NA )
+# LOADED:  2025.001M  XLS with  0  errors/warnings
+# LOADED:  2025.001M 
+# QC start: 2025.001M: proposal loaded (1 out of 10)
+# QCed:      2025.001M  with  0  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2025.002M )
+# LOADED:  2025.002M  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 2025.002M , NA )
+# LOADED:  2025.002M  XLS with  0  errors/warnings
+# LOADED:  2025.002M 
+# QC start: 2025.002M: proposal loaded (2 out of 10)
+# QCed:      2025.002M  with  0  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2025.003M )
+# LOADED:  2025.003M  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 2025.003M , NA )
+# LOADED:  2025.003M  XLS with  0  errors/warnings
+# LOADED:  2025.003M 
+# QC start: 2025.003M: proposal loaded (3 out of 10)
+# QCed:      2025.003M  with  0  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2025.004M )
+# LOADED:  2025.004M  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 2025.004M , NA )
+# LOADED:  2025.004M  XLS with  0  errors/warnings
+# LOADED:  2025.004M 
+# QC start: 2025.004M: proposal loaded (4 out of 10)
+# QCed:      2025.004M  with  0  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2025.005M )
+# LOADED:  2025.005M  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 2025.005M , NA )
+# LOADED:  2025.005M  XLS with  0  errors/warnings
+# LOADED:  2025.005M 
+# QC start: 2025.005M: proposal loaded (5 out of 10)
+# QCed:      2025.005M  with  0  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2025.006M )
+# LOADED:  2025.006M  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 2025.006M , NA )
+# LOADED:  2025.006M  XLS with  0  errors/warnings
+# LOADED:  2025.006M 
+# QC start: 2025.006M: proposal loaded (6 out of 10)
+# QCed:      2025.006M  with  0  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2025.007M )
+# LOADED:  2025.007M  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 2025.007M , NA )
+# LOADED:  2025.007M  XLS with  0  errors/warnings
+# LOADED:  2025.007M 
+# QC start: 2025.007M: proposal loaded (7 out of 10)
+# QCed:      2025.007M  with  0  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2025.008M )
+# LOADED:  2025.008M  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 2025.008M , NA )
+# LOADED:  2025.008M  XLS with  0  errors/warnings
+# LOADED:  2025.008M 
+# QC start: 2025.008M: proposal loaded (8 out of 10)
+# QCed:      2025.008M  with  0  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2025.009M )
+# LOADED:  2025.009M  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 2025.009M , NA )
+# LOADED:  2025.009M  XLS with  0  errors/warnings
+# LOADED:  2025.009M 
+# QC start: 2025.009M: proposal loaded (9 out of 10)
+# QCed:      2025.009M  with  0  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2025.010M )
+# LOADED:  2025.010M  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 2025.010M , NA )
+# LOADED:  2025.010M  XLS with  0  errors/warnings
+# LOADED:  2025.010M 
+# QC start: 2025.010M: proposal loaded (10 out of 10)
+# QCed:      2025.010M  with  0  errors/warnings
+changeList:  2025.001M 2025.002M 2025.003M 2025.004M 2025.005M 2025.006M 2025.007M 2025.008M 2025.009M 2025.010M 
+Wrote: OUTDIR/QC.summary.tsv (0 rows)
+# MERGE PROC: 2025.001M with 21 changes  (1 out of 10)
+# MERGE PROC: 2025.002M with 1 changes  (2 out of 10)
+# MERGE PROC: 2025.003M with 5 changes  (3 out of 10)
+# MERGE PROC: 2025.004M with 7 changes  (4 out of 10)
+# MERGE PROC: 2025.005M with 4 changes  (5 out of 10)
+# MERGE PROC: 2025.006M with 4 changes  (6 out of 10)
+# MERGE PROC: 2025.007M with 63 changes  (7 out of 10)
+# MERGE PROC: 2025.008M with 4 changes  (8 out of 10)
+# MERGE PROC: 2025.009M with 1 changes  (9 out of 10)
+# MERGE PROC: 2025.010M with 10 changes  (10 out of 10)
+# DONE. MERGED 10  proposal(s), skipped 0 ; total changes: 120 
+!!!!!!!!!!!!!!!! LOST ROOT NODE in  2025.010M  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# APPLIED:  21 changes from 2025.001M.N.v1.Alpharhabdovirinae_2ng14nsp  with SUCCESS:21 
+# APPLIED:   1 changes from 2025.002M.N.v1.Crustavirus_1nsp  with SUCCESS:1 
+# APPLIED:   5 changes from 2025.003M.N.v1.Konkoviridae_5nsp  with SUCCESS:5 
+# APPLIED:   7 changes from 2025.004M.N.v1.Lispiviridae_1ngen_6nsp  with SUCCESS:7 
+# APPLIED:   4 changes from 2025.005M.N.v1.Phasmaviridae_4nsp  with WARNING:4 SUCCESS:4 
+# APPLIED:   4 changes from 2025.006M.N.v1.Phenuiviridae_1ng_3nsp_250605  with SUCCESS:4 
+# APPLIED:  63 changes from 2025.007M.N.v1.Phenuiviridae_62nsp+1asp  with SUCCESS:63 
+# APPLIED:   4 changes from 2025.008M.N.v1.Rhabdoviridae_4nsp  with SUCCESS:4 
+# APPLIED:   1 changes from 2025.009M.N.v1.Tupavirus_1nsp  with WARNING:1 SUCCESS:1 
+# APPLIED:  10 changes from 2025.010M.N.v1.Xinmoviridae_5ng_5nsp  with SUCCESS:10 
+# TOTAL  : 120 changes  from 10 proposals  with WARNING:5 SUCCESS:120 
+Wrote: OUTDIR/QC.summary.tsv (125 rows)
+Writing  testResults/msl40v1/proposals_msl41_holly10/msl.tsv 
+WROTE   testResults/msl40v1/proposals_msl41_holly10/msl.tsv (20963 rows)
+Writing  testResults/msl40v1/proposals_msl41_holly10/QC.docx_summary.tsv 
+WROTE   testResults/msl40v1/proposals_msl41_holly10/QC.docx_summary.tsv (10)
+Writing  testResults/msl40v1/proposals_msl41_holly10/msl_load.sql 
+Writing out_* updates for prevMSL
+WROTE    testResults/msl40v1/proposals_msl41_holly10/msl_load.sql 
+# COMPLETED.

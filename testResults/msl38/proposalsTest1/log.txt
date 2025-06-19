@@ -1,7 +1,8 @@
 # Rscript merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposalsTest1 --outDir=testResults/msl38/proposalsTest1 --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v3.20250130.dc36f55
+VERSION: v3.20250222.34b9f9e
 Previous taxa: 132852 34  from  current_msl/msl38/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+[1] "# SKIP VMR LOAD: current_msl/msl38/species_isolates.utf8.txt"
 # LOAD_PROPOSAL_DOCX( 2023.001A )
 # LOADED:  2023.001A  DOCX with  0  errors/warnings
 # LOAD_PROPOSAL( 2023.001A , NA )

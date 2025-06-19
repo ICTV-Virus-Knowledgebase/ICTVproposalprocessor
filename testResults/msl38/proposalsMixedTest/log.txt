@@ -1,7 +1,8 @@
 # Rscript merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposalsMixedTest --outDir=testResults/msl38/proposalsMixedTest --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v3.20250130.dc36f55
+VERSION: v3.20250222.34b9f9e
 Previous taxa: 132852 34  from  current_msl/msl38/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+[1] "# SKIP VMR LOAD: current_msl/msl38/species_isolates.utf8.txt"
 Wrote: OUTDIR/QC.summary.tsv (2 rows)
 Wrote: OUTDIR/QC.summary.tsv (3 rows)
 # SKIPPED:  2  (no .xlsx)
@@ -12,32 +13,32 @@ Wrote: OUTDIR/QC.summary.tsv (3 rows)
 Wrote: OUTDIR/QC.summary.tsv (3 rows)
 # LOADED:  2023.002A 
 # QC start: 2023.002A: proposal loaded (2 out of 4)
-# QCed:      2023.002A  with  7  errors/warnings
+# QCed:      2023.002A  with  8  errors/warnings
 # LOAD_PROPOSAL_DOCX( 3 )
-# LOADED:  3  DOCX with  7  errors/warnings
+# LOADED:  3  DOCX with  8  errors/warnings
 # LOAD_PROPOSAL( 3 , NA )
-# LOADED:  3  XLS with  7  errors/warnings
-Wrote: OUTDIR/QC.summary.tsv (7 rows)
+# LOADED:  3  XLS with  8  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (8 rows)
 # LOADED:  3 
 # QC start: 3: proposal loaded (3 out of 4)
-# QCed:      3  with  7  errors/warnings
+# QCed:      3  with  8  errors/warnings
 # LOAD_PROPOSAL_DOCX( 4 )
-# LOADED:  4  DOCX with  7  errors/warnings
+# LOADED:  4  DOCX with  8  errors/warnings
 # LOAD_PROPOSAL( 4 , NA )
 code 4: A worksheet name matching 'proposal*' was not found: logging error
-# LOADED:  4  XLS with  8  errors/warnings
-Wrote: OUTDIR/QC.summary.tsv (8 rows)
+# LOADED:  4  XLS with  9  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (9 rows)
 # LOADED:  4 
 SKIP:  4 : proposal could not be loaded
 changeList:  2023.002A 3 
-Wrote: OUTDIR/QC.summary.tsv (8 rows)
+Wrote: OUTDIR/QC.summary.tsv (9 rows)
 # MERGE PROC: 2023.002A with 4 changes  (2 out of 4)
 # MERGE PROC: 3 with 2 changes  (3 out of 4)
 # DONE. MERGED 2  proposal(s), skipped 2 ; total changes: 6 
-# APPLIED:   4 changes from 2023.002A.N.v4.create_subgenus_move_sp_create_sp  with ERROR:7 SUCCESS:2 
+# APPLIED:   4 changes from 2023.002A.N.v4.create_subgenus_move_sp_create_sp  with ERROR:8 SUCCESS:2 
 # APPLIED:   2 changes from new proposal  with ERROR:2 
-# TOTAL  :   6 changes  from 2 proposals  with ERROR:13 WARNING:1 SUCCESS:2 
-Wrote: OUTDIR/QC.summary.tsv (16 rows)
+# TOTAL  :   6 changes  from 2 proposals  with ERROR:14 WARNING:1 SUCCESS:2 
+Wrote: OUTDIR/QC.summary.tsv (17 rows)
 Writing  testResults/msl38/proposalsMixedTest/msl.tsv 
 WROTE   testResults/msl38/proposalsMixedTest/msl.tsv (14779 rows)
 Writing  testResults/msl38/proposalsMixedTest/QC.docx_summary.tsv 

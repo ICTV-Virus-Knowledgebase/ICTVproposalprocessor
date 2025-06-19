@@ -1,0 +1,27 @@
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl39v4 --proposalsDir=testData/msl39v4/proposals_msl40_accession_dash --outDir=testResults/msl39v4/proposals_msl40_accession_dash --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v3.20250222.34b9f9e
+Previous taxa: 151832 34  from  current_msl/msl39v4/taxonomy_node_export.utf8.txt 
+WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+# LOAD_PROPOSAL_DOCX( 2024.001P )
+# LOADED:  2024.001P  DOCX with  1  errors/warnings
+# LOAD_PROPOSAL( 2024.001P , NA )
+# LOADED:  2024.001P  XLS with  1  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (1 rows)
+# LOADED:  2024.001P 
+# QC start: 2024.001P: proposal loaded (1 out of 1)
+# QCed:      2024.001P  with  1  errors/warnings
+changeList:  2024.001P 
+Wrote: OUTDIR/QC.summary.tsv (1 rows)
+# MERGE PROC: 2024.001P with 1 changes  (1 out of 1)
+# DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 1 
+# APPLIED:   1 changes from 2024.001P.A.v2.Fimoviridae_1nsp  with SUCCESS:1 
+# TOTAL  :   1 changes  from 1 proposals  with INFO:1 SUCCESS:1 
+Wrote: OUTDIR/QC.summary.tsv (2 rows)
+Writing  testResults/msl39v4/proposals_msl40_accession_dash/msl.tsv 
+WROTE   testResults/msl39v4/proposals_msl40_accession_dash/msl.tsv (18981 rows)
+Writing  testResults/msl39v4/proposals_msl40_accession_dash/QC.docx_summary.tsv 
+WROTE   testResults/msl39v4/proposals_msl40_accession_dash/QC.docx_summary.tsv (1)
+Writing  testResults/msl39v4/proposals_msl40_accession_dash/msl_load.sql 
+Writing out_* updates for prevMSL
+WROTE    testResults/msl39v4/proposals_msl40_accession_dash/msl_load.sql 
+# COMPLETED.
