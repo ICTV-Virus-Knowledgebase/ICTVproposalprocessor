@@ -1607,7 +1607,7 @@ value_validation = rbind(value_validation, data.frame(
 # Accession:  semi-colon separated list, with colon-separated labels
 value_validation = rbind(value_validation, data.frame(
   pat_name = "accession.remove-non-semi-colon-sep-list",
-  col = c("exemplarName","exemplarIsolate","genomeCoverage","molecule","hostSource","comments"),
+  col = c("exemplarIsolate","genomeCoverage","molecule","hostSource"),# "exemplarName","comments"),
   regex = "([^[:print:]]+)",
   type = "replace",
   class = "ERROR",
