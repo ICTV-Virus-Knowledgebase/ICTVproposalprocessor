@@ -158,8 +158,8 @@ for TEST in $TESTS; do
     else
         echo "dwdiff --punctuation --color  <(cut -f 5- $RESULTSBASE) <(cut -f 5- $RESULTS) #> $RESULTSDWDIFF" | tee $RESULTSDWDIFF
         dwdiff --punctuation --color <(cut -f 5- $RESULTSBASE) <(cut -f 5- $RESULTS) 2>&1 >> $RESULTSDWDIFF; RC=$?
-        echo "diff -yw -W 200 \<(cut -f 5- $RESULTS) \<(cut -f 5- $RESULTSBASE) \> $RESULTSDIFF" | tee $RESULTSDIFF
-        diff -yw -W 200 <(cut -f 5- $RESULTS) <(cut -f 5- $RESULTSBASE) 2>&1 >> $RESULTSDIFF; RC=$?
+        echo "diff -yw -W 200 \<(cut -f 5- $RESULTSBASE) \<(cut -f 5- $RESULTS) \> $RESULTSDIFF" | tee $RESULTSDIFF
+        diff -yw -W 200 <(cut -f 5- $RESULTSBASE) <(cut -f 5- $RESULTS) 2>&1 >> $RESULTSDIFF; RC=$?
         if [ $RC -eq "0" ]; then
             echo "ok     OUT  $TEST" | tee -a $REPORT
         else
@@ -175,13 +175,13 @@ for TEST in $TESTS; do
     # get just the needed columns from REF_MSL, then strip MSL number off
     echo "cut -f 4-14,23-31 $REF_MSL | egrep \"^$TEST_MSL_NUM\\t\" > $MSLREFLOCAL" |tee $MSLREFLOCAL
     cut -f 4-14,23-31 $REF_MSL | egrep "^$TEST_MSL_NUM\\t" >> $MSLREFLOCAL
-    echo "diff <(cut -f 2-19 $MSL) <(cut -f 2- $MSLREFLOCAL) 2>&1 >> $MSLDIFF" >> $MSLDIFF
-    diff <(cut -f 2-19 $MSL) <(cut -f 2- $MSLREFLOCAL) 2>&1 >> $MSLDIFF
+    echo "diff <(cut -f 2-19 $MSLREFLOCAL) <(cut -f 2- $MSL) 2>&1 >> $MSLDIFF" >> $MSLDIFF
+    diff <(cut -f 2-19 $MSLREFLOCAL) <(cut -f 2- $MSL) 2>&1 >> $MSLDIFF
 #    if [[ ! -e $MSLDIFFBASE || ! -e $MSLDIFF ]]; then 
 #	echo "*MISS  MSL  $TEST" | tee -a $REPORT
 #    else
-#        echo "diff -u \<(cut -f 1- $MSLDIFF) \<(cut -f 1- $MSLDIFFBASE) | dwdiff -u --color \> $MSLDIFFDIFF" | tee $MSLDIFFDIFF
-#        diff -u <(cut -f 1- $MSLDIFF) <(cut -f 1- $MSLDIFFBASE) | dwdiff -u --color 2>&1 >> $MSLDIFFDIFF; RC=$?
+#        echo "diff -u \<(cut -f 1- $MSLDIFFBASE) \<(cut -f 1- $MSLDIFF) | dwdiff -u --color \> $MSLDIFFDIFF" | tee $MSLDIFFDIFF
+#        diff -u <(cut -f 1- $MSLDIFFBASE) <(cut -f 1- $MSLDIFF) | dwdiff -u --color 2>&1 >> $MSLDIFFDIFF; RC=$?
 #        if [ $RC -eq "0" ]; then
 #            echo "ok     MSL  $TEST" | tee -a $REPORT
 #        else
@@ -198,16 +198,16 @@ for TEST in $TESTS; do
 	echo "*MISS  OUT  $TEST" | tee -a $REPORT
     else
 	# official diff
-        echo "diff -yw -W 200 \<(tail -n +3 $LOG|sed -e 's/\[?25h//g') \<(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g') \> $LOGDIFF" | tee $LOGDIFF
-        diff -yw -W 200 <(tail -n +3 $LOG|sed -e 's/\[?25h//g') <(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g') 2>&1 >> $LOGDIFF; RC=$?
+        echo "diff -yw -W 200 \<(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g') \<(tail -n +3 $LOG|sed -e 's/\[?25h//g') \> $LOGDIFF" | tee $LOGDIFF
+        diff -yw -W 200 <(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g') <(tail -n +3 $LOG|sed -e 's/\[?25h//g') 2>&1 >> $LOGDIFF; RC=$?
         if [ $RC -eq "0" ]; then
             echo "ok     LOG  $TEST" | tee -a $REPORT
         else
             echo "*FAIL  LOG  $TEST" | tee -a $REPORT
         fi
 	# unofficial, prettier dwdiff
-	echo "dwdiff --punctuation --color <(tail -n +3 $LOG|sed -e 's/^[\[?25h//g') <(tail -n +3 $LOGBASE|sed -e 's/^[\[?25h//g') 2>&1 #> $LOGDWDIFF" | tee $LOGDWDIFF
-	dwdiff --punctuation --color <(tail -n +3 $LOG|sed -e 's/\[?25h//g') <(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g') 2>&1 >> $LOGDWDIFF
+	echo "dwdiff --punctuation --color <(tail -n +3 $LOGBASE|sed -e 's/^[\[?25h//g') <(tail -n +3 $LOG|sed -e 's/^[\[?25h//g') 2>&1 #> $LOGDWDIFF" | tee $LOGDWDIFF
+	dwdiff --punctuation --color <(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g') <(tail -n +3 $LOG|sed -e 's/\[?25h//g') 2>&1 >> $LOGDWDIFF
     fi
     echo "#-------------------------" | tee -a $REPORT
 	
