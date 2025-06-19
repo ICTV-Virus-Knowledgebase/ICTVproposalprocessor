@@ -1,1 +1,1 @@
-../../../testResults/msl39v4/proposals_msl39v4_suffix_validation/log.txt
+../../../testResults/msl39v4/proposals_msl39v4_suffix_validation/./log.txt
