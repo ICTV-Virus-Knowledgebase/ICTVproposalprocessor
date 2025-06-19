@@ -69,6 +69,10 @@ suppressPackageStartupMessages(library(writexl) )# another option library(openxl
 suppressPackageStartupMessages(library(qdapTools)) # read docx
 suppressPackageStartupMessages(library(tools)) # file_ext()
 
+# accession list parsing
+suppressPackageStartupMessages(library(dplyr))
+suppressPackageStartupMessages(library(tidyr))
+suppressPackageStartupMessages(library(stringr))
 
 #### GLOBAL VARS ####
 #   vector      .GlobalEnv$params 
@@ -199,7 +203,7 @@ option_list <- list(
               help="Template proposal xlsx, used to load CVs [default \"%default\"]"),
   make_option(c("--cvTemplateSheet"), default="Menu Items (Do not change)", dest="template_xlsx_sheet",
               help="Template proposal xlsx, used to load CVs [default \"%default\"]"),
-  make_option(c("--vmr"), default="VMR.xlsx", dest="vmr_fname",
+  make_option(c("--vmr"), default="species_isolates.utf8.txt", dest="vmr_fname",
               help="VMR to check for accession re-use [default \"%default\"]"),
   make_option(c("--templateURL"), default="https://ictv.global/taxonomy/templates", dest="template_url",
               help="URL for out-of-date template message [default \"%default\"]"),
@@ -594,6 +598,60 @@ save_reference_cache=function() {
   save(file=cacheFilename,list=refGlobalObjs)
 
 }
+
+# VMR$genbank_accessions is a ;-separated list with optional "name:" prefixes. 
+# parse that out to have a single-accession per row data.frame
+parseGenbankAccessionsV1 <- function(vmrDf) {
+  vmrDf %>%
+    mutate(genbank_accessions = strsplit(as.character(genbank_accessions), ";")) %>%
+    unnest(genbank_accessions) %>%
+    mutate(
+      accession_index = ave(genbank_accessions, isolate_id, FUN = seq_along),
+      segment_name = ifelse(str_detect(genbank_accessions, ":"), str_extract(genbank_accessions, "^[^:]+"), NA),
+      accession = str_extract(genbank_accessions, "[^:]+$")
+    ) %>%
+    select(isolate_id, taxnode_id, species_name, isolate_type, isolate_names, segment_name, accession, accession_index)
+}
+parseGenbankAccessions <- function(df, accessionCol, extraCols) {
+  # Ensure the accessionCol and extraCols exist in the dataframe
+  if (!(accessionCol %in% names(df))) {
+    stop("The specified accession column does not exist in the data frame.")
+  }
+  missingCols <- setdiff(extraCols, names(df))
+  if (length(missingCols) > 0) {
+    stop("The following extra columns are missing in the data frame: ", paste(missingCols, collapse = ", "))
+  }
+  
+  # Expand the genbank_accessions column by splitting on ";"
+  expandedDf <- df %>%
+    mutate(!!accessionCol := strsplit(as.character(.data[[accessionCol]]), ";")) %>%
+    unnest(!!sym(accessionCol)) %>%
+    mutate(
+      !!accessionCol := str_trim(.data[[accessionCol]]),  # Trim spaces
+      accession_index = ave(.data[[accessionCol]], .data[[extraCols[1]]], FUN = seq_along)  # Use the first extra column for grouping
+    )
+  
+  # Extract segment_name, accession, and accession_range
+  validDf <- expandedDf %>%
+    filter(str_detect(.data[[accessionCol]], "^[a-zA-Z0-9._-]*:?[^:()]+(?: \\([0-9]+\\.[0-9]+\\))?$")) %>%
+    mutate(
+      segment_name = str_extract(.data[[accessionCol]], "^[^:]+(?=:)"),
+      accession_full = str_extract(.data[[accessionCol]], "[^:]+$"),  # Includes possible range
+      accession_range = str_extract(accession_full, "(?<=\\()[0-9]+\\.[0-9]+(?=\\))"),  # Extract range
+      accession = str_trim(str_remove(accession_full, " \\([0-9]+\\.[0-9]+\\)")),  # Remove range from accession
+      segment_name = ifelse(is.na(segment_name), NA, str_trim(segment_name))  # Remove spaces
+    ) %>%
+    select(all_of(extraCols), segment_name, accession, accession_range, accession_index)
+  
+  # Identify invalid records
+  invalidDf <- expandedDf %>%
+    filter(!str_detect(.data[[accessionCol]], "^[a-zA-Z0-9._-]*:?[^:()]+(?: \\([0-9]+\\.[0-9]+\\))?$")) %>%
+    select(all_of(extraCols), !!accessionCol, accession_index)
+  
+  # Return a list containing valid and invalid data frames
+  return(list(validAccessions = validDf, invalidAccessions = invalidDf))
+}
+
 load_reference=function() {
   #
   # this uses the DATABASE schema for the taxonomy_node table (ie, naming convention)
@@ -837,24 +895,30 @@ load_reference=function() {
   if(params$verbose) {cat("HostSourceCV: ", dim(hostSourceCV), " from ",dbHostSourceFilename,"\n")}
   .GlobalEnv$cvList[["hostSource"]] = union(cvList[["hostSource"]],dbCvList[["hostSource"]])
   #
-  ##### CVs from VMR xlsx  #####
+  #####  VMR (species_isolates) for Genbank Accessions  #####
   #
   vmrFilename = file.path(params$ref_dir, params$vmr_fname)
-  .GlobalEnv$vmrDf = data.frame(
-    # suppress errors about column names
-    # https://github.com/tidyverse/readxl/issues/580#issuecomment-519804058
-    suppressMessages(
-      read_excel(
-        path    = vmrFilename,
-        #sheet   = "Terms",
-        trim_ws = TRUE,
-        na      = c("Please select","[Please select]","[Please\u00A0select]"),
-        skip    = 0,
-        range   = cell_cols("A:AO"),
-        col_names = TRUE
-      )
-    )
-  )
+  if (file.exists(vmrFilename)) {
+    .GlobalEnv$vmrDf = read.delim(file=vmrFilename,header=TRUE, stringsAsFactors=TRUE,na.strings=c("NULL"))
+  
+    # Run the function and store the result in .GlobalEnv
+    #.GlobalEnv$vmrAccessions <- parseGenbankAccessionsV1(.GlobalEnv$vmrDf)
+    # creates 
+    #   .GlobalEnv$vmrAccessions 
+    #   .GlobalEnv$vmrInvalidAccessions 
+    accessionList = parseGenbankAccessions(.GlobalEnv$vmrDf, "genbank_accessions", 
+      c("isolate_id", "taxnode_id", "species_name", "isolate_type", "isolate_names"))
+      
+    .GlobalEnv$vmrAccessions = accessionList[["validAccessions"]]
+    badAccessions = accessionList[["invalidAccessions"]]
+    if( nrow(badAccessions) ) {
+      cat(paste0("ERROR: VMR accession badly formated: species:",badAccessions$species_name," iso_id:",badAccessions$isolate_id," value: ",badAccessions$genbank_accessions))
+      stop(paste0("ERROR: ", vmrFilename, " contains ",nrow(baddAccessions), " badly formatted accessions" ))
+    }
+  } else {
+    print(paste0("# SKIP VMR LOAD: ", vmrFilename))
+  }
+   
 } # load_reference()
 
 
