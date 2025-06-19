@@ -25,8 +25,8 @@ if [ "$(uname)" == "Linux" ]; then
 	# update docker image, just incase
 	#
 	echo "# Building docker image"
-	echo "# SKIP ./docker_build_image.sh"
-	#./docker_build_image.sh
+	#echo "# SKIP ./docker_build_image.sh"
+	./docker_build_image.sh
 fi
 
 #
@@ -96,6 +96,7 @@ for TEST in $TESTS; do
     DWDIFF_DELIM="" # delimiters for dwdiff (-P includes "-", which goes too far
     RESULTSDWDIFF=${DEST_DIR}/QC.regression.dwdiff
     RESULTSDWDIFFSHORT=${DEST_DIR}/QC.regression.sdwdiff
+    LOGT=${DEST_DIR}/log.new.tmp
     LOG=${DEST_DIR}/log.new.txt
     LOGBASE=${DEST_DIR}/log.txt
     LOGDIFF=${DEST_DIR}/log.diff
@@ -162,7 +163,9 @@ for TEST in $TESTS; do
 		    --outDir="testResults/$TEST_MSL/$TEST_CASE" \
 		    --msl \
 		    --qcTsvRegression=$(basename $RESULTS) \
-		    ) 1>>$LOG 2>&1 
+		    ) 1>$LOGT 2>&1 
+   	    # git rid of warnigns we only see inside docker
+	    grep -v "to see the first 50" $LOGT >>$LOG
     fi	
 
     #
@@ -218,16 +221,16 @@ for TEST in $TESTS; do
 	echo "*MISS  OUT  $TEST" | tee -a $REPORT
     else
 	# official diff
-        echo "diff -yw --color -W 200 \<(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g') \<(tail -n +3 $LOG|sed -e 's/\[?25h//g') \> $LOGDIFF" | tee $LOGDIFF
-        diff -yw --color -W 200 <(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g') <(tail -n +3 $LOG|sed -e 's/\[?25h//g') 2>&1 >> $LOGDIFF; RC=$?
+        echo "diff -yw --color -W 200 \<(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g'|awk '/^.+$/{print $0}') \<(tail -n +3 $LOG|sed -e 's/\[?25h//g'|awk '/^.+$/{print $0}') \> $LOGDIFF" | tee $LOGDIFF
+        diff -yw --color -W 200 <(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g'|awk '/^.+$/{print $0}') <(tail -n +3 $LOG|sed -e 's/\[?25h//g'|awk '/^.+$/{print $0}') 2>&1 >> $LOGDIFF; RC=$?
         if [ $RC -eq "0" ]; then
             echo -e "${GREEN}ok     LOG  $TEST${RESET}" | tee -a $REPORT
         else
             echo -e "${RED}*FAIL  LOG  $TEST${RESET}" | tee -a $REPORT
         fi
 	# unofficial, prettier dwdiff
-	echo "dwdiff --delimiters='$DWDIFF_DELIM' --color <(tail -n +3 $LOGBASE|sed -e 's/^[\[?25h//g') <(tail -n +3 $LOG|sed -e 's/^[\[?25h//g') 2>&1 #> $LOGDWDIFF" | tee $LOGDWDIFF
-	dwdiff --delimiters="$DWDIFF_DELIM" --color <(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g') <(tail -n +3 $LOG|sed -e 's/\[?25h//g') 2>&1 >> $LOGDWDIFF
+	echo "dwdiff --delimiters='$DWDIFF_DELIM' --color <(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g'|awk '/^.+$/{print $0}') <(tail -n +3 $LOG|sed -e 's/\[?25h//g'|awk '/^.+$/{print $0}') 2>&1 #> $LOGDWDIFF" | tee $LOGDWDIFF
+	dwdiff --delimiters="$DWDIFF_DELIM" --color <(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g'|awk '/^.+$/{print $0}') <(tail -n +3 $LOG|sed -e 's/\[?25h//g'|awk '/^.+$/{print $0}') 2>&1 >> $LOGDWDIFF
     fi
     echo "#-------------------------" | tee -a $REPORT
 	
