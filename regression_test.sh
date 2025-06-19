@@ -80,7 +80,9 @@ for TEST in $TESTS; do
     RESULTS=${DEST_DIR}/QC.regression.new.tsv
     RESULTSBASE=${DEST_DIR}/QC.regression.tsv
     RESULTSDIFF=${DEST_DIR}/QC.regression.diff
+    DWDIFF_DELIM="" # delimiters for dwdiff (-P includes "-", which goes too far
     RESULTSDWDIFF=${DEST_DIR}/QC.regression.dwdiff
+    RESULTSDWDIFFSHORT=${DEST_DIR}/QC.regression.sdwdiff
     LOG=${DEST_DIR}/log.new.txt
     LOGBASE=${DEST_DIR}/log.txt
     LOGDIFF=${DEST_DIR}/log.diff
@@ -156,10 +158,15 @@ for TEST in $TESTS; do
     if [[ ! -e $RESULTSBASE || ! -e $RESULTS ]]; then 
 	echo "*MISS  OUT  $TEST" | tee -a $REPORT
     else
-        echo "dwdiff --punctuation --color  <(cut -f 5- $RESULTSBASE) <(cut -f 5- $RESULTS) #> $RESULTSDWDIFF" | tee $RESULTSDWDIFF
-        dwdiff --punctuation --color <(cut -f 5- $RESULTSBASE) <(cut -f 5- $RESULTS) 2>&1 >> $RESULTSDWDIFF; RC=$?
-        echo "diff -yw -W 200 \<(cut -f 5- $RESULTSBASE) \<(cut -f 5- $RESULTS) \> $RESULTSDIFF" | tee $RESULTSDIFF
-        diff -yw -W 200 <(cut -f 5- $RESULTSBASE) <(cut -f 5- $RESULTS) 2>&1 >> $RESULTSDIFF; RC=$?
+	# dwdiff (short): diff -w -u | dwdiff -u
+        echo "diff -w -u <(cut -f 5- $RESULTSBASE) <(cut -f 5- $RESULTS) | dwdiff -u --delimiters='$DWDIFF_DELIM' --color #> $RESULTSDWDIFFSHORT" | tee $RESULTSDWDIFFSHORT
+        diff -w -u <(cut -f 5- $RESULTSBASE) <(cut -f 5- $RESULTS) 2>&1  | dwdiff -u --delimiters="$DWDIFF_DELIM" --color >> $RESULTSDWDIFFSHORT
+	# dwdiff 
+        echo "dwdiff --delimiters='$DWDIFF_DELIM' --color  <(cut -f 5- $RESULTSBASE) <(cut -f 5- $RESULTS) #> $RESULTSDWDIFF" | tee $RESULTSDWDIFF
+        dwdiff --delimiters="$DWDIFF_DELIM" --color <(cut -f 5- $RESULTSBASE) <(cut -f 5- $RESULTS) 2>&1 >> $RESULTSDWDIFF
+	# diff -y
+        echo "diff -yw --color -W 200 \<(cut -f 5- $RESULTSBASE) \<(cut -f 5- $RESULTS) \> $RESULTSDIFF" | tee $RESULTSDIFF
+        diff -yw --color -W 200 <(cut -f 5- $RESULTSBASE) <(cut -f 5- $RESULTS) 2>&1 >> $RESULTSDIFF; RC=$?
         if [ $RC -eq "0" ]; then
             echo "ok     OUT  $TEST" | tee -a $REPORT
         else
@@ -198,16 +205,16 @@ for TEST in $TESTS; do
 	echo "*MISS  OUT  $TEST" | tee -a $REPORT
     else
 	# official diff
-        echo "diff -yw -W 200 \<(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g') \<(tail -n +3 $LOG|sed -e 's/\[?25h//g') \> $LOGDIFF" | tee $LOGDIFF
-        diff -yw -W 200 <(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g') <(tail -n +3 $LOG|sed -e 's/\[?25h//g') 2>&1 >> $LOGDIFF; RC=$?
+        echo "diff -yw --color -W 200 \<(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g') \<(tail -n +3 $LOG|sed -e 's/\[?25h//g') \> $LOGDIFF" | tee $LOGDIFF
+        diff -yw --color -W 200 <(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g') <(tail -n +3 $LOG|sed -e 's/\[?25h//g') 2>&1 >> $LOGDIFF; RC=$?
         if [ $RC -eq "0" ]; then
             echo "ok     LOG  $TEST" | tee -a $REPORT
         else
             echo "*FAIL  LOG  $TEST" | tee -a $REPORT
         fi
 	# unofficial, prettier dwdiff
-	echo "dwdiff --punctuation --color <(tail -n +3 $LOGBASE|sed -e 's/^[\[?25h//g') <(tail -n +3 $LOG|sed -e 's/^[\[?25h//g') 2>&1 #> $LOGDWDIFF" | tee $LOGDWDIFF
-	dwdiff --punctuation --color <(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g') <(tail -n +3 $LOG|sed -e 's/\[?25h//g') 2>&1 >> $LOGDWDIFF
+	echo "dwdiff --delimiters='$DWDIFF_DELIM' --color <(tail -n +3 $LOGBASE|sed -e 's/^[\[?25h//g') <(tail -n +3 $LOG|sed -e 's/^[\[?25h//g') 2>&1 #> $LOGDWDIFF" | tee $LOGDWDIFF
+	dwdiff --delimiters="$DWDIFF_DELIM" --color <(tail -n +3 $LOGBASE|sed -e 's/\[?25h//g') <(tail -n +3 $LOG|sed -e 's/\[?25h//g') 2>&1 >> $LOGDWDIFF
     fi
     echo "#-------------------------" | tee -a $REPORT
 	
