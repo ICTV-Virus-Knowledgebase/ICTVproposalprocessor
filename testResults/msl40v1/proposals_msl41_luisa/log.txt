@@ -8,7 +8,19 @@ WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # LOADED:  2025.017P  XLS with  0  errors/warnings
 # LOADED:  2025.017P 
 # QC start: 2025.017P: proposal loaded (1 out of 1)
-Error in if (changeRow["change"] != "Abolish" && !is.na(changeRow[".destRank"]) &&  : 
-  missing value where TRUE/FALSE needed
-Calls: load_and_qc_proposals -> qc_proposal -> apply -> FUN
-Execution halted
+# QCed:      2025.017P  with  3  errors/warnings
+changeList:  2025.017P 
+Wrote: OUTDIR/QC.summary.tsv (3 rows)
+# MERGE PROC: 2025.017P with 56 changes  (1 out of 1)
+# DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 56 
+# APPLIED:  56 changes from 2025.017P.N.v1.Secoviridae_53nsp_3abolishsp  with ERROR:13 WARNING:3 SUCCESS:46 
+# TOTAL  :  56 changes  from 1 proposals  with ERROR:13 WARNING:3 SUCCESS:46 
+Wrote: OUTDIR/QC.summary.tsv (62 rows)
+Writing  testResults/msl40v1/proposals_msl41_luisa/msl.tsv 
+WROTE   testResults/msl40v1/proposals_msl41_luisa/msl.tsv (20896 rows)
+Writing  testResults/msl40v1/proposals_msl41_luisa/QC.docx_summary.tsv 
+WROTE   testResults/msl40v1/proposals_msl41_luisa/QC.docx_summary.tsv (1)
+Writing  testResults/msl40v1/proposals_msl41_luisa/msl_load.sql 
+Writing out_* updates for prevMSL
+WROTE    testResults/msl40v1/proposals_msl41_luisa/msl_load.sql 
+# COMPLETED.
