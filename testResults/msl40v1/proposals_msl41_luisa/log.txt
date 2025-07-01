@@ -1,0 +1,14 @@
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl40v1 --proposalsDir=testData/msl40v1/proposals_msl41_luisa --outDir=testResults/msl40v1/proposals_msl41_luisa --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: v2.2.99cd15e
+Previous taxa: 172682 34  from  current_msl/msl40v1/taxonomy_node_export.utf8.txt 
+WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+# LOAD_PROPOSAL_DOCX( 2025.017P )
+# LOADED:  2025.017P  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 2025.017P , NA )
+# LOADED:  2025.017P  XLS with  0  errors/warnings
+# LOADED:  2025.017P 
+# QC start: 2025.017P: proposal loaded (1 out of 1)
+Error in if (changeRow["change"] != "Abolish" && !is.na(changeRow[".destRank"]) &&  : 
+  missing value where TRUE/FALSE needed
+Calls: load_and_qc_proposals -> qc_proposal -> apply -> FUN
+Execution halted

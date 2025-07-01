@@ -257,7 +257,8 @@ if( interactive() ) {
   # MSL39v2
   params$test_case_msl = 'msl39v2'; params$test_case_dir = 'proposals_msl39v3'
   params$test_case_msl = 'msl39v4'; params$test_case_dir = 'proposals_msl40_binomial_subgenus'
-  #params$test_case_msl = 'msl38'; params$test_case_dir = 'proposalsTest6_split'
+  params$test_case_msl = 'msl40v1'; params$test_case_dir = 'proposals_msl41_luisa'
+
   params$proposals_dir = paste0("testData/",params$test_case_msl,"/",params$test_case_dir)
   params$out_dir       = paste0("testResults/",params$test_case_msl,"/",params$test_case_dir)
 
@@ -2652,6 +2653,8 @@ qc_proposal = function(code, proposalDf) {
               levelStr="ERROR",errorCode="ACTION.UNK",errorStr=paste("XLSX incorrect term in column","Change"),
               notes=paste("XLSX incorrect value [",badRows[,"change"],"]. Valid terms: [",paste0(names(cvList[[".change2action"]]),collapse=","),"]")
     ) 
+    # remove bad rows from further processing
+    changeDf = changeDf[!is.na(changeDf$.action),]
   }
   #
   #### QC suffixes ####
@@ -5318,7 +5321,7 @@ if( !is.null(nrow(allChangeDf)) && nrow(allChangeDf) > 0 ) {
   apply_changes(allChangeDf[allChangeDfOrder,])
   
   # Internal sanity check
-  if(!(20070000 %in% .GlobalEnv$newMSL$ictv_id)) { 
+  if(!sum(c(19710000,20070000) %in% .GlobalEnv$newMSL$ictv_id)) { 
     cat("!!!!!!!!!!!!!!!! LOST ROOT NODE in ",code," !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
     if(interactive()) {browser()}
   }
