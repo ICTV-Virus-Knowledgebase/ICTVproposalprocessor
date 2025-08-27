@@ -99,14 +99,14 @@ badSC = ! proposals$sc %in% names(sc2destFolder)
 if( sum(badSC) > 0) {
   cat(paste0("### ERROR: ",sum(badSC)," codes include terminal letters that aren't Study Section abbreviations:","\n"))
   cat(paste0(proposals[badSC,c("sc","code","filename","path")],"\n"))
-  return(1)     
+  stop("Invalid study section abbreviation")
 }
 cat(paste0("QC: fitler unrecongized status (",paste0(names(status2text),collapse=", "),")\n"))
 badStatus = ! proposals$status %in% names(status2text)
 if( sum(badStatus) > 0) {
   cat(paste0("### ERROR: ",sum(badStatus)," filenames include invalid status lettters (valid status:", paste(paste0(names(status2text),"='",status2text,"'"),collapse=","),"):","\n"))
   cat(paste0(proposals[badStatus,c("status","code","filename","path")],"\n"))
-  return(1)     
+  stop("Invalid proposal status")
 }
 
 
