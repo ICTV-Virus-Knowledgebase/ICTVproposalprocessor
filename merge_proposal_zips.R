@@ -167,7 +167,7 @@ option_list <- list(
 	      #default="testResults", 
 	      dest="out_dir",
               help = "Directory to write outputs to [default \"%default\"]"),
-  make_option(c("-r","--refDir"), default="current_msl/msl40v1", dest="ref_dir", 
+  make_option(c("-r","--refDir"), default="current_msl/msl40v2", dest="ref_dir", 
               help="Directory from which read current MSL and CV data from [default \"%default\"]"),
   
   # out filenames
@@ -257,7 +257,7 @@ if( interactive() ) {
   # MSL39v2
   params$test_case_msl = 'msl39v2'; params$test_case_dir = 'proposals_msl39v3'
   params$test_case_msl = 'msl39v4'; params$test_case_dir = 'proposals_msl40_binomial_subgenus'
-  params$test_case_msl = 'msl40v1'; params$test_case_dir = 'proposals_msl41_extra_file'
+  params$test_case_msl = 'msl40v2'; params$test_case_dir = 'proposals_msl41_extra_file'
 
   params$proposals_dir = paste0("testData/",params$test_case_msl,"/",params$test_case_dir)
   params$out_dir       = paste0("testResults/",params$test_case_msl,"/",params$test_case_dir)
