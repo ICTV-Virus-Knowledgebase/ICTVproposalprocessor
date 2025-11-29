@@ -1,8 +1,8 @@
-# Rscript merge_proposal_zips.R --refDir=current_msl/msl40v1 --proposalsDir=testData/msl40v1/proposals_msl41_holly10 --outDir=testResults/msl40v1/proposals_msl41_holly10 --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v3.20250222.34b9f9e
-Previous taxa: 172682 34  from  current_msl/msl40v1/taxonomy_node_export.utf8.txt 
+# sudo docker run -it -v /var/www/drupal/apps/proposal_validator/taxon_proposal_qc_and_load/testData:/testData:ro -v /var/www/drupal/apps/proposal_validator/taxon_proposal_qc_and_load/testResultsDocker:/testResults:rw ictv_proposal_processor /merge_proposal_zips.R --refDir=current_msl/msl40v1 --proposalsDir=testData/msl40v1/proposals_msl41_holly10 --outDir=testResults/msl40v1/proposals_msl41_holly10 --msl --qcTsvRegression=QC.regression.new.tsv
+[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25hVERSION: msl40v2.20251129.b865b7c
+[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25hPrevious taxa: 172682 34  from  current_msl/msl40v1/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
-# LOAD_PROPOSAL_DOCX( 2025.001M )
+[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h# LOAD_PROPOSAL_DOCX( 2025.001M )
 # LOADED:  2025.001M  DOCX with  0  errors/warnings
 # LOAD_PROPOSAL( 2025.001M , NA )
 # LOADED:  2025.001M  XLS with  0  errors/warnings
@@ -74,7 +74,7 @@ WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # QCed:      2025.010M  with  0  errors/warnings
 changeList:  2025.001M 2025.002M 2025.003M 2025.004M 2025.005M 2025.006M 2025.007M 2025.008M 2025.009M 2025.010M 
 Wrote: OUTDIR/QC.summary.tsv (0 rows)
-# MERGE PROC: 2025.001M with 21 changes  (1 out of 10)
+[?25h[?25h[?25h[?25h[?25h[?25h# MERGE PROC: 2025.001M with 21 changes  (1 out of 10)
 # MERGE PROC: 2025.002M with 1 changes  (2 out of 10)
 # MERGE PROC: 2025.003M with 5 changes  (3 out of 10)
 # MERGE PROC: 2025.004M with 7 changes  (4 out of 10)
@@ -84,9 +84,8 @@ Wrote: OUTDIR/QC.summary.tsv (0 rows)
 # MERGE PROC: 2025.008M with 4 changes  (8 out of 10)
 # MERGE PROC: 2025.009M with 1 changes  (9 out of 10)
 # MERGE PROC: 2025.010M with 10 changes  (10 out of 10)
-# DONE. MERGED 10  proposal(s), skipped 0 ; total changes: 120 
-!!!!!!!!!!!!!!!! LOST ROOT NODE in  2025.010M  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# APPLIED:  21 changes from 2025.001M.N.v1.Alpharhabdovirinae_2ng14nsp  with SUCCESS:21 
+[?25h[?25h[?25h# DONE. MERGED 10  proposal(s), skipped 0 ; total changes: 120 
+[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h# APPLIED:  21 changes from 2025.001M.N.v1.Alpharhabdovirinae_2ng14nsp  with SUCCESS:21 
 # APPLIED:   1 changes from 2025.002M.N.v1.Crustavirus_1nsp  with SUCCESS:1 
 # APPLIED:   5 changes from 2025.003M.N.v1.Konkoviridae_5nsp  with SUCCESS:5 
 # APPLIED:   7 changes from 2025.004M.N.v1.Lispiviridae_1ngen_6nsp  with SUCCESS:7 
@@ -97,12 +96,13 @@ Wrote: OUTDIR/QC.summary.tsv (0 rows)
 # APPLIED:   1 changes from 2025.009M.N.v1.Tupavirus_1nsp  with WARNING:1 SUCCESS:1 
 # APPLIED:  10 changes from 2025.010M.N.v1.Xinmoviridae_5ng_5nsp  with SUCCESS:10 
 # TOTAL  : 120 changes  from 10 proposals  with WARNING:5 SUCCESS:120 
-Wrote: OUTDIR/QC.summary.tsv (125 rows)
-Writing  testResults/msl40v1/proposals_msl41_holly10/msl.tsv 
+[?25hWrote: OUTDIR/QC.summary.tsv (125 rows)
+[?25hWriting  testResults/msl40v1/proposals_msl41_holly10/msl.tsv 
 WROTE   testResults/msl40v1/proposals_msl41_holly10/msl.tsv (20963 rows)
 Writing  testResults/msl40v1/proposals_msl41_holly10/QC.docx_summary.tsv 
 WROTE   testResults/msl40v1/proposals_msl41_holly10/QC.docx_summary.tsv (10)
 Writing  testResults/msl40v1/proposals_msl41_holly10/msl_load.sql 
 Writing out_* updates for prevMSL
 WROTE    testResults/msl40v1/proposals_msl41_holly10/msl_load.sql 
-# COMPLETED.
+[?25h[?25h[?25h# COMPLETED.
+[?25h[?25h
