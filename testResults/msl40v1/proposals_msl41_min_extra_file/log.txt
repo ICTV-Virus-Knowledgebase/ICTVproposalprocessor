@@ -1,0 +1,32 @@
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl40v1 --proposalsDir=testData/msl40v1/proposals_msl41_min_extra_file --outDir=testResults/msl40v1/proposals_msl41_min_extra_file --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: msl40v1.20251013.95ef468
+Previous taxa: 172682 34  from  current_msl/msl40v1/taxonomy_node_export.utf8.txt 
+WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+# LOAD_PROPOSAL( 2024.035B , testData/msl40v1/proposals_msl41_min_extra_file/2024.035B.Uc.v3.Tubulavirales_34ng_49ns.xlsx )
+# LOAD_PROPOSAL( 2024.035B , testData/msl40v1/proposals_msl41_min_extra_file/2024.035B.Uc.v3.Tubulavirales_sim_matrix.xlsx )
+code 2024.035B: A worksheet name matching 'proposal*' was not found: logging error
+Wrote: OUTDIR/QC.summary.tsv (1 rows)
+Wrote: OUTDIR/QC.summary.tsv (3 rows)
+# LOAD_PROPOSAL_DOCX( 2024.035B )
+# LOADED:  2024.035B  DOCX with  4  errors/warnings
+# LOAD_PROPOSAL( 2024.035B , NA )
+# LOADED:  2024.035B  XLS with  4  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (4 rows)
+# LOADED:  2024.035B 
+# QC start: 2024.035B: proposal loaded (1 out of 1)
+# QCed:      2024.035B  with  4  errors/warnings
+changeList:  2024.035B 
+Wrote: OUTDIR/QC.summary.tsv (4 rows)
+# MERGE PROC: 2024.035B with 83 changes  (1 out of 1)
+# DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 83 
+# APPLIED:  83 changes from 2024.035B.Uc.v3.Tubulavirales_34ng_49ns  with WARNING:83 SUCCESS:83 
+# TOTAL  :  83 changes  from 1 proposals  with ERROR:3 WARNING:83 INFO:1 SUCCESS:83 
+Wrote: OUTDIR/QC.summary.tsv (170 rows)
+Writing  testResults/msl40v1/proposals_msl41_min_extra_file/msl.tsv 
+WROTE   testResults/msl40v1/proposals_msl41_min_extra_file/msl.tsv (20933 rows)
+Writing  testResults/msl40v1/proposals_msl41_min_extra_file/QC.docx_summary.tsv 
+WROTE   testResults/msl40v1/proposals_msl41_min_extra_file/QC.docx_summary.tsv (1)
+Writing  testResults/msl40v1/proposals_msl41_min_extra_file/msl_load.sql 
+Writing out_* updates for prevMSL
+WROTE    testResults/msl40v1/proposals_msl41_min_extra_file/msl_load.sql 
+# COMPLETED.
