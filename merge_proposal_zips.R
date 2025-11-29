@@ -2484,10 +2484,12 @@ qc_proposal = function(code, proposalDf) {
         charEncodings = ""
         if(params$tmi) { 
           # show code points in error message, mostly for I18N problems
-          charEncodings = paste0("; charEncodings",
-                                 paste(unlist(strsplit(changeDf[qc.matches,col],"")),
-                                       CharToAsc(unlist(strsplit(changeDf[qc.matches,col],""))), 
-                                       sep="=", collapse=","))
+          chars <- unlist(strsplit(changeDf[qc.matches, col], ""))
+          
+          charEncodings <- paste0(
+            "; charEncodings",
+            paste(chars, sapply(chars, utf8ToInt), sep = "=", collapse = ",")
+          )
         }
         log_error(code,linenum=rownames(changeDf)[qc.matches],
                   action=changeDf$change[qc.matches],actionOrder=actionOrder, 
