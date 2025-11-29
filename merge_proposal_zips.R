@@ -1955,19 +1955,19 @@ load_proposal_docx = function(code) {
   
   # check original template version
   if( length(grep(txt, pattern="Part 1: TITLE, AUTHORS, APPROVALS, etc", ignore.case=T)) < 1 ) {
-    if( grep(txt[3], pattern="Taxonomy Proposal Form, 2024", ignore.case = T) == 1 ) {
-      #
-      # not yet supporting 2024 DOCX templates
-      #
-      log_error(code,linenum=0,action="OPEN_DOCX",actionOrder=actionOrder,
-                rank="",taxon="",
-                levelStr = "INFO",
-                errorCode = "DOCX_2024_TEMPLATE",
-                errorStr = paste0("2024 version of DOCX proposal template (yet) supported."),
-                notes=paste0("DOCX_FILENAME=",proposalsDf[code,"docx"])
-      )
-      return(list(metaDf=metaDf))
-    } else {
+    # if( grep(txt[3], pattern="Taxonomy Proposal Form, 2024", ignore.case = T) == 1 ) {
+    #   #
+    #   # not yet supporting 2024 DOCX templates
+    #   #
+    #   log_error(code,linenum=0,action="OPEN_DOCX",actionOrder=actionOrder,
+    #             rank="",taxon="",
+    #             levelStr = "INFO",
+    #             errorCode = "DOCX_2024_TEMPLATE",
+    #             errorStr = paste0("2024 version of DOCX proposal template (yet) supported."),
+    #             notes=paste0("DOCX_FILENAME=",proposalsDf[code,"docx"])
+    #   )
+    #   return(list(metaDf=metaDf))
+    # } else {
       #
       # unknown template
       #
@@ -1979,7 +1979,7 @@ load_proposal_docx = function(code) {
                 notes=paste0("DOCX_FILENAME=",proposalsDf[code,"docx"])
       )
       return(list(metaDf=metaDf))
-    }
+   # }
   }
   #
   # parse older docx format
