@@ -1,0 +1,26 @@
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl40v2 --proposalsDir=testData/msl40v2/proposals_msl41_msl40v2 --outDir=testResults/msl40v2/proposals_msl41_msl40v2 --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: msl40v1.20251013.95ef468
+Previous taxa: 172699 34  from  current_msl/msl40v2/taxonomy_node_export.utf8.txt 
+WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+# LOAD_PROPOSAL_DOCX( 2025.013B )
+# LOADED:  2025.013B  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 2025.013B , NA )
+# LOADED:  2025.013B  XLS with  0  errors/warnings
+# LOADED:  2025.013B 
+# QC start: 2025.013B: proposal loaded (1 out of 1)
+# QCed:      2025.013B  with  0  errors/warnings
+changeList:  2025.013B 
+Wrote: OUTDIR/QC.summary.tsv (0 rows)
+# MERGE PROC: 2025.013B with 142 changes  (1 out of 1)
+# DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 142 
+# APPLIED: 142 changes from 2025.013B.Uc.v3.Crassvirales_reorganisation  with ERROR:8 WARNING:48 INFO:5 SUCCESS:135 
+# TOTAL  : 142 changes  from 1 proposals  with ERROR:8 WARNING:48 INFO:5 SUCCESS:135 
+Wrote: OUTDIR/QC.summary.tsv (196 rows)
+Writing  testResults/msl40v2/proposals_msl41_msl40v2/msl.tsv 
+WROTE   testResults/msl40v2/proposals_msl41_msl40v2/msl.tsv (20954 rows)
+Writing  testResults/msl40v2/proposals_msl41_msl40v2/QC.docx_summary.tsv 
+WROTE   testResults/msl40v2/proposals_msl41_msl40v2/QC.docx_summary.tsv (1)
+Writing  testResults/msl40v2/proposals_msl41_msl40v2/msl_load.sql 
+Writing out_* updates for prevMSL
+WROTE    testResults/msl40v2/proposals_msl41_msl40v2/msl_load.sql 
+# COMPLETED.
