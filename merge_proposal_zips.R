@@ -247,7 +247,7 @@ if( interactive() ) {
   # defeat auto-caching when debugging
   #rm(docxList,xlsxList,changeList)
   params$verbose = T
-  params$tmi = F
+  params$tmi = T
   params$debug_on_error = F
   params$processing_mode = 'final'
   #params$output_change_report = F
@@ -257,7 +257,7 @@ if( interactive() ) {
   # MSL39v2
   params$test_case_msl = 'msl39v2'; params$test_case_dir = 'proposals_msl39v3'
   params$test_case_msl = 'msl39v4'; params$test_case_dir = 'proposals_msl40_binomial_subgenus'
-  params$test_case_msl = 'msl40v1'; params$test_case_dir = 'proposals_msl41_luisa'
+  params$test_case_msl = 'msl40v1'; params$test_case_dir = 'proposals_msl41_extra_file'
 
   params$proposals_dir = paste0("testData/",params$test_case_msl,"/",params$test_case_dir)
   params$out_dir       = paste0("testResults/",params$test_case_msl,"/",params$test_case_dir)
@@ -1123,6 +1123,7 @@ scan_for_proposals = function() {
   # QC for duplicate codes
   dups = duplicated(xlsxs$code) & !is.na(xlsxs$code)
   allDups =xlsxs$code %in% xlsxs$code[dups]
+  names(allDups) = rownames(xlsxs)
   if( sum(dups) > 0 ) {
     # track if all dups were resolved by being non-template files
     dups_ok = TRUE 
@@ -1165,7 +1166,7 @@ scan_for_proposals = function() {
       } # for each dup for this code
       
       # check if there was only one parsable xlsx
-      code_template_count = nrow(xlsxs[xlsxs$code==code && allDups,])
+      code_template_count = nrow(xlsxs[xlsxs$code==code & allDups,])
       if( code_template_count > 1 ) {
           dups_ok = FALSE
       }
