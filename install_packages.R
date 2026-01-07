@@ -4,3 +4,7 @@ install.packages("writexl")
 install.packages("qdapTools")
 install.packages("optparse")
 install.packages("DescTools") # CharToAsc
+install.packages("stringr")
+install.packages("dplyr")
+install.packages("tidyr")
+install.packages("data.table")
