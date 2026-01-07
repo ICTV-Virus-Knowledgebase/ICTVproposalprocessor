@@ -5573,22 +5573,22 @@ if(params$export_msl) {
   
   # ........................................................................
   #
-  ##### SQL to add new MSL to [taxonomy_toc]   ##### 
+  ##### SQL to add new MSL to `taxonomy_toc`   ##### 
   #
   # ........................................................................
-  cat("insert into [taxonomy_toc] ([tree_id],[msl_release_num],[comments]) ",
+  cat("insert into `taxonomy_toc` (`tree_id`,`msl_release_num`,`comments`) ",
       "values (", paste(
        sort(levels(as.factor(newMSL$tree_id)),decreasing = T)[1],
         sql_msl_num,
         "NULL",
       sep=","),
-      ")\n",
+      ");\n",
       file=sqlout
   )
   
   # ........................................................................
   #
-  ##### SQL to insert newMSL into [taxonomy_node] #####
+  ##### SQL to insert newMSL into `taxonomy_node` #####
   #
   # convert factors to character
   # (was easier to do on a data.frame, because of data.table FAQ 1.1)
@@ -5611,10 +5611,13 @@ if(params$export_msl) {
     # much faster - fewer trigger calls
     # but makes localizing errors harder
     if( rowCount %% as.integer(params$sql_insert_batch_size) == 1 ) {
-      cat(paste0("insert into [taxonomy_node] ",
-                 "([",
-                 paste0(sqlColList,collapse="],["),
-                 "])",
+      if (rowCount > 1) {
+        cat(";\n", file=sqlout)
+      }
+      cat(paste0("insert into `taxonomy_node` ",
+                 "(`",
+                 paste0(sqlColList,collapse="`,`"),
+                 "`)",
                  "\n",
                  " values ",
                  "\n"
@@ -5649,34 +5652,37 @@ if(params$export_msl) {
     # 
     rowCount=rowCount+1
   }
+  cat(";\n", file=sqlout)
   
   # QC queries
   cat("-- QC queries \n", file=sqlout)
   cat(paste("
   select level_id,
-      new_ct=count(case when in_change like 'new' then 1 end), 
-    	other_ct=count(case when in_change<>'new' then 1 end),
-    	null_ct=count(case when in_change is null then 1 end),
-    	total_ct=count(*)
-  from taxonomy_node
+      count(case when in_change like 'new' then 1 end) as new_ct, 
+    	count(case when in_change<>'new' then 1 end) as other_ct,
+    	count(case when in_change is null then 1 end) as null_ct,
+    	count(*) as total_ct
+  from `taxonomy_node`
   where msl_release_num = ",sql_msl_num,"
   group by level_id
-  order by level_id
+  order by level_id;
   "), file=sqlout)
+  cat("\n", file=sqlout)
   
   # QC query
   cat(paste("-- QC Query
   select 
-       level_id,in_change, ct=count(*)
-  from taxonomy_node
+       level_id,in_change, count(*) as ct
+  from `taxonomy_node`
   where msl_release_num = ",sql_msl_num,"
   group by level_id,in_change
-  order by level_id,in_change
-  
+  order by level_id,in_change;
   "), file=sqlout)
+  cat("\n", file=sqlout)
+
   # ........................................................................
   #
-  ##### SQL to update prevMSL.out in [taxonomy_node]   ##### 
+  ##### SQL to update prevMSL.out in `taxonomy_node`   ##### 
   #
   # column names and data codings in newMSL should match the taxonomy_node table. 
   #
@@ -5710,12 +5716,12 @@ if(params$export_msl) {
   #
   for(  row in rownames(curMslStr) )  {
     #row=head(rownames(curMslStr),n=1) # debug
-    cat(paste0("update [taxonomy_node] set ",
+    cat(paste0("update `taxonomy_node` set ",
                
                paste0(
                  paste0(
                    # column names
-                   "[",curMslColList,"]=",
+                   "`",curMslColList,"`=",
                    # convert NA to NULL (not 'NA')
                    ifelse(is.na(curMslStr[row,curMslColList]),"NULL",
                           paste0("'",
@@ -5723,44 +5729,46 @@ if(params$export_msl) {
                                  gsub("'","''", curMslStr[row,curMslColList])
                                  ,"'"))
                  ,collapse=","),
-               " where [taxnode_id]=",
+               " where `taxnode_id`=",
                curMslStr[row,"taxnode_id"]
                ) 
     ),
-    "\n",
+    ";\n",
     file=sqlout)
   }
+
   # QC SQL
   cat("\n-- build deltas (~7min) \n
-  EXEC [dbo].[rebuild_delta_nodes_2] NULL
+  CALL `rebuild_delta_nodes`(NULL);
   
   -- rebuild merge/split (seconds) \n
-  EXEC [dbo].[rebuild_node_merge_split] 
-  
+  CALL `rebuild_node_merge_split`(); 
   ", file=sqlout)
+
   cat(paste("
   -- NOW check if all newMSL have delta in, and prevMSL have delta out
-  SELECT 'prevMSL w/o delta to new', COUNT(*) FROM taxonomy_node
+  SELECT 'prevMSL w/o delta to new', COUNT(*) FROM `taxonomy_node`
   WHERE msl_release_num = ",sql_msl_num-1,"
   AND taxnode_id NOT IN (SELECT prev_taxid FROM taxonomy_node_delta)
   UNION ALL
-  SELECT  'newMSL w/o delta to prev',  COUNT(*) FROM taxonomy_node
+  SELECT  'newMSL w/o delta to prev',  COUNT(*) FROM `taxonomy_node`
   WHERE msl_release_num = ",sql_msl_num,"
-  AND taxnode_id NOT IN (SELECT new_taxid FROM taxonomy_node_delta)
+  AND taxnode_id NOT IN (SELECT new_taxid FROM taxonomy_node_delta);
   "),
   file=sqlout)
+  cat("\n", file=sqlout)
   
   # QC query
   cat(paste("-- QC Query
   SELECT 
-       level_id,out_change, ct=COUNT(*)
-  FROM taxonomy_node
+       level_id,out_change, COUNT(*) as ct
+  FROM `taxonomy_node`
   WHERE msl_release_num = ",sql_msl_num-1,"
   GROUP BY level_id,out_change
-  ORDER BY level_id,out_change
+  ORDER BY level_id,out_change;
   
   -- QC SPs
-  EXEC [dbo].[QC_run_modules]
+  CALL `QC_run_modules`();
   
   "), file=sqlout)
   #
