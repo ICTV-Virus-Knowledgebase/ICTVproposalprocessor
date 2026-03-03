@@ -5570,6 +5570,10 @@ if(params$export_msl) {
   # 
   cat("-- begin transaction\n", file=sqlout)
   cat("-- rollback transaction\n", file=sqlout)
+  # MariaDB/MySQL treat backslash as an escape character by default, so a value
+  # ending with "\" can accidentally escape the closing quote and break parsing.
+  # Force standard single-quote escaping (''), and make backslashes literal.
+  cat("SET SESSION sql_mode = CONCAT(@@SESSION.sql_mode, ',NO_BACKSLASH_ESCAPES');\n\n", file=sqlout)
   
   # ........................................................................
   #
@@ -5596,6 +5600,15 @@ if(params$export_msl) {
   newMslStr = as.data.frame(newMSL)
   for( col in sqlColList)  {
     newMslStr[,col] = as.character(newMslStr[,col])
+  }
+
+  sql_value_nullable = function(x) {
+    x = as.character(x)
+    ifelse(
+      is.na(x),
+      "NULL",
+      paste0("'", gsub("'", "''", x, fixed = TRUE), "'")
+    )
   }
   
   #
@@ -5629,19 +5642,10 @@ if(params$export_msl) {
     #
     # actual row values
     #
+    rowVals = unlist(newMslStr[row, sqlColList], use.names = FALSE)
     cat(paste0("(",
-               paste0(
-                 # convert NA to NULL (not 'NA')
-                 ifelse(is.na(newMslStr[row, sqlColList]), "NULL",
-                        paste0("'",
-                               # escape apostrophies as double-appostrophies (MSSQL)
-                               gsub(
-                                 "'", "''", newMslStr[row, sqlColList]
-                               )
-                               , "'")),
-                 collapse = ","
-               )
-               , ")"),
+               paste0(sql_value_nullable(rowVals), collapse = ","),
+               ")"),
         " -- lineage=",
         as.character(newMslStr[row, "lineage"]) ,
         "\n",
@@ -5716,6 +5720,7 @@ if(params$export_msl) {
   #
   for(  row in rownames(curMslStr) )  {
     #row=head(rownames(curMslStr),n=1) # debug
+    rowVals = unlist(curMslStr[row,curMslColList], use.names = FALSE)
     cat(paste0("update `taxonomy_node` set ",
                
                paste0(
@@ -5723,11 +5728,7 @@ if(params$export_msl) {
                    # column names
                    "`",curMslColList,"`=",
                    # convert NA to NULL (not 'NA')
-                   ifelse(is.na(curMslStr[row,curMslColList]),"NULL",
-                          paste0("'",
-                                 # escape apostrophes as double-apostrophes (MSSQL)
-                                 gsub("'","''", curMslStr[row,curMslColList])
-                                 ,"'"))
+                   sql_value_nullable(rowVals)
                  ,collapse=","),
                " where `taxnode_id`=",
                curMslStr[row,"taxnode_id"]
@@ -5736,6 +5737,62 @@ if(params$export_msl) {
     ";\n",
     file=sqlout)
   }
+
+  sql_tree_id = sort(levels(as.factor(newMSL$tree_id)),decreasing = TRUE)[1]
+
+  cat(paste0(
+    "\n-- set for taxonomy_node_compute_indexes\n",
+    "SET SESSION max_sp_recursion_depth = 255;\n\n",
+    "SET @right_idx := NULL;\n\n",
+    "SET @realm_id := NULL, @subrealm_id := NULL, @kingdom_id := NULL, @subkingdom_id := NULL,\n",
+    "    @phylum_id := NULL, @subphylum_id := NULL, @class_id := NULL, @subclass_id := NULL,\n",
+    "    @order_id := NULL, @suborder_id := NULL, @family_id := NULL, @subfamily_id := NULL,\n",
+    "    @genus_id := NULL, @subgenus_id := NULL, @species_id := NULL,\n",
+    "    @inher_molecule_id := NULL, @lineage := NULL;\n\n",
+    "SET @realm_desc_ct := 0, @subrealm_desc_ct := 0, @kingdom_desc_ct := 0, @subkingdom_desc_ct := 0,\n",
+    "    @phylum_desc_ct := 0, @subphylum_desc_ct := 0, @class_desc_ct := 0, @subclass_desc_ct := 0,\n",
+    "    @order_desc_ct := 0, @suborder_desc_ct := 0, @family_desc_ct := 0, @subfamily_desc_ct := 0,\n",
+    "    @genus_desc_ct := 0, @subgenus_desc_ct := 0, @species_desc_ct := 0;\n\n",
+    "-- rebuilt indexes\n",
+    "CALL `taxonomy_node_compute_indexes`(\n",
+    "    ", sql_tree_id, ",\n",
+    "    1,\n",
+    "    @right_idx,\n",
+    "    1,\n",
+    "    @realm_id,\n",
+    "    @subrealm_id,\n",
+    "    @kingdom_id,\n",
+    "    @subkingdom_id,\n",
+    "    @phylum_id,\n",
+    "    @subphylum_id,\n",
+    "    @class_id,\n",
+    "    @subclass_id,\n",
+    "    @order_id,\n",
+    "    @suborder_id,\n",
+    "    @family_id,\n",
+    "    @subfamily_id,\n",
+    "    @genus_id,\n",
+    "    @subgenus_id,\n",
+    "    @species_id,\n",
+    "    @realm_desc_ct,\n",
+    "    @subrealm_desc_ct,\n",
+    "    @kingdom_desc_ct,\n",
+    "    @subkingdom_desc_ct,\n",
+    "    @phylum_desc_ct,\n",
+    "    @subphylum_desc_ct,\n",
+    "    @class_desc_ct,\n",
+    "    @subclass_desc_ct,\n",
+    "    @order_desc_ct,\n",
+    "    @suborder_desc_ct,\n",
+    "    @family_desc_ct,\n",
+    "    @subfamily_desc_ct,\n",
+    "    @genus_desc_ct,\n",
+    "    @subgenus_desc_ct,\n",
+    "    @species_desc_ct,\n",
+    "    @inher_molecule_id,\n",
+    "    @lineage\n",
+    ");\n"
+  ), file=sqlout)
 
   # QC SQL
   cat("\n-- build deltas (~7min) \n
@@ -5768,7 +5825,7 @@ if(params$export_msl) {
   ORDER BY level_id,out_change;
   
   -- QC SPs
-  CALL `QC_run_modules`();
+  CALL `QC_run_modules`(NULL);
   
   "), file=sqlout)
   #
