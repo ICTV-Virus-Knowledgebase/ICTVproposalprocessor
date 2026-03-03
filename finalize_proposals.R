@@ -64,7 +64,8 @@ status2text = c(
   "Ud"="Unaccepted (diferred)",   
   "Uc"="Completed (previously Unaccepted)",
   "A"="Accepted",
-  "R"="Ratified"
+  "R"="Ratified",
+  "Ac"="Accepted (with minor corrections required)"
 )
 
 #
@@ -78,10 +79,9 @@ proposals$filename = gsub("^.*/","",proposals$path)
 proposals = proposals[grep("^~",proposals$filename, invert=T),]
 
 # extract code
-proposals$code   = gsub("^([0-9]{4}\\.[0-9]{3}[A-Z]X{0,1})\\.([NARU][cd]{0,1})\\..*$","\\1",proposals$filename)
-proposals$status = gsub("^([0-9]{4}\\.[0-9]{3}[A-Z]X{0,1})\\.([NARU][cd]{0,1})\\..*$","\\2",proposals$filename)
+proposals$code   = gsub("^([0-9]{4}\\.[0-9]{3}[A-Z]X{0,1})\\..*$","\\1",proposals$filename)
+proposals$status = gsub("^([0-9]{4}\\.[0-9]{3}[A-Z]X{0,1})\\.([A-Za-z]+)\\..*$","\\2",proposals$filename)
 proposals$sc     = gsub("^[0-9]{4}\\.[0-9]{3}([A-Z])[X]{0,1}$","\\1",proposals$code)
-
 #
 # QC
 #
@@ -161,7 +161,7 @@ system(paste0("rm -rf '",params$zips_dir,"'"), intern=F,ignore.stdout=F, ignore.
 for(dirPath in c(params$dest_dir, params$zips_dir, params$ztmp_dir, paste0(params$dest_dir,"/",sc2destFolder))) {
   if (!dir.exists(dirPath)){
     dir.create(dirPath)
-    if(params$verbose) {print(paste0("mkdir ", dirPath))}
+    if(params$verbose) {print(paste0("mkdir -p ", dirPath))}
   }
 }
 
