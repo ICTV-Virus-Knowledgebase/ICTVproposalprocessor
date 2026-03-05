@@ -75,6 +75,13 @@ proposals = data.frame(path=list.files(path=params$src_dir,pattern="[0-9]{4}\\.[
 cat(paste0("SCANNED ",params$src_dir, "/ FOUND ",dim(proposals)[1]," RAW proposal documents\n"))
 proposals$filename = gsub("^.*/","",proposals$path)
 
+# filenames that indicate supplemental material (case-insensitive)
+# supplemental naming tokens (case-insensitive)
+supplemental_pattern = "(?i)(^|[_\\. -])(suppl|viridic|table|matrix|sup)([_\\. -]|$)"
+is_supplemental = function(filename) {
+  grepl(supplemental_pattern, filename, perl = TRUE)
+}
+
 # filter editor temp files
 proposals = proposals[grep("^~",proposals$filename, invert=T),]
 
@@ -114,7 +121,7 @@ if( sum(badStatus) > 0) {
 missingSuppl  = proposals %>% filter(
   !grepl("\\.xls[x]*$", filename, ignore.case = TRUE),
   !grepl("\\.doc[x]*$", filename, ignore.case = TRUE),
-  !grepl("_suppl", filename, ignore.case = TRUE)
+  !is_supplemental(filename)
 )
 if( nrow(missingSuppl) > 0 ) {
   cat(paste0("MISSING_SUPPL: ", missingSuppl$filename,"\n"))
@@ -202,7 +209,7 @@ for(curCode in allCodes$code) {
   # create zip files
   # -j : filename only, no path stored
   # -df : [MacOS] store only data-fork of file, for export to other FS.
-  primaryFile = codeFiles[grep(pattern="Suppl", codeFiles$filename, invert = T),]
+  primaryFile = codeFiles[!is_supplemental(codeFiles$filename),]
   primaryFile = primaryFile[grep(pattern=".doc[x]*$",primaryFile$filename),]
   if( nrow(primaryFile) != 1) {
     cat(paste0("# ERROR: code=", curCode,", ",length(primaryFile)," primary file(s):\n"))
