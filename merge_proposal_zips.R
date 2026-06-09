@@ -211,7 +211,7 @@ option_list <- list(
               help="Filename for refDir/cache [default \"%default\"]"),
   
   # input filenames
-  make_option(c("--infileSupplPat"), default="_Suppl.", dest="infile_suppl_pat",
+  make_option(c("--infileSupplPat"), default="(^|[_. -])(suppl|viridic|table|matrix|sup)([_. -]|$)", dest="infile_suppl_pat",
               help="Input files (in proposalDir/) containing this pattern in filename are ignored [default \"%default\"]"),
   make_option(c("--mode"), default="validate", dest="processing_mode",
               help="Stringency Mode: 'validate' (any .doc|docx|xls|xlsx), 'draft' (YYYY.###A.v#.'), or 'final' (no '.v#') [default \"%default\"]"),
@@ -651,6 +651,22 @@ parseGenbankAccessions <- function(df, accessionCol, extraCols) {
   
   # Return a list containing valid and invalid data frames
   return(list(validAccessions = validDf, invalidAccessions = invalidDf))
+}
+
+find_vmr_accession_matches <- function(accession, exclude_taxnode_ids=c()) {
+  if(!exists("vmrAccessions", envir=.GlobalEnv) || is.na(accession) || accession == "") {
+    return(character())
+  }
+  
+  matches = !is.na(.GlobalEnv$vmrAccessions$accession) &
+    (.GlobalEnv$vmrAccessions$accession == accession)
+  
+  exclude_taxnode_ids = exclude_taxnode_ids[!is.na(exclude_taxnode_ids)]
+  if(length(exclude_taxnode_ids) > 0) {
+    matches = matches & !(.GlobalEnv$vmrAccessions$taxnode_id %in% exclude_taxnode_ids)
+  }
+  
+  unique(as.character(.GlobalEnv$vmrAccessions$species_name[matches]))
 }
 
 load_reference=function() {
@@ -3659,7 +3675,18 @@ apply_changes = function(changesDf) {
       # check if same accession number already exists
       #
       isDupAccession = (.GlobalEnv$newMSL$genbank_accession_csv == curChangeDf$exemplarAccession)
-      if(sum(isDupAccession, na.rm=TRUE)>0) {
+      vmrDupAccessionTaxa = character()
+      if(sum(isDupAccession, na.rm=TRUE)==0) {
+        vmrExcludeTaxnodeIDs = c()
+        if( curChangeDf$.action == 'split' &&
+            .GlobalEnv$curMSL$.split[srcCurTaxonIdx] &&
+            !is.na(.GlobalEnv$curMSL$genbank_accession_csv[srcCurTaxonIdx]) &&
+            .GlobalEnv$curMSL$genbank_accession_csv[srcCurTaxonIdx] == curChangeDf$exemplarAccession) {
+          vmrExcludeTaxnodeIDs = .GlobalEnv$curMSL$taxnode_id[srcCurTaxonIdx]
+        }
+        vmrDupAccessionTaxa = find_vmr_accession_matches(curChangeDf$exemplarAccession, vmrExcludeTaxnodeIDs)
+      }
+      if(sum(isDupAccession, na.rm=TRUE)>0 || length(vmrDupAccessionTaxa)>0) {
         
         # unless this is a SPLIT doing a rename, but keeping the isolate/accession
         if( curChangeDf$.action == 'split' &&
@@ -3707,7 +3734,12 @@ apply_changes = function(changesDf) {
             ## QQQ what proposal created this? (from this round? historically? Need a function: last_modified())
             log_change_error(curChangeDf, errLevel, "CREATE.DUP_ACC", 
                              errorStr=paste0("Change=",toupper(curChangeDf$.action),", a species with this accession number already exists"), 
-                             notes=paste0("accession=", curChangeDf$exemplarAccession, ", existingSpecies=",.GlobalEnv$newMSL[isDupAccession,]$lineage)
+                             notes=paste0("accession=", curChangeDf$exemplarAccession, ", existingSpecies=",
+                                          if(sum(isDupAccession, na.rm=TRUE)>0) {
+                                            paste(.GlobalEnv$newMSL[isDupAccession,]$lineage, collapse="; ")
+                                          } else {
+                                            paste(vmrDupAccessionTaxa, collapse="; ")
+                                          })
             )
           }     
           # hard error in FINAL mode
@@ -4402,10 +4434,19 @@ apply_changes = function(changesDf) {
       #  !srcNewTarget - prevents checking against ourself
       #
       isDupAccession = (.GlobalEnv$newMSL$genbank_accession_csv == curChangeDf$exemplarAccession & !srcNewTarget)
-      if(sum(isDupAccession, na.rm=TRUE)>0) {
+      vmrDupAccessionTaxa = character()
+      if(sum(isDupAccession, na.rm=TRUE)==0) {
+        vmrDupAccessionTaxa = find_vmr_accession_matches(curChangeDf$exemplarAccession, srcPrevTaxnodeID)
+      }
+      if(sum(isDupAccession, na.rm=TRUE)>0 || length(vmrDupAccessionTaxa)>0) {
         log_change_error(curChangeDf, "ERROR", "MOVE.DUP_ACC", 
                          errorStr=paste0("Change=",toupper(curChangeDf$.action),", a species with this accession number already exists"), 
-                         notes=paste0("accession=", curChangeDf$exemplarAccession, ", existingSpecies=",.GlobalEnv$newMSL[isDupAccession,]$lineage)
+                         notes=paste0("accession=", curChangeDf$exemplarAccession, ", existingSpecies=",
+                                      if(sum(isDupAccession, na.rm=TRUE)>0) {
+                                        paste(.GlobalEnv$newMSL[isDupAccession,]$lineage, collapse="; ")
+                                      } else {
+                                        paste(vmrDupAccessionTaxa, collapse="; ")
+                                      })
         )
         ## QQQ what proposal created this? (from this round? historically? Need a function: last_modified())
         next;
