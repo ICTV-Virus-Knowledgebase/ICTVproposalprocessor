@@ -930,7 +930,7 @@ load_reference=function() {
     badAccessions = accessionList[["invalidAccessions"]]
     if( nrow(badAccessions) ) {
       cat(paste0("ERROR: VMR accession badly formated: species:",badAccessions$species_name," iso_id:",badAccessions$isolate_id," value: ",badAccessions$genbank_accessions))
-      stop(paste0("ERROR: ", vmrFilename, " contains ",nrow(baddAccessions), " badly formatted accessions" ))
+      stop(paste0("ERROR: ", vmrFilename, " contains ",nrow(badAccessions), " badly formatted accessions" ))
     }
   } else {
     print(paste0("# SKIP VMR LOAD: ", vmrFilename))
