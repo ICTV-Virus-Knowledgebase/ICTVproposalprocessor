@@ -44,7 +44,7 @@ MSL_DIR=current_msl
 TEST_DIR=testData
 echo TEST_DIR=$TEST_DIR
 RESULTS_DIR=testResults
-if [ ! -z "$CONTAINER" ]; then RESULTS_DIR=testResultsDocker; fi
+if [ ! -z "$CONTAINER" ]; then RESULTS_DIR=testResults; fi
 echo RESULTS_DIR=$RESULTS_DIR
 
 REPORT=QC.regression_test.summary.txt
