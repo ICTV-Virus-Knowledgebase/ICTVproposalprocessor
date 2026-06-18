@@ -1,9 +1,9 @@
-# Rscript merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposals2023merge-rename --outDir=testResults/msl38/proposals2023merge-rename --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v3.20250222.34b9f9e
-Previous taxa: 132852 34  from  current_msl/msl38/taxonomy_node_export.utf8.txt 
+# sudo docker run -it -v /var/www/drupal/apps/proposal_validator/taxon_proposal_qc_and_load/testData:/testData:ro -v /var/www/drupal/apps/proposal_validator/taxon_proposal_qc_and_load/testResultsDocker:/testResults:rw ictv_proposal_processor /merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposals2023merge-rename --outDir=testResults/msl38/proposals2023merge-rename --msl --qcTsvRegression=QC.regression.new.tsv
+[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25hVERSION: msl41v1_20260320.20260615.7c21931
+[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25hPrevious taxa: 132852 34  from  current_msl/msl38/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 [1] "# SKIP VMR LOAD: current_msl/msl38/species_isolates.utf8.txt"
-Wrote: OUTDIR/QC.summary.tsv (2 rows)
+[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25hWrote: OUTDIR/QC.summary.tsv (2 rows)
 # LOAD_PROPOSAL_DOCX( 2023.019P )
 # LOADED:  2023.019P  DOCX with  2  errors/warnings
 # LOAD_PROPOSAL( 2023.019P , NA )
@@ -14,16 +14,17 @@ Wrote: OUTDIR/QC.summary.tsv (2 rows)
 # QCed:      2023.019P  with  2  errors/warnings
 changeList:  2023.019P 
 Wrote: OUTDIR/QC.summary.tsv (2 rows)
-# MERGE PROC: 2023.019P with 58 changes  (1 out of 1)
-# DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 58 
-# APPLIED:  58 changes from 2023.019P.Uc.v4.Solemoviridae_rename_sp  with SUCCESS:58 
+[?25h[?25h[?25h[?25h[?25h[?25h# MERGE PROC: 2023.019P with 58 changes  (1 out of 1)
+[?25h[?25h[?25h# DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 58 
+[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h[?25h# APPLIED:  58 changes from 2023.019P.Uc.v4.Solemoviridae_rename_sp  with SUCCESS:58 
 # TOTAL  :  58 changes  from 1 proposals  with INFO:2 SUCCESS:58 
-Wrote: OUTDIR/QC.summary.tsv (60 rows)
-Writing  testResults/msl38/proposals2023merge-rename/msl.tsv 
+[?25hWrote: OUTDIR/QC.summary.tsv (60 rows)
+[?25hWriting  testResults/msl38/proposals2023merge-rename/msl.tsv 
 WROTE   testResults/msl38/proposals2023merge-rename/msl.tsv (14775 rows)
 Writing  testResults/msl38/proposals2023merge-rename/QC.docx_summary.tsv 
 WROTE   testResults/msl38/proposals2023merge-rename/QC.docx_summary.tsv (1)
 Writing  testResults/msl38/proposals2023merge-rename/msl_load.sql 
 Writing out_* updates for prevMSL
 WROTE    testResults/msl38/proposals2023merge-rename/msl_load.sql 
-# COMPLETED.
+[?25h[?25h[?25h# COMPLETED.
+[?25h[?25h
