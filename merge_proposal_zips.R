@@ -167,7 +167,7 @@ option_list <- list(
 	      #default="testResults", 
 	      dest="out_dir",
               help = "Directory to write outputs to [default \"%default\"]"),
-  make_option(c("-r","--refDir"), default="current_msl/msl40v2", dest="ref_dir", 
+  make_option(c("-r","--refDir"), default="current_msl/msl41v1", dest="ref_dir", 
               help="Directory from which read current MSL and CV data from [default \"%default\"]"),
   
   # out filenames
@@ -1990,7 +1990,7 @@ load_proposal_docx = function(code) {
       log_error(code,linenum=0,action="OPEN_DOCX",actionOrder=actionOrder,
                 rank="",taxon="",
                 levelStr = "INFO",
-                errorCode = "DOCX_UNKNONW_TEMPLATE",
+                errorCode = "DOCX_UNKNOWN_TEMPLATE",
                 errorStr = paste0("Unrecognized version of DOCX proposal template. Not (yet) supported."),
                 notes=paste0("DOCX_FILENAME=",proposalsDf[code,"docx"])
       )
