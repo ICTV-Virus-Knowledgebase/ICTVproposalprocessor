@@ -669,6 +669,13 @@ find_vmr_accession_matches <- function(accession, exclude_taxnode_ids=c()) {
   unique(as.character(.GlobalEnv$vmrAccessions$species_name[matches]))
 }
 
+is_pending_accession <- function(accession) {
+  if(length(accession) == 0) { return(FALSE) }
+  accession = as.character(accession[1])
+  if(is.na(accession) || accession == "") { return(FALSE) }
+  grepl("\\bpending\\b", accession, ignore.case=TRUE)
+}
+
 load_reference=function() {
   #
   # this uses the DATABASE schema for the taxonomy_node table (ie, naming convention)
@@ -3672,6 +3679,18 @@ apply_changes = function(changesDf) {
       }
       
       #
+      # check if accession number is pending
+      #
+      pendingAccession = is_pending_accession(curChangeDf$exemplarAccession)
+      if(pendingAccession) {
+        log_change_error(curChangeDf, "ERROR", "CREATE.PENDING_ACC", 
+                         errorStr=paste0("Change=",toupper(curChangeDf$.action),", accession number is pending"), 
+                         notes=paste0("accession=", curChangeDf$exemplarAccession)
+        )
+        next;
+      }
+      
+      #
       # check if same accession number already exists
       #
       isDupAccession = (.GlobalEnv$newMSL$genbank_accession_csv == curChangeDf$exemplarAccession)
@@ -3686,7 +3705,7 @@ apply_changes = function(changesDf) {
         }
         vmrDupAccessionTaxa = find_vmr_accession_matches(curChangeDf$exemplarAccession, vmrExcludeTaxnodeIDs)
       }
-      if(sum(isDupAccession, na.rm=TRUE)>0 || length(vmrDupAccessionTaxa)>0) {
+      if(!pendingAccession && (sum(isDupAccession, na.rm=TRUE)>0 || length(vmrDupAccessionTaxa)>0)) {
         
         # unless this is a SPLIT doing a rename, but keeping the isolate/accession
         if( curChangeDf$.action == 'split' &&
@@ -3719,29 +3738,20 @@ apply_changes = function(changesDf) {
         else {
           # not in a split
           
-          # Pending/dup is hard error in FINAL mode, otherwise WARNING
+          # Duplicate accession is a hard error in FINAL mode, otherwise WARNING
           errLevel = "ERROR" #ifelse(params$processing_mode=="final","ERROR","WARNING")
           
-          # this is a warning/error depending on mode
-          if(  curChangeDf$exemplarAccession %in% c("pending","Pending") ) { 
-            log_change_error(curChangeDf, errLevel, "CREATE.PENDING_ACC", 
-                             errorStr=paste0("Change=",toupper(curChangeDf$.action),", accession number is 'pending'"), 
-                             notes=paste0("accession=", curChangeDf$exemplarAccession)
-            )
-          } 
-          else {
-            # hard error for each other species with this accession
-            ## QQQ what proposal created this? (from this round? historically? Need a function: last_modified())
-            log_change_error(curChangeDf, errLevel, "CREATE.DUP_ACC", 
-                             errorStr=paste0("Change=",toupper(curChangeDf$.action),", a species with this accession number already exists"), 
-                             notes=paste0("accession=", curChangeDf$exemplarAccession, ", existingSpecies=",
-                                          if(sum(isDupAccession, na.rm=TRUE)>0) {
-                                            paste(.GlobalEnv$newMSL[isDupAccession,]$lineage, collapse="; ")
-                                          } else {
-                                            paste(vmrDupAccessionTaxa, collapse="; ")
-                                          })
-            )
-          }     
+          # hard error for each other species with this accession
+          ## QQQ what proposal created this? (from this round? historically? Need a function: last_modified())
+          log_change_error(curChangeDf, errLevel, "CREATE.DUP_ACC", 
+                           errorStr=paste0("Change=",toupper(curChangeDf$.action),", a species with this accession number already exists"), 
+                           notes=paste0("accession=", curChangeDf$exemplarAccession, ", existingSpecies=",
+                                        if(sum(isDupAccession, na.rm=TRUE)>0) {
+                                          paste(.GlobalEnv$newMSL[isDupAccession,]$lineage, collapse="; ")
+                                        } else {
+                                          paste(vmrDupAccessionTaxa, collapse="; ")
+                                        })
+          )
           # hard error in FINAL mode
           if(params$processing_mode=="final") { next }
         } # acc re-use not in split
