@@ -78,6 +78,7 @@ RUN set -e \
 #
 # do this as a git clone, instead!?!?
 COPY merge_proposal_zips.R .
+COPY abolished_accessions.tsv .
 COPY version_git.txt .
 
 #

@@ -205,6 +205,8 @@ option_list <- list(
               help="Template proposal xlsx, used to load CVs [default \"%default\"]"),
   make_option(c("--vmr"), default="species_isolates.utf8.txt", dest="vmr_fname",
               help="VMR to check for accession re-use [default \"%default\"]"),
+  make_option(c("--abolishedAccessions"), default="abolished_accessions.tsv", dest="abolished_accessions_fname",
+              help="TSV file of previously used accessions that are no longer current VMR accessions [default \"%default\"]"),
   make_option(c("--templateURL"), default="https://ictv.global/taxonomy/templates", dest="template_url",
               help="URL for out-of-date template message [default \"%default\"]"),
   make_option(c("--cacheFile"), default=".RData", dest="cache_fname",
@@ -653,8 +655,20 @@ parseGenbankAccessions <- function(df, accessionCol, extraCols) {
   return(list(validAccessions = validDf, invalidAccessions = invalidDf))
 }
 
+normalize_accession_value <- function(accession) {
+  if(length(accession) == 0) { return(NA_character_) }
+  accession = str_trim(as.character(accession[1]))
+  if(is.na(accession) || accession == "") { return(NA_character_) }
+  accessionFull = str_extract(accession, "[^:]+$")
+  str_trim(str_remove(accessionFull, " [(][0-9]+[.][0-9]+[)]$"))
+}
+
 find_vmr_accession_matches <- function(accession, exclude_taxnode_ids=c()) {
-  if(!exists("vmrAccessions", envir=.GlobalEnv) || is.na(accession) || accession == "") {
+  if(!exists("vmrAccessions", envir=.GlobalEnv)) {
+    return(character())
+  }
+  accession = normalize_accession_value(accession)
+  if(is.na(accession) || accession == "") {
     return(character())
   }
   
@@ -667,6 +681,70 @@ find_vmr_accession_matches <- function(accession, exclude_taxnode_ids=c()) {
   }
   
   unique(as.character(.GlobalEnv$vmrAccessions$species_name[matches]))
+}
+
+load_abolished_accessions <- function() {
+  .GlobalEnv$abolishedAccessions = data.frame(
+    accession=character(),
+    species=character(),
+    virus_name=character(),
+    stringsAsFactors=FALSE
+  )
+  abolishedFilename = params$abolished_accessions_fname
+  if(!file.exists(abolishedFilename) && !grepl("^/", abolishedFilename)) {
+    refAbolishedFilename = file.path(params$ref_dir, abolishedFilename)
+    if(file.exists(refAbolishedFilename)) {
+      abolishedFilename = refAbolishedFilename
+    }
+  }
+  if(!file.exists(abolishedFilename) && !grepl("^/", abolishedFilename)) {
+    scriptArg = grep("^--file=", commandArgs(FALSE), value=TRUE)[1]
+    if(!is.na(scriptArg)) {
+      scriptDir = dirname(normalizePath(sub("^--file=", "", scriptArg), mustWork=FALSE))
+      scriptAbolishedFilename = file.path(scriptDir, abolishedFilename)
+      if(file.exists(scriptAbolishedFilename)) {
+        abolishedFilename = scriptAbolishedFilename
+      }
+    }
+  }
+  if(!file.exists(abolishedFilename)) {
+    if(params$verbose) { cat(paste0("# SKIP ABOLISHED ACCESSIONS LOAD: ", abolishedFilename, "\n")) }
+    return(invisible(.GlobalEnv$abolishedAccessions))
+  }
+
+  abolishedDf = read.delim(file=abolishedFilename, header=TRUE, stringsAsFactors=FALSE, na.strings=c("", "NA", "NULL"))
+  if(!("accession" %in% names(abolishedDf))) {
+    stop(paste0("ERROR: ", abolishedFilename, " is missing required column: accession"))
+  }
+  if(!("species" %in% names(abolishedDf))) { abolishedDf$species = NA_character_ }
+  if(!("virus_name" %in% names(abolishedDf))) { abolishedDf$virus_name = NA_character_ }
+
+  abolishedDf$accession = vapply(abolishedDf$accession, normalize_accession_value, character(1))
+  abolishedDf = abolishedDf[!is.na(abolishedDf$accession) & abolishedDf$accession != "", c("accession", "species", "virus_name")]
+  .GlobalEnv$abolishedAccessions = unique(abolishedDf)
+  if(params$verbose) { cat("AbolishedAccessions: ", dim(.GlobalEnv$abolishedAccessions), " from ", abolishedFilename, "\n") }
+  invisible(.GlobalEnv$abolishedAccessions)
+}
+
+find_abolished_accession_matches <- function(accession) {
+  emptyDf = data.frame(accession=character(), species=character(), virus_name=character(), stringsAsFactors=FALSE)
+  if(!exists("abolishedAccessions", envir=.GlobalEnv) || length(accession) == 0) {
+    return(emptyDf)
+  }
+  accession = normalize_accession_value(accession)
+  if(is.na(accession) || accession == "") {
+    return(emptyDf)
+  }
+
+  matches = !is.na(.GlobalEnv$abolishedAccessions$accession) &
+    (.GlobalEnv$abolishedAccessions$accession == accession)
+  unique(.GlobalEnv$abolishedAccessions[matches, c("accession", "species", "virus_name")])
+}
+
+format_abolished_accession_matches <- function(matches) {
+  if(nrow(matches) == 0) { return("") }
+  labels = ifelse(!is.na(matches$species) & matches$species != "", as.character(matches$species), as.character(matches$virus_name))
+  paste(unique(labels[!is.na(labels) & labels != ""]), collapse="; ")
 }
 
 is_pending_accession <- function(accession) {
@@ -957,6 +1035,7 @@ if(params$use_cache && !params$update_cache && file.exists(cacheFilename)) {
 if( params$update_cache ) {
   save_reference_cache()
 }
+load_abolished_accessions()
 
 #### SCAN FOR PROPOSALS ####
 
@@ -3691,6 +3770,19 @@ apply_changes = function(changesDf) {
       }
       
       #
+      # check if accession number was used in a previous VMR but is no longer current
+      #
+      abolishedAccessionMatches = find_abolished_accession_matches(curChangeDf$exemplarAccession)
+      if(!pendingAccession && nrow(abolishedAccessionMatches)>0) {
+        log_change_error(curChangeDf, "ERROR", "CREATE.ABOLISHED_ACC",
+                         errorStr=paste0("Change=",toupper(curChangeDf$.action),", accession number was used previously and is no longer a current VMR accession"),
+                         notes=paste0("accession=", curChangeDf$exemplarAccession, ", previousSpecies=",
+                                      format_abolished_accession_matches(abolishedAccessionMatches))
+        )
+        next;
+      }
+
+      #
       # check if same accession number already exists
       #
       isDupAccession = (.GlobalEnv$newMSL$genbank_accession_csv == curChangeDf$exemplarAccession)
@@ -4438,6 +4530,19 @@ apply_changes = function(changesDf) {
         # proceed anyways - non-fatal error.
       }
       
+      #
+      # check if accession number was used in a previous VMR but is no longer current
+      #
+      abolishedAccessionMatches = find_abolished_accession_matches(curChangeDf$exemplarAccession)
+      if(nrow(abolishedAccessionMatches)>0) {
+        log_change_error(curChangeDf, "ERROR", "MOVE.ABOLISHED_ACC",
+                         errorStr=paste0("Change=",toupper(curChangeDf$.action),", accession number was used previously and is no longer a current VMR accession"),
+                         notes=paste0("accession=", curChangeDf$exemplarAccession, ", previousSpecies=",
+                                      format_abolished_accession_matches(abolishedAccessionMatches))
+        )
+        next;
+      }
+
       #
       # check if same accession number already exists
       #
