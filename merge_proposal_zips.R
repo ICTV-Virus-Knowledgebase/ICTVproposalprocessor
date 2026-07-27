@@ -816,7 +816,7 @@ load_reference=function() {
     fread(file=dbTaxonomyNodeFilename,
                      header=TRUE,#header=FALSE,col.names=names(taxonomy_node_names),
                      colClasses=as.character(taxonomy_node_names),
-                     stringsAsFactors=FALSE,na.strings=c("","NULL"),
+                     stringsAsFactors=FALSE,na.strings=c("","NULL","\\N"),
                      key=c("taxnode_id"), index=c("name","msl_release_num","parent_id"),
                      nThread = 1
     )
