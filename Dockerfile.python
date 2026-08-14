@@ -1,0 +1,14 @@
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+WORKDIR /app
+
+COPY requirements.python.txt ./
+RUN pip install --no-cache-dir -r requirements.python.txt
+
+COPY merge_proposal_zips.py abolished_accessions.tsv version_git.txt ./
+COPY version_git.sh ./
+COPY current_msl/ ./current_msl/
+
+RUN chmod +x /app/merge_proposal_zips.py /app/version_git.sh
+ENTRYPOINT ["/app/merge_proposal_zips.py"]

@@ -1,0 +1,8 @@
+name: ictv-proposal-validator-python
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pandas>=2.2,<3
+  - openpyxl>=3.1,<4
+  - xlrd>=2.0,<3
