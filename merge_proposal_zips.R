@@ -1470,6 +1470,10 @@ xlsx_v2_row2=c(
   "COMMENTS"
 )
 
+# The 2023.x, 2024.1, and 2026.1 templates share this worksheet layout.
+# Later revisions must be added explicitly after their headers are verified.
+xlsx_2023_style_exact_versions = c("2024.1", "2026.1")
+
 xlsx_2023_row3 = c("CURRENT TAXONOMY" , NA_character_, NA_character_ , NA_character_, NA_character_,
                    NA_character_, NA_character_, NA_character_, NA_character_, NA_character_,
                    NA_character_, NA_character_, NA_character_, NA_character_, NA_character_,
@@ -2183,10 +2187,11 @@ qc_proposal = function(code, proposalDf) {
   #### guess template version ####
 
   
-  # check row 3, cell 1 for 2023 and later version numbers
+  # Check row 2, cell A for supported 2023-style template versions.
   if(!is.null(proposalDf[2,1]) && (
     (substring(proposalDf[2,1],1,13) == "version 2023.")
     || (substring(proposalDf[2,1],1,13) == "version 2024.")
+    || (substring(proposalDf[2,1],1,13) == "version 2026.")
     )) {
     
     # "YYYY.##."
@@ -2194,11 +2199,11 @@ qc_proposal = function(code, proposalDf) {
     # "YYYY."
     templateVersion  = substring(templateVersionX,1,5)
 
-    if( templateVersion == "2024." ) {
-      # 2024.1 is the same as 2023.# series
-      if( templateVersionX == "2024.1") { templateVersion = "2023." } # QQQQ debug fix after test
+    if( templateVersion %in% c("2024.", "2026.") ) {
+      # These verified releases use the same layout as the 2023.x series.
+      if( templateVersionX %in% xlsx_2023_style_exact_versions) { templateVersion = "2023." }
       else {
-        # new, unspported version
+        # New, unsupported version of a known template family.
         proposalsDf[code,"templateVersion"]="error"   
         log_error(code,linenum=2,action="OPEN_XLSX",actionOrder=actionOrder, 
                   rank="",taxon="",
