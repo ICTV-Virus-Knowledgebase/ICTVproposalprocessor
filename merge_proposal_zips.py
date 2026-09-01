@@ -1877,25 +1877,42 @@ def update_lineage(parent_id: Any, parent_lineage: Any,
                    parent_otherLineage: Any = pd.NA,
                    parent_otherLineageProposal: Any = pd.NA,
                    parent_otherLineageAction: Any = pd.NA) -> int:
-    """Recursively update descendants; retains the R helper's public name."""
+    """Recursively update descendant lineages and R-style provenance."""
     parent_rows = newMSL.index[newMSL["taxnode_id"].eq(parent_id)]
     if len(parent_rows):
         parent_row = parent_rows[0]
+        if ".otherLineage" in newMSL:
+            newMSL.at[parent_row, ".otherLineage"] = parent_otherLineage
         for column, value in [
-            (".otherLineage", parent_otherLineage),
             (".otherLineageProposal", parent_otherLineageProposal),
             (".otherLineageAction", parent_otherLineageAction),
         ]:
-            if column in newMSL and not is_na(value):
-                newMSL.at[parent_row, column] = value
+            if column not in newMSL:
+                continue
+            previous = newMSL.at[parent_row, column]
+            newMSL.at[parent_row, column] = (
+                value if is_na(previous) else f"{previous};{value}"
+            )
+
     count = 0
     children = newMSL.index[newMSL["parent_id"].eq(parent_id)]
     for child in children:
         child_lineage = f"{parent_lineage};{newMSL.at[child, 'name']}"
         newMSL.at[child, "lineage"] = child_lineage
+        if ".otherLineage" in newMSL and not is_na(parent_otherLineage):
+            newMSL.at[child, ".otherLineage"] = (
+                f"{parent_otherLineage};{newMSL.at[child, 'name']}"
+            )
+        child_other_lineage = (
+            newMSL.at[child, ".otherLineage"]
+            if ".otherLineage" in newMSL else pd.NA
+        )
         count += 1 + update_lineage(
-            newMSL.at[child, "taxnode_id"], child_lineage,
-            parent_otherLineage, parent_otherLineageProposal, parent_otherLineageAction,
+            newMSL.at[child, "taxnode_id"],
+            child_lineage,
+            child_other_lineage,
+            parent_otherLineageProposal,
+            parent_otherLineageAction,
         )
     return count
 
@@ -2107,6 +2124,126 @@ def _validate_species_fields(change: pd.Series, require_coverage: bool = True) -
     return okay
 
 
+def _lineage_metadata(index: Any, column: str) -> Any:
+    """Read optional R-style lineage provenance from the working MSL."""
+    return newMSL.at[index, column] if column in newMSL else pd.NA
+
+
+def _original_parent_lineage(parent_index: Any) -> Any:
+    """Find a working parent's pre-proposal lineage in the reference MSL."""
+    previous_id = _lineage_metadata(parent_index, ".prev_taxnode_id")
+    if is_na(previous_id) or "taxnode_id" not in curMSL or "lineage" not in curMSL:
+        return pd.NA
+    matches = curMSL.index[curMSL["taxnode_id"].eq(previous_id)]
+    return curMSL.at[matches[0], "lineage"] if len(matches) == 1 else pd.NA
+
+
+def _log_create_parent_lineage(change: pd.Series, parent_index: Any) -> None:
+    """Mirror the R create/split diagnostic for an unexpected parent lineage."""
+    expected = change.get(".destParentLineage")
+    observed = newMSL.at[parent_index, "lineage"]
+    if is_na(expected) or is_na(observed) or str(expected) == str(observed):
+        return
+
+    other_lineage = _lineage_metadata(parent_index, ".otherLineage")
+    original_lineage = _original_parent_lineage(parent_index)
+    previous_proposals = _lineage_metadata(parent_index, "prev_proposals")
+    parent_created_during_run = (
+        is_na(_lineage_metadata(parent_index, ".prev_taxnode_id"))
+        and not is_na(previous_proposals)
+    )
+    # R records .otherLineage while applying earlier proposals. Until Python's
+    # complete recursive provenance model is ported, the reference MSL gives
+    # the same classification: if it matched the proposal before this run, the
+    # mismatch was introduced by an earlier applied proposal and is INFO.
+    parent_changed_during_run = (
+        not is_na(original_lineage) and str(original_lineage) == str(expected)
+    )
+    if (not is_na(other_lineage)
+            or parent_changed_during_run
+            or parent_created_during_run):
+        lineage_proposal = _lineage_metadata(parent_index, ".otherLineageProposal")
+        if is_na(lineage_proposal):
+            lineage_proposal = previous_proposals
+        lineage_action = _lineage_metadata(parent_index, ".otherLineageAction")
+        if is_na(lineage_action):
+            lineage_action = "earlier proposal change"
+        log_change_error(
+            change, "INFO", "CREATE.PARENT_RENAMED",
+            f"Change={text(change.get('.action'), '').upper()}, proposed parent taxon "
+            "exists, but not with expected name/lineage, using observed lineage",
+            f"otherProposal(s)={text(lineage_proposal)} did a "
+            f"{text(lineage_action)}, "
+            f"PROPOSED//OBSERVED={diff_lineages(expected, observed)}",
+        )
+        return
+
+    log_change_error(
+        change, "WARNING", "CREATE.PARENT_LINEAGE",
+        f"Change={text(change.get('.action'), '').upper()}, proposed parent taxon "
+        "exists, but not with expected lineage, using observed lineage",
+        f"PROPOSED//OBSERVED={diff_lineages(expected, observed)}, "
+        f"otherProposals={text(previous_proposals)}",
+    )
+
+
+def _log_move_parent_lineage(change: pd.Series, parent_index: Any) -> None:
+    """Mirror the R move-family diagnostic for an unexpected parent lineage."""
+    expected = change.get(".destParentLineage")
+    observed = newMSL.at[parent_index, "lineage"]
+    if is_na(expected) or is_na(observed) or str(expected) == str(observed):
+        return
+
+    other_lineage = _lineage_metadata(parent_index, ".otherLineage")
+    if not is_na(other_lineage):
+        log_change_error(
+            change, "INFO", "MOVE.PROPOSED_PARENT_LINEAGE_CHANGED",
+            "PROPOSED parent lineage already modified",
+            f"proposal(s)="
+            f"{text(_lineage_metadata(parent_index, '.otherLineageProposal'))} did a "
+            f"{text(_lineage_metadata(parent_index, '.otherLineageAction'))}; "
+            f"OBSERVED//PROPOSED={diff_lineages(observed, expected)}",
+        )
+        return
+
+    parent_name = change.get(".destParentName")
+    previous = _matching_taxa(curMSL, parent_name)
+    previous_lineage = (
+        curMSL.at[previous[0], "lineage"]
+        if len(previous) == 1 and "lineage" in curMSL else pd.NA
+    )
+    if not is_na(previous_lineage) and str(previous_lineage) != str(expected):
+        log_change_error(
+            change, "WARNING", "MOVE.PARENT_LINEAGE",
+            "PROPOSED parent taxon exists, but not with expected lineage",
+            f",PROPOSED//CUR={diff_lineages(expected, observed)}, "
+            f"PROPOSED={text(expected)}, CUR={text(observed)}, "
+            f"otherProposals={text(_lineage_metadata(parent_index, 'prev_proposals'))}",
+        )
+    else:
+        log_change_error(
+            change, "INFO", "MOVE.PARENT_LINEAGE_UPDATED2",
+            "PROPOSED parent taxon exists, but with updated lineage",
+            f",PROPOSED//CUR={diff_lineages(expected, observed)}, "
+            f"PROPOSED={text(expected)}, CUR={text(observed)}",
+        )
+
+
+def _merge_into_notes(source_index: Any, destination_index: Any) -> str:
+    """Build the R MERGE_INTO.OK diagnostic before the source row is removed."""
+    source_rank = text(newMSL.at[source_index, "rank"], "")
+    source_name = text(newMSL.at[source_index, "name"], "")
+    source_lineage = newMSL.at[source_index, "lineage"]
+    destination_rank = text(newMSL.at[destination_index, "rank"], "")
+    destination_name = text(newMSL.at[destination_index, "name"], "")
+    destination_lineage = newMSL.at[destination_index, "lineage"]
+    return (
+        f"MERGE {source_rank} named '{source_name}' into {destination_rank} named "
+        f"'{destination_name}' CUR//PROPOSED="
+        f"{diff_lineages(source_lineage, destination_lineage)}"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Atomic taxonomy action implementations
 # ---------------------------------------------------------------------------
@@ -2133,6 +2270,7 @@ def _create_taxon(change: pd.Series, action: str,
     parent_index = _resolve_single(newMSL, parent_name, change, "PARENT")
     if parent_index is None:
         return False
+    _log_create_parent_lineage(change, parent_index)
     parent_taxnode_id = newMSL.at[parent_index, "taxnode_id"]
     row = {column: pd.NA for column in newMSL.columns}
     row["taxnode_id"] = int(pd.to_numeric(newMSL["taxnode_id"], errors="coerce").max()) + 1
@@ -2146,6 +2284,15 @@ def _create_taxon(change: pd.Series, action: str,
     row["ictv_id"] = row["taxnode_id"]
     row["is_hidden"] = 0
     row[".prev_taxnode_id"] = pd.NA
+    parent_other_lineage = _lineage_metadata(parent_index, ".otherLineage")
+    if not is_na(parent_other_lineage):
+        row[".otherLineage"] = f"{parent_other_lineage};{destination}"
+        row[".otherLineageProposal"] = _lineage_metadata(
+            parent_index, ".otherLineageProposal"
+        )
+        row[".otherLineageAction"] = _lineage_metadata(
+            parent_index, ".otherLineageAction"
+        )
     index = len(newMSL)
     with warnings.catch_warnings():
         warnings.filterwarnings(
@@ -2194,7 +2341,10 @@ def _move_or_rename_taxon(index: Any, change: pd.Series, action: str) -> bool:
     exclude = [newMSL.at[index, ".prev_taxnode_id"]] if ".prev_taxnode_id" in newMSL else []
     if not _check_accessions(change, exclude):
         return False
+    if action in {"move", "promote", "demote", "split"}:
+        _log_move_parent_lineage(change, parent_index)
     previous_name = newMSL.at[index, "name"]
+    previous_lineage = newMSL.at[index, "lineage"]
     out_target = destination if action == "rename" else change.get(".destLineage")
     _set_out_fields(index, change, action, out_target)
     newMSL.at[index, "name"] = destination
@@ -2207,7 +2357,32 @@ def _move_or_rename_taxon(index: Any, change: pd.Series, action: str) -> bool:
     previous_taxnode_id = newMSL.at[index, ".prev_taxnode_id"] if ".prev_taxnode_id" in newMSL else pd.NA
     if is_na(previous_taxnode_id):
         _append_in_fields(index, change)
-    _refresh_descendant_lineages(newMSL.at[index, "taxnode_id"])
+
+    lineage_proposal = (
+        f"{text(_proposal_zip(change))}:{text(change.get('.linenum'), '')}"
+    )
+    if action == "rename":
+        alternate_lineage = previous_lineage
+        lineage_action = (
+            f"{action} {text(change.get('.srcRank'))} {text(previous_name)} "
+            f"to {text(destination)}"
+        )
+    else:
+        alternate_lineage = (
+            f"{text(_lineage_metadata(parent_index, '.otherLineage'))};"
+            f"{text(destination)}"
+        )
+        lineage_action = (
+            f"{action} {text(change.get('.srcRank'))} "
+            f"{diff_lineages(change.get('.srcLineage'), newMSL.at[index, 'lineage'])}"
+        )
+    update_lineage(
+        newMSL.at[index, "taxnode_id"],
+        newMSL.at[index, "lineage"],
+        alternate_lineage,
+        lineage_proposal,
+        lineage_action,
+    )
     _register_accessions(change)
     if params.tmi:
         print(f"  {action}: {previous_name} -> {destination}")
@@ -2223,7 +2398,9 @@ def _move_or_rename_taxon(index: Any, change: pd.Series, action: str) -> bool:
 # order and records whether each row was applied.
 
 
-def _log_apply_success(change: pd.Series, action: str) -> None:
+def _log_apply_success(change: pd.Series, action: str,
+                       error_code: str | None = None,
+                       notes_override: str | None = None) -> None:
     success_codes = {
         "new": "CREATE.OK", "split": "SPLIT.OK",
         "rename": "RENAME.OK", "abolish": "ABOLISH.OK",
@@ -2242,8 +2419,12 @@ def _log_apply_success(change: pd.Series, action: str) -> None:
         notes = f"ABOLISH {text(change.get('.srcRank'), '')} named {source}"
     else:
         notes = f"{action.upper()} {source} to {destination}"
-    log_change_error(change, "SUCCESS", success_codes.get(action, f"{action.upper()}.OK"),
-                     f"Change={action.upper()}, applied successfully", notes)
+    log_change_error(
+        change, "SUCCESS",
+        error_code or success_codes.get(action, f"{action.upper()}.OK"),
+        f"Change={action.upper()}, applied successfully",
+        notes_override if notes_override is not None else notes,
+    )
 
 
 def apply_change(change: pd.Series) -> bool:
@@ -2261,6 +2442,8 @@ def apply_change(change: pd.Series) -> bool:
     action = str(action)
     source = change.get(".srcTaxon")
     destination = change.get(".destTaxon")
+    success_error_code = None
+    success_notes = None
 
     if action == "new":
         success = _create_taxon(change, action)
@@ -2282,6 +2465,10 @@ def apply_change(change: pd.Series) -> bool:
             destination_matches = _matching_taxa(newMSL, destination)
             destination_matches = destination_matches[destination_matches != source_index]
             if len(destination_matches) == 1:
+                success_error_code = "MERGE_INTO.OK"
+                success_notes = _merge_into_notes(
+                    source_index, destination_matches[0]
+                )
                 destination_taxnode_id = newMSL.at[destination_matches[0], "taxnode_id"]
                 success = _remove_taxon(source_index, change, action, destination)
                 if success:
@@ -2300,7 +2487,9 @@ def apply_change(change: pd.Series) -> bool:
                              "Proposal action is not implemented", action)
             success = False
     if success:
-        _log_apply_success(change, action)
+        _log_apply_success(
+            change, action, success_error_code, success_notes
+        )
     if success and params.verbose:
         print(f"APPLIED {change.get('.codeLine')}: {action} {text(source)} -> {text(destination)}")
     return success
