@@ -683,6 +683,25 @@ find_vmr_accession_matches <- function(accession, exclude_taxnode_ids=c()) {
   unique(as.character(.GlobalEnv$vmrAccessions$species_name[matches]))
 }
 
+vmr_taxon_has_accession <- function(accession, taxnode_ids) {
+  if(!exists("vmrAccessions", envir=.GlobalEnv) || length(taxnode_ids) == 0) {
+    return(FALSE)
+  }
+
+  accession = normalize_accession_value(accession)
+  taxnode_ids = as.character(taxnode_ids[!is.na(taxnode_ids)])
+  if(is.na(accession) || accession == "" || length(taxnode_ids) == 0) {
+    return(FALSE)
+  }
+
+  any(
+    !is.na(.GlobalEnv$vmrAccessions$accession) &
+      (.GlobalEnv$vmrAccessions$accession == accession) &
+      (as.character(.GlobalEnv$vmrAccessions$taxnode_id) %in% taxnode_ids),
+    na.rm=TRUE
+  )
+}
+
 load_abolished_accessions <- function() {
   .GlobalEnv$abolishedAccessions = data.frame(
     accession=character(),
@@ -3790,25 +3809,28 @@ apply_changes = function(changesDf) {
       #
       # check if same accession number already exists
       #
+      splitReusesSourceAccession = FALSE
+      if(curChangeDf$.action == 'split' &&
+         length(srcCurTaxonIdx) > 0 && any(srcCurTaxonIdx, na.rm=TRUE) &&
+         any(.GlobalEnv$curMSL$.split[srcCurTaxonIdx], na.rm=TRUE)) {
+        splitSourceTaxnodeIDs = .GlobalEnv$curMSL$taxnode_id[srcCurTaxonIdx]
+        sourceTaxonomyAccessions = .GlobalEnv$curMSL$genbank_accession_csv[srcCurTaxonIdx]
+        splitReusesSourceAccession = any(
+          !is.na(sourceTaxonomyAccessions) &
+            sourceTaxonomyAccessions == curChangeDf$exemplarAccession,
+          na.rm=TRUE
+        ) || vmr_taxon_has_accession(curChangeDf$exemplarAccession, splitSourceTaxnodeIDs)
+      }
+
       isDupAccession = (.GlobalEnv$newMSL$genbank_accession_csv == curChangeDf$exemplarAccession)
       vmrDupAccessionTaxa = character()
       if(sum(isDupAccession, na.rm=TRUE)==0) {
-        vmrExcludeTaxnodeIDs = c()
-        if( curChangeDf$.action == 'split' &&
-            .GlobalEnv$curMSL$.split[srcCurTaxonIdx] &&
-            !is.na(.GlobalEnv$curMSL$genbank_accession_csv[srcCurTaxonIdx]) &&
-            .GlobalEnv$curMSL$genbank_accession_csv[srcCurTaxonIdx] == curChangeDf$exemplarAccession) {
-          vmrExcludeTaxnodeIDs = .GlobalEnv$curMSL$taxnode_id[srcCurTaxonIdx]
-        }
-        vmrDupAccessionTaxa = find_vmr_accession_matches(curChangeDf$exemplarAccession, vmrExcludeTaxnodeIDs)
+        vmrDupAccessionTaxa = find_vmr_accession_matches(curChangeDf$exemplarAccession)
       }
       if(!pendingAccession && (sum(isDupAccession, na.rm=TRUE)>0 || length(vmrDupAccessionTaxa)>0)) {
         
         # unless this is a SPLIT doing a rename, but keeping the isolate/accession
-        if( curChangeDf$.action == 'split' &&
-            .GlobalEnv$curMSL$.split[srcCurTaxonIdx] &&
-            !is.na(.GlobalEnv$curMSL$genbank_accession_csv[srcCurTaxonIdx]) &&
-            .GlobalEnv$curMSL$genbank_accession_csv[srcCurTaxonIdx] == curChangeDf$exemplarAccession) {
+        if(splitReusesSourceAccession) {
   
           # this is ok for a split to re-use an accession under a new or same name, but just once
           if( !is.na(.GlobalEnv$curMSL$.split_acc_used[srcCurTaxonIdx]) ) {
