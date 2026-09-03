@@ -891,6 +891,14 @@ def create_new_msl(current: pd.DataFrame, prev_msl: int, dest_msl: int,
     for column in [".emptyReported", ".otherLineage", ".otherLineageProposal",
                    ".otherLineageAction"]:
         result[column] = pd.NA
+    # R's move-family implementation leaves the moved node's own lineage stale.
+    # Preserve that legacy state only for diagnostic parity; the real Python
+    # lineage remains correct and is the value exported to MSL artifacts.
+    result[".rDiagnosticLineage"] = result["lineage"]
+    result[".split"] = False
+    result[".split_kept"] = False
+    for column in [".split_code", ".split_linenum", ".split_actionOrder"]:
+        result[column] = pd.NA
     root = result["rank"].astype(str) == "tree"
     result.loc[root, "name"] = params.msl_name
     result.loc[root, "notes"] = params.msl_notes
@@ -1873,6 +1881,40 @@ def _lineage_from_parent(parent_index: Any, name: str) -> str:
     return f"{parent_lineage};{name}"
 
 
+def _diagnostic_lineage(index: Any) -> Any:
+    """Return the legacy R lineage used only for application diagnostics."""
+    if ".rDiagnosticLineage" in newMSL:
+        return newMSL.at[index, ".rDiagnosticLineage"]
+    return newMSL.at[index, "lineage"]
+
+
+def _diagnostic_lineage_from_parent(parent_index: Any, name: str) -> str:
+    if parent_index is None:
+        return name
+    # Unlike Python's exported lineage builder, R retains the tree/root label
+    # (for example "2024") in this application-stage diagnostic state.
+    parent_lineage = _diagnostic_lineage(parent_index)
+    if is_na(parent_lineage) or not str(parent_lineage):
+        return name
+    return f"{parent_lineage};{name}"
+
+
+def _refresh_diagnostic_descendant_lineages(parent_taxnode_id: Any) -> None:
+    """Recursively propagate the non-exported legacy R diagnostic lineage."""
+    if ".rDiagnosticLineage" not in newMSL:
+        return
+    parent_rows = newMSL.index[newMSL["taxnode_id"].eq(parent_taxnode_id)]
+    if not len(parent_rows):
+        return
+    parent_lineage = _diagnostic_lineage(parent_rows[0])
+    children = newMSL.index[newMSL["parent_id"].eq(parent_taxnode_id)]
+    for child in children:
+        newMSL.at[child, ".rDiagnosticLineage"] = (
+            f"{parent_lineage};{newMSL.at[child, 'name']}"
+        )
+        _refresh_diagnostic_descendant_lineages(newMSL.at[child, "taxnode_id"])
+
+
 def update_lineage(parent_id: Any, parent_lineage: Any,
                    parent_otherLineage: Any = pd.NA,
                    parent_otherLineageProposal: Any = pd.NA,
@@ -2129,51 +2171,23 @@ def _lineage_metadata(index: Any, column: str) -> Any:
     return newMSL.at[index, column] if column in newMSL else pd.NA
 
 
-def _original_parent_lineage(parent_index: Any) -> Any:
-    """Find a working parent's pre-proposal lineage in the reference MSL."""
-    previous_id = _lineage_metadata(parent_index, ".prev_taxnode_id")
-    if is_na(previous_id) or "taxnode_id" not in curMSL or "lineage" not in curMSL:
-        return pd.NA
-    matches = curMSL.index[curMSL["taxnode_id"].eq(previous_id)]
-    return curMSL.at[matches[0], "lineage"] if len(matches) == 1 else pd.NA
-
-
 def _log_create_parent_lineage(change: pd.Series, parent_index: Any) -> None:
     """Mirror the R create/split diagnostic for an unexpected parent lineage."""
     expected = change.get(".destParentLineage")
-    observed = newMSL.at[parent_index, "lineage"]
+    observed = _diagnostic_lineage(parent_index)
     if is_na(expected) or is_na(observed) or str(expected) == str(observed):
         return
 
     other_lineage = _lineage_metadata(parent_index, ".otherLineage")
-    original_lineage = _original_parent_lineage(parent_index)
     previous_proposals = _lineage_metadata(parent_index, "prev_proposals")
-    parent_created_during_run = (
-        is_na(_lineage_metadata(parent_index, ".prev_taxnode_id"))
-        and not is_na(previous_proposals)
-    )
-    # R records .otherLineage while applying earlier proposals. Until Python's
-    # complete recursive provenance model is ported, the reference MSL gives
-    # the same classification: if it matched the proposal before this run, the
-    # mismatch was introduced by an earlier applied proposal and is INFO.
-    parent_changed_during_run = (
-        not is_na(original_lineage) and str(original_lineage) == str(expected)
-    )
-    if (not is_na(other_lineage)
-            or parent_changed_during_run
-            or parent_created_during_run):
-        lineage_proposal = _lineage_metadata(parent_index, ".otherLineageProposal")
-        if is_na(lineage_proposal):
-            lineage_proposal = previous_proposals
-        lineage_action = _lineage_metadata(parent_index, ".otherLineageAction")
-        if is_na(lineage_action):
-            lineage_action = "earlier proposal change"
+    if not is_na(other_lineage):
         log_change_error(
             change, "INFO", "CREATE.PARENT_RENAMED",
             f"Change={text(change.get('.action'), '').upper()}, proposed parent taxon "
             "exists, but not with expected name/lineage, using observed lineage",
-            f"otherProposal(s)={text(lineage_proposal)} did a "
-            f"{text(lineage_action)}, "
+            f"otherProposal(s)="
+            f"{text(_lineage_metadata(parent_index, '.otherLineageProposal'))} did a "
+            f"{text(_lineage_metadata(parent_index, '.otherLineageAction'))}, "
             f"PROPOSED//OBSERVED={diff_lineages(expected, observed)}",
         )
         return
@@ -2190,7 +2204,7 @@ def _log_create_parent_lineage(change: pd.Series, parent_index: Any) -> None:
 def _log_move_parent_lineage(change: pd.Series, parent_index: Any) -> None:
     """Mirror the R move-family diagnostic for an unexpected parent lineage."""
     expected = change.get(".destParentLineage")
-    observed = newMSL.at[parent_index, "lineage"]
+    observed = _diagnostic_lineage(parent_index)
     if is_na(expected) or is_na(observed) or str(expected) == str(observed):
         return
 
@@ -2227,6 +2241,51 @@ def _log_move_parent_lineage(change: pd.Series, parent_index: Any) -> None:
             f",PROPOSED//CUR={diff_lineages(expected, observed)}, "
             f"PROPOSED={text(expected)}, CUR={text(observed)}",
         )
+
+
+#
+# Emit SRC.LINEAGE_WRONG WARNING when all of the following are true:
+# 1. The proposal row has a .srcTaxon and .srcLineage.
+# 2. One matching source taxon exists in the newMSL.
+# 3. The expected proposal lineage differs from the observed diagnostic lineage.
+# 4. The matched taxon’s .otherLineage is not missing, indicating another proposal changed its lineage.
+# Otherwise, when the lineage differs but .otherLineage is missing, it emits SRC.LINEAGE_WRONG as a WARNING instead.
+#
+def _log_source_lineage(change: pd.Series) -> None:
+    """Mirror R's pre-application source-lineage compatibility diagnostic."""
+    source_name = change.get(".srcTaxon")
+    expected = change.get(".srcLineage")
+    # Does both .srcTaxon and .srcLineage exist?
+    if is_na(source_name) or is_na(expected):
+        return
+    matches = _matching_taxa(newMSL, source_name)
+    # Does one matching source taxon exist in the newMSL?
+    if len(matches) != 1:
+        return
+    source_index = matches[0]
+    observed = _diagnostic_lineage(source_index)
+    # Does the expected proposal lineage differ from the observed diagnostic lineage?
+    if is_na(observed) or str(expected) == str(observed):
+        return
+    other_lineage = _lineage_metadata(source_index, ".otherLineage")
+    # Is the matched taxon's .otherLineage not missing?
+    if not is_na(other_lineage):
+        log_change_error(
+            change, "INFO", "SRC.LINEAGE_CHANGED",
+            "CURRENT lineage changed by another proposal",
+            f"proposal(s)="
+            f"{text(_lineage_metadata(source_index, '.otherLineageProposal'))} did a "
+            f"{text(_lineage_metadata(source_index, '.otherLineageAction'))} "
+            f"PROPOSAL//NEW_MSL={diff_lineages(expected, observed)}",
+        )
+        return
+    # lineage differs but .otherLineage is missing, emit SRC.LINEAGE_WRONG as a WARNING.
+    log_change_error(
+        change, "WARNING", "SRC.LINEAGE_WRONG",
+        "'current taxonomy' in proposal doesn't match current MSL. Typo?",
+        f"MSL//PROPOSED={diff_lineages(expected, change.get('.destLineage'))}, "
+        f"PROPOSAL={text(expected)}; MSL={text(observed)}",
+    )
 
 
 def _merge_into_notes(source_index: Any, destination_index: Any) -> str:
@@ -2281,6 +2340,21 @@ def _create_taxon(change: pd.Series, action: str,
     row["rank"] = change.get(".destRank")
     row["name"] = destination
     row["lineage"] = _lineage_from_parent(parent_index, str(destination))
+    expected_parent_lineage = change.get(".destParentLineage")
+    diagnostic_parent_lineage = _diagnostic_lineage(parent_index)
+    if (not is_na(expected_parent_lineage)
+            and str(expected_parent_lineage) != str(diagnostic_parent_lineage)):
+        row[".rDiagnosticLineage"] = _diagnostic_lineage_from_parent(
+            parent_index, str(destination)
+        )
+    else:
+        row[".rDiagnosticLineage"] = change.get(
+            ".destLineage", row["lineage"]
+        )
+        if is_na(row[".rDiagnosticLineage"]):
+            row[".rDiagnosticLineage"] = _diagnostic_lineage_from_parent(
+                parent_index, str(destination)
+            )
     row["ictv_id"] = row["taxnode_id"]
     row["is_hidden"] = 0
     row[".prev_taxnode_id"] = pd.NA
@@ -2343,8 +2417,11 @@ def _move_or_rename_taxon(index: Any, change: pd.Series, action: str) -> bool:
         return False
     if action in {"move", "promote", "demote", "split"}:
         _log_move_parent_lineage(change, parent_index)
+    if action == "split":
+        _mark_split_source(index, change, kept=True)
     previous_name = newMSL.at[index, "name"]
     previous_lineage = newMSL.at[index, "lineage"]
+    previous_diagnostic_lineage = _diagnostic_lineage(index)
     out_target = destination if action == "rename" else change.get(".destLineage")
     _set_out_fields(index, change, action, out_target)
     newMSL.at[index, "name"] = destination
@@ -2374,7 +2451,7 @@ def _move_or_rename_taxon(index: Any, change: pd.Series, action: str) -> bool:
         )
         lineage_action = (
             f"{action} {text(change.get('.srcRank'))} "
-            f"{diff_lineages(change.get('.srcLineage'), newMSL.at[index, 'lineage'])}"
+            f"{diff_lineages(change.get('.srcLineage'), previous_diagnostic_lineage)}"
         )
     update_lineage(
         newMSL.at[index, "taxnode_id"],
@@ -2383,6 +2460,18 @@ def _move_or_rename_taxon(index: Any, change: pd.Series, action: str) -> bool:
         lineage_proposal,
         lineage_action,
     )
+    if ".rDiagnosticLineage" in newMSL:
+        if action == "rename":
+            newMSL.at[index, ".rDiagnosticLineage"] = (
+                _diagnostic_lineage_from_parent(parent_index, str(destination))
+            )
+        else:
+            # Match R's diagnostic state without retaining its stale lineage in
+            # the actual Python taxonomy/output.
+            newMSL.at[index, ".rDiagnosticLineage"] = previous_diagnostic_lineage
+        _refresh_diagnostic_descendant_lineages(
+            newMSL.at[index, "taxnode_id"]
+        )
     _register_accessions(change)
     if params.tmi:
         print(f"  {action}: {previous_name} -> {destination}")
@@ -2396,6 +2485,94 @@ def _move_or_rename_taxon(index: Any, change: pd.Series, action: str) -> bool:
 # apply_change maps each normalized action to an atomic operation and records a
 # success only after mutation. apply_changes preserves the chosen dependency
 # order and records whether each row was applied.
+
+
+def _ensure_split_columns() -> None:
+    if ".split" not in newMSL:
+        newMSL[".split"] = False
+    if ".split_kept" not in newMSL:
+        newMSL[".split_kept"] = False
+    for column in [".split_code", ".split_linenum", ".split_actionOrder"]:
+        if column not in newMSL:
+            newMSL[column] = pd.NA
+
+
+def _mark_split_source(index: Any, change: pd.Series, kept: bool) -> None:
+    """Retain R's split bookkeeping for post-application implicit abolition."""
+    _ensure_split_columns()
+    if kept:
+        newMSL.at[index, ".split_kept"] = True
+    elif not bool(newMSL.at[index, ".split_kept"]):
+        newMSL.at[index, ".split"] = True
+    newMSL.at[index, ".split_code"] = change.get(".code")
+    newMSL.at[index, ".split_linenum"] = change.get(".linenum")
+    newMSL.at[index, ".split_actionOrder"] = actionOrder
+
+
+def _mark_split_destination(change: pd.Series) -> None:
+    matches = _matching_taxa(newMSL, change.get(".destTaxon"))
+    if len(matches) != 1:
+        return
+    _ensure_split_columns()
+    index = matches[0]
+    newMSL.at[index, ".split_kept"] = True
+    newMSL.at[index, ".split_code"] = change.get(".code")
+    newMSL.at[index, ".split_linenum"] = change.get(".linenum")
+    newMSL.at[index, ".split_actionOrder"] = actionOrder
+
+
+def _finalize_implicit_splits() -> None:
+    """Log and remove split sources for which no directive kept the old name."""
+    global newMSL
+    if ".split" not in newMSL or ".split_kept" not in newMSL:
+        return
+    split_rows = newMSL.index[
+        newMSL[".split"].fillna(False).astype(bool)
+        & ~newMSL[".split_kept"].fillna(False).astype(bool)
+    ].tolist()
+    for index in split_rows:
+        rank = text(newMSL.at[index, "rank"], "")
+        name = text(newMSL.at[index, "name"], "")
+        lineage = text(_diagnostic_lineage(index), "")
+        log_error(
+            newMSL.at[index, ".split_code"],
+            newMSL.at[index, ".split_linenum"],
+            "split_abolish",
+            rank,
+            name,
+            "INFO",
+            "SPLIT.IMPLICIT_ABOLISH",
+            "Change=SPLIT, but no split line kept original name, so remove "
+            "original name from new MSL",
+            f"removed {rank} {name} from {lineage}",
+            actionOrder,
+        )
+
+    for index in reversed(split_rows):
+        taxnode_id = newMSL.at[index, "taxnode_id"]
+        children = newMSL.index[newMSL["parent_id"].eq(taxnode_id)]
+        if len(children):
+            child_labels = " ".join(
+                f"{newMSL.at[child, 'rank']}:{newMSL.at[child, 'name']}"
+                for child in children
+            )
+            log_error(
+                newMSL.at[index, ".split_code"],
+                newMSL.at[index, ".split_linenum"],
+                "split_abolish",
+                text(newMSL.at[index, "rank"], ""),
+                text(newMSL.at[index, "name"], ""),
+                "ERROR",
+                "SPLIT.IMPLICIT_ABOLISH_WITH_KIDS",
+                "Change=ABOLISH, taxon still has un-abolished/moved children",
+                f"taxon={text(newMSL.at[index, 'name'])}, "
+                f"lineage={text(newMSL.at[index, 'lineage'])}, kids: N={len(children)}, "
+                f"NAMES=[{child_labels}]",
+                actionOrder,
+            )
+            continue
+        newMSL = newMSL.drop(index=index)
+    newMSL = newMSL.reset_index(drop=True)
 
 
 def _log_apply_success(change: pd.Series, action: str,
@@ -2442,6 +2619,7 @@ def apply_change(change: pd.Series) -> bool:
     action = str(action)
     source = change.get(".srcTaxon")
     destination = change.get(".destTaxon")
+    _log_source_lineage(change)
     success_error_code = None
     success_notes = None
 
@@ -2452,8 +2630,10 @@ def apply_change(change: pd.Series) -> bool:
         if source_index is None:
             return False
         exclude = [newMSL.at[source_index, ".prev_taxnode_id"]] if ".prev_taxnode_id" in newMSL else []
+        _mark_split_source(source_index, change, kept=False)
         success = _create_taxon(change, action, exclude)
         if success:
+            _mark_split_destination(change)
             _set_out_fields(source_index, change, "split", change.get(".destLineage"))
     else:
         source_index = _resolve_single(newMSL, source, change, "SOURCE")
@@ -2499,6 +2679,7 @@ def apply_changes(changes: pd.DataFrame) -> pd.DataFrame:
     applied: list[bool] = []
     for _, change in changes.iterrows():
         applied.append(apply_change(change))
+    _finalize_implicit_splits()
     result = changes.copy()
     result[".applied"] = applied
     return result
