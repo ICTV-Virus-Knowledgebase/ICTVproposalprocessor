@@ -3,6 +3,7 @@
 # run and evaluate regression tests
 #
 # USAGE: ./regression_test.sh [test_pattern] [container_version]
+# USAGE: ./regression_test.sh [--python|--r] [test_pattern] [container_version]
 #
 # On Linux, this runs the docker container
 # On MacOS, this runs R directly. 
@@ -14,6 +15,17 @@
 TEST_PAT="*"
 if [ ! -z "$1" ]; then TEST_PAT="*$1*"; shift; fi
 echo TEST_PAT=$TEST_PAT
+
+# Determine which implementation to run (default: R)
+IMPLEMENTATION="r" # "r" or "python"
+if [["$1" == "--python"]]; then
+    IMPLEMENTATION="python"
+    shift # Move to the next argument
+elif [["$1" == "--r"]]; then
+    IMPLEMENTATION="r"
+    shift
+fi
+echo "IMPLEMENTATION=$IMPLEMENTATION"
 
 # which docker container to run
 if [ "$(uname)" == "Linux" ]; then 
@@ -43,11 +55,19 @@ fi
 MSL_DIR=current_msl
 TEST_DIR=testData
 echo TEST_DIR=$TEST_DIR
-RESULTS_DIR=testResults
+
+# Python or R for test result directory?
+if [["$IMPLEMENTATION" == "python"]]; then
+    RESULTS_DIR=testResultsPython
+else
+    RESULTS_DIR=testResults
+fi
+
 if [ ! -z "$CONTAINER" ]; then RESULTS_DIR=testResults; fi
 echo RESULTS_DIR=$RESULTS_DIR
 
-REPORT=QC.regression_test.summary.txt
+# REPORT=QC.regression_test.summary.txt
+REPORT=QC.regression_test.summary.${IMPLEMENTATION}.txt
 echo REPORT=$REPORT
 (date; hostname) > $REPORT
 
@@ -125,48 +145,69 @@ for TEST in $TESTS; do
     # run script
     #
     if [ -z "$CONTAINER" ]; then 
-	    echo "#" \
-	         Rscript merge_proposal_zips.R \
-		    --refDir=$MSL_DIR/$TEST_MSL \
-		    --proposalsDir=$SRC_DIR \
-		    --outDir=$DEST_DIR \
-		    --msl \
-		    --qcTsvRegression=$(basename $RESULTS) \
-		    '2>&1' | tee $LOG
-	    Rscript merge_proposal_zips.R \
-		    --refDir=$MSL_DIR/$TEST_MSL \
-		    --proposalsDir=$SRC_DIR \
-		    --outDir=$DEST_DIR \
-		    --msl \
-		    --qcTsvRegression=$(basename $RESULTS) \
-		    1>> $LOG 2>&1
-    else
-	    echo "#" \
-		sudo docker run -it \
-		    -v "$(pwd)/${TEST_DIR}:/testData":ro \
-		    -v "$(pwd)/${RESULTS_DIR}:/testResults":rw \
-	            $CONTAINER  \
-		    /merge_proposal_zips.R \
-		    --refDir=current_msl/${TEST_MSL} \
-		    --proposalsDir="testData/$TEST_MSL/$TEST_CASE" \
-		    --outDir="testResults/$TEST_MSL/$TEST_CASE" \
-		    --msl \
-		    --qcTsvRegression=$(basename $RESULTS) \
-		    2>&1 | tee $LOG
-	    (sudo docker run -it \
-		    -v "$(pwd)/${TEST_DIR}:/testData":ro \
-		    -v "$(pwd)/${RESULTS_DIR}:/testResults":rw \
-	            $CONTAINER  \
-		    /merge_proposal_zips.R \
-		    --refDir=current_msl/${TEST_MSL} \
-		    --proposalsDir="testData/$TEST_MSL/$TEST_CASE" \
-		    --outDir="testResults/$TEST_MSL/$TEST_CASE" \
-		    --msl \
-		    --qcTsvRegression=$(basename $RESULTS) \
-		    ) 1>$LOGT 2>&1 
-   	    # git rid of warnigns we only see inside docker
-	    grep -v "to see the first 50" $LOGT >>$LOG
-    fi	
+        if ["$IMPLEMENTATION" == "python"]; then
+        # Python merge_proposal_zips.R
+            echo "#" \
+                python merge_proposal_zips.py \
+                --refDir=$MSL_DIR/$TEST_MSL \
+                --proposalDir=$SRC_DIR \
+                --outDir=$DEST_DIR \
+                --msl \
+                --qcTsvRegression=$(basename $RESULTS) \
+                '2>&1' | tee $LOG
+            python3 merge_proposal_zips.py \
+                --refDir=$MSL_DIR/$TEST_MSL \
+                --proposalDir=$SRC_DIR \
+                --outDir=$DEST_DIR \
+                --msl \
+                --qcTsvRegression=$(basename $RESULTS) \
+                1>> $LOG 2>&1
+        else
+            # R merge_proposal_zips.R
+            echo "#" \
+                Rscript merge_proposal_zips.R \
+                --refDir=$MSL_DIR/$TEST_MSL \
+                --proposalsDir=$SRC_DIR \
+                --outDir=$DEST_DIR \
+                --msl \
+                --qcTsvRegression=$(basename $RESULTS) \
+                '2>&1' | tee $LOG
+            Rscript merge_proposal_zips.R \
+                --refDir=$MSL_DIR/$TEST_MSL \
+                --proposalsDir=$SRC_DIR \
+                --outDir=$DEST_DIR \
+                --msl \
+                --qcTsvRegression=$(basename $RESULTS) \
+                1>> $LOG 2>&1
+    #
+    # Logic to run the docker container, which I do not think we need anymore (keeping here for now)
+    # else
+	#     echo "#" \
+	# 	sudo docker run -it \
+	# 	    -v "$(pwd)/${TEST_DIR}:/testData":ro \
+	# 	    -v "$(pwd)/${RESULTS_DIR}:/testResults":rw \
+	#             $CONTAINER  \
+	# 	    /merge_proposal_zips.R \
+	# 	    --refDir=current_msl/${TEST_MSL} \
+	# 	    --proposalsDir="testData/$TEST_MSL/$TEST_CASE" \
+	# 	    --outDir="testResults/$TEST_MSL/$TEST_CASE" \
+	# 	    --msl \
+	# 	    --qcTsvRegression=$(basename $RESULTS) \
+	# 	    2>&1 | tee $LOG
+	#     (sudo docker run -it \
+	# 	    -v "$(pwd)/${TEST_DIR}:/testData":ro \
+	# 	    -v "$(pwd)/${RESULTS_DIR}:/testResults":rw \
+	#             $CONTAINER  \
+	# 	    /merge_proposal_zips.R \
+	# 	    --refDir=current_msl/${TEST_MSL} \
+	# 	    --proposalsDir="testData/$TEST_MSL/$TEST_CASE" \
+	# 	    --outDir="testResults/$TEST_MSL/$TEST_CASE" \
+	# 	    --msl \
+	# 	    --qcTsvRegression=$(basename $RESULTS) \
+	# 	    ) 1>$LOGT 2>&1 
+   	#     # git rid of warnigns we only see inside docker
+	#     grep -v "to see the first 50" $LOGT >>$LOG
+    # fi	
 
     #
     # check output
