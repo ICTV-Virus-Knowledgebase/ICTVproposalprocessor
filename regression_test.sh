@@ -150,14 +150,14 @@ for TEST in $TESTS; do
             echo "#" \
                 python merge_proposal_zips.py \
                 --refDir=$MSL_DIR/$TEST_MSL \
-                --proposalDir=$SRC_DIR \
+                --proposalsDir=$SRC_DIR \
                 --outDir=$DEST_DIR \
                 --msl \
                 --qcTsvRegression=$(basename $RESULTS) \
                 '2>&1' | tee $LOG
             python3 merge_proposal_zips.py \
                 --refDir=$MSL_DIR/$TEST_MSL \
-                --proposalDir=$SRC_DIR \
+                --proposalsDir=$SRC_DIR \
                 --outDir=$DEST_DIR \
                 --msl \
                 --qcTsvRegression=$(basename $RESULTS) \
