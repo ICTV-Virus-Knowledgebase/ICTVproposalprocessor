@@ -4448,6 +4448,13 @@ apply_changes = function(changesDf) {
       # ........................................................................
  
       # check if srcTaxon was specified in xlsx (required)
+      if(is.na(srcTaxonName) && curChangeDf$.action %in% c("promote","demote")) {
+        log_change_error(curChangeDf, "ERROR", "CHANGE_RANK.NO_SRC",
+                         paste0("Change=", toupper(curChangeDf$.action), ", but 'current taxonomy' columns are empty"),
+                         notes=paste0("destTaxonomy=", destLineage)
+        )
+        next
+      }
       if(is.na(srcTaxonName) && curChangeDf$.action =='move') {
         # they didn't specify the source, but  it's a MOVE
         # we should be able to find it
