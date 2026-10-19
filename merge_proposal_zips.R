@@ -2043,6 +2043,72 @@ load_proposal = function(code,xlsxpath_override=NA) {
 #
 # Load  .docx into DF
 #
+# The 2024-2026 forms store metadata in Word tables. Read cells rather than
+# flattened paragraphs so blank cells and multi-paragraph values keep their place.
+read_proposal_docx_tables = function(docxpath) {
+  tmp = tempfile()
+  dir.create(tmp)
+  on.exit(unlink(tmp, recursive=TRUE))
+  unzip(docxpath, files="word/document.xml", exdir=tmp)
+  doc = XML::xmlTreeParse(file.path(tmp, "word", "document.xml"), useInternalNodes=TRUE)
+  ns = c(w="http://schemas.openxmlformats.org/wordprocessingml/2006/main")
+  cell_text = function(cell) {
+    paragraphs = vapply(XML::getNodeSet(cell, "./w:p", namespaces=ns), XML::xmlValue, character(1))
+    paragraphs = trimws(gsub("[\t\r\n]+", " ", paragraphs))
+    paste(paragraphs[nzchar(paragraphs)], collapse="; ")
+  }
+  meta = list(title="", authorsEmails="", correspondingAuthor="", abstract="")
+  authors = corresponding = taxonomyAbstracts = generalAbstracts = character()
+  for(table in XML::getNodeSet(doc, "//w:tbl", namespaces=ns)) {
+    rows = lapply(XML::getNodeSet(table, "./w:tr", namespaces=ns), function(row) {
+      vapply(XML::getNodeSet(row, "./w:tc", namespaces=ns), cell_text, character(1))
+    })
+    for(i in seq_along(rows)) {
+      cells = rows[[i]]
+      if(length(cells) == 0) { next }
+      if(grepl("^Title *:$", cells[1], ignore.case=TRUE) && length(cells) > 1) {
+        meta$title = paste(cells[-1][nzchar(cells[-1])], collapse="; ")
+      }
+
+      # 2024 uses Name; 2025/2026 use Given name and Surname.
+      nameCols = grep("^(Name$|Given name\\b|Surname$)", cells, ignore.case=TRUE, perl=TRUE)
+      emailCol = grep("^Email address", cells, ignore.case=TRUE)
+      corrCol = grep("^(Corresponding author|Corr\\. author)", cells, ignore.case=TRUE)
+      if(length(nameCols) > 0 && length(emailCol) == 1 && length(corrCol) == 1 && i < length(rows)) {
+        for(j in seq.int(i+1, length(rows))) {
+          authorCells = rows[[j]]
+          if(length(authorCells) < max(c(nameCols, emailCol, corrCol))) { next }
+          name = paste(authorCells[nameCols][nzchar(authorCells[nameCols])], collapse=" ")
+          email = authorCells[emailCol]
+          if(!nzchar(name) && !nzchar(email)) { next }
+          authors = c(authors, paste(c(name, email)[nzchar(c(name, email))], collapse=" "))
+          if(nzchar(authorCells[corrCol])) {
+            corresponding = c(corresponding, if(nzchar(name)) name else email)
+          }
+        }
+      }
+
+      # Some forms retain an empty General Proposal abstract before the
+      # completed Taxonomy Proposal abstract. Prefer the taxonomy section.
+      isTaxonomy = grepl("^Abstract of Taxonomy Proposal", cells[1], ignore.case=TRUE)
+      isGeneral = grepl("^Abstract for General Proposal", cells[1], ignore.case=TRUE)
+      if((isTaxonomy || isGeneral) && i < length(rows)) {
+        content = unlist(rows[seq.int(i+1, length(rows))], use.names=FALSE)
+        abstract = paste(content[nzchar(content)], collapse="; ")
+        if(nzchar(abstract)) {
+          if(isTaxonomy) { taxonomyAbstracts = c(taxonomyAbstracts, abstract) }
+          else { generalAbstracts = c(generalAbstracts, abstract) }
+        }
+      }
+    }
+  }
+  meta$authorsEmails = paste(authors, collapse="; ")
+  meta$correspondingAuthor = paste(corresponding, collapse="; ")
+  abstracts = if(length(taxonomyAbstracts) > 0) taxonomyAbstracts else generalAbstracts
+  meta$abstract = paste(abstracts, collapse="; ")
+  return(meta)
+}
+
 load_proposal_docx = function(code) {
   cat("# LOAD_PROPOSAL_DOCX(",code,")\n")
 
@@ -2077,34 +2143,37 @@ load_proposal_docx = function(code) {
 
   # read DOCX file, no column names
   txt = read_docx(proposalsDf[code,"docxpath"])
+
+  # Table-based forms replaced the older Part 1 / Short title layout.
+  if(any(grepl("^ *Taxonomy Proposal Form, (2024|2025|2026) *$", txt, ignore.case=TRUE))) {
+    meta = read_proposal_docx_tables(proposalsDf[code,"docxpath"])
+    missingCodes = c(title="DOCX_TITLE_MISSING", authorsEmails="DOCX_AUTHORS_MISSING",
+                     correspondingAuthor="DOCX_CORR_AUTHOR_MISSING", abstract="DOCX_ABSTRACT_MISSING")
+    missingMessages = c(title="Title not found", authorsEmails="Authors list not found",
+                        correspondingAuthor="Corresponding Author not found", abstract="Abstract not found")
+    for(field in names(meta)) {
+      if(nzchar(meta[[field]])) {
+        metaDf[[field]] = meta[[field]]
+      } else {
+        log_error(code,linenum=0,action="OPEN_DOCX",actionOrder=actionOrder,
+                  rank="",taxon="",levelStr="WARNING",
+                  errorCode=missingCodes[[field]],errorStr=missingMessages[[field]],
+                  notes=paste0("Field not found in DOCX metadata tables: ",field))
+      }
+    }
+    return(list(metaDf=metaDf))
+  }
   
   # check original template version
   if( length(grep(txt, pattern="Part 1: TITLE, AUTHORS, APPROVALS, etc", ignore.case=T)) < 1 ) {
-    # if( grep(txt[3], pattern="Taxonomy Proposal Form, 2024", ignore.case = T) == 1 ) {
-    #   #
-    #   # not yet supporting 2024 DOCX templates
-    #   #
-    #   log_error(code,linenum=0,action="OPEN_DOCX",actionOrder=actionOrder,
-    #             rank="",taxon="",
-    #             levelStr = "INFO",
-    #             errorCode = "DOCX_2024_TEMPLATE",
-    #             errorStr = paste0("2024 version of DOCX proposal template (yet) supported."),
-    #             notes=paste0("DOCX_FILENAME=",proposalsDf[code,"docx"])
-    #   )
-    #   return(list(metaDf=metaDf))
-    # } else {
-      #
-      # unknown template
-      #
-      log_error(code,linenum=0,action="OPEN_DOCX",actionOrder=actionOrder,
-                rank="",taxon="",
-                levelStr = "INFO",
-                errorCode = "DOCX_UNKNOWN_TEMPLATE",
-                errorStr = paste0("Unrecognized version of DOCX proposal template. Not (yet) supported."),
-                notes=paste0("DOCX_FILENAME=",proposalsDf[code,"docx"])
-      )
-      return(list(metaDf=metaDf))
-   # }
+    log_error(code,linenum=0,action="OPEN_DOCX",actionOrder=actionOrder,
+              rank="",taxon="",
+              levelStr = "INFO",
+              errorCode = "DOCX_UNKNOWN_TEMPLATE",
+              errorStr = paste0("Unrecognized version of DOCX proposal template. Not (yet) supported."),
+              notes=paste0("DOCX_FILENAME=",proposalsDf[code,"docx"])
+    )
+    return(list(metaDf=metaDf))
   }
   #
   # parse older docx format
