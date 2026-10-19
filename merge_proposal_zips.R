@@ -4471,7 +4471,8 @@ apply_changes = function(changesDf) {
       #
       # check for kids - can't abolish before kids
       #
-      srcKids=(.GlobalEnv$newMSL$parent_id==.GlobalEnv$newMSL[srcNewTarget,"taxnode_id"])
+      # Use the scalar ID; a single-column data.table subset remains a table.
+      srcKids=(.GlobalEnv$newMSL$parent_id==.GlobalEnv$newMSL$taxnode_id[srcNewTarget])
       if(sum(srcKids,na.rm=TRUE)>0) {
         log_change_error(curChangeDf, "ERROR", "ABOLISH.KIDS", "Change=ABOLISH, taxon still has un-abolished children", 
                          notes=paste0("taxon=", srcTaxonName, ", lineage=",srcLineage,", kids: N=",sum(srcKids,na.rm=TRUE),
