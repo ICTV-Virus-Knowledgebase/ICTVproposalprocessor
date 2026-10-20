@@ -3545,6 +3545,45 @@ update_lineage = function(parent_id,parent_lineage,
 
 # ............................................................................
 #
+# abolish_taxon
+#
+# remove a taxon from newMSL, and record the abolish on curMSL
+#
+# ............................................................................
+# INPUTs:
+#   curChangeDf  = the ABOLISH change (with .order set)
+#   srcNewTarget = logical index of the taxon to abolish in newMSL
+#
+abolish_taxon = function(curChangeDf, srcNewTarget) {
+  proposalZip   = paste0(proposalsDf[curChangeDf$.code,"basename"],".zip")
+  srcTaxonName  = taxon_get_name(curChangeDf[xlsx_change_srcCols])
+  srcTaxonRank  = taxon_get_rank(curChangeDf[xlsx_change_srcCols])
+  destTaxonName = taxon_get_name(curChangeDf[xlsx_change_destCols])
+  srcPrevTarget = (.GlobalEnv$curMSL$taxnode_id==.GlobalEnv$newMSL[srcNewTarget,]$.prev_taxnode_id)
+
+  #
+  # remove taxon from NEW
+  #
+  .GlobalEnv$newMSL = .GlobalEnv$newMSL[!srcNewTarget,]
+
+  # put out_* changes on curMSL
+  .GlobalEnv$curMSL[srcPrevTarget,"out_updated"] = TRUE  # admin; mark this to save to db
+  .GlobalEnv$curMSL[srcPrevTarget,"out_change"] = "abolish"
+  .GlobalEnv$curMSL[srcPrevTarget,"out_filename"] =
+    ifelse(is.na(.GlobalEnv$curMSL[srcPrevTarget,"out_filename"]),proposalZip,
+           paste0(.GlobalEnv$curMSL[srcPrevTarget,"out_filename"],";",proposalZip))
+  .GlobalEnv$curMSL[srcPrevTarget,"out_target"] = destTaxonName
+  .GlobalEnv$curMSL[srcPrevTarget,"out_notes"] = paste0("linenum=",curChangeDf$.linenum) # add comments?
+  .GlobalEnv$curMSL[srcPrevTarget,".actionOrder"] = curChangeDf$.order
+
+  # success note
+  log_change_error(curChangeDf, "SUCCESS", "ABOLISH.OK", "Change=ABOLISH, applied successfully",
+                   notes=paste0("ABOLISH ",srcTaxonRank, " named ",srcTaxonName)
+  )
+}
+
+# ............................................................................
+#
 # apply_changes
 #
 # ............................................................................
@@ -3564,6 +3603,11 @@ apply_changes = function(changesDf) {
 
   .GlobalEnv$newMSL[,c(".split",".split_kept")] = FALSE
   .GlobalEnv$newMSL[,c(".split_code",".split_linenum",".split_actionOrder",".split_acc_used")] = NA_character_
+
+  # ABOLISH of a taxon with kids is deferred until all changes are applied
+  .GlobalEnv$newMSL[,".abolish"] = FALSE
+  .GlobalEnv$newMSL[,".abolish_row"] = NA_character_
+  .GlobalEnv$newMSL[,".abolish_actionOrder"] = NA_real_
 
   rowsWoErrors = rownames(changesDf[changesDf$.noErrors,])
   actionOrder = 0
@@ -3638,10 +3682,24 @@ apply_changes = function(changesDf) {
                        errorStr=paste0("Change=",toupper(action),", but neither 'current taxonomy', nor 'proposed taxonomy', were specified")
       )
       next;
-      
+
     }
     #
-    # check if lineage not correct in "current" 
+    # check if src was already abolished
+    # (ABOLISH of a taxon with kids is deferred, so it's still in newMSL)
+    #
+    srcAbolished = srcNewMatches & .GlobalEnv$newMSL$.abolish
+    if( sum(srcAbolished,na.rm=T)>0 ) {
+      abolishChangeDf = changesDf[.GlobalEnv$newMSL$.abolish_row[which(srcAbolished)[1]],]
+      log_change_error(curChangeDf, "ERROR", paste0(toupper(curChangeDf$.action),".SRC_ALREADY_CHANGED"),
+                       paste0("Change=",toupper(action),", but taxon already abolished"),
+                       notes=paste0("proposal(s)=", proposalsDf[abolishChangeDf$.code,"basename"], ".zip line ",abolishChangeDf$.linenum,
+                                    " also did a 'abolish' to '", srcTaxonName,"'")
+      )
+      next;
+    }
+    #
+    # check if lineage not correct in "current"
     #
     if( sum(srcNewMatches,na.rm=T)==1 ) {
       srcNewTaxon = .GlobalEnv$newMSL[srcNewMatches,]
@@ -4150,6 +4208,7 @@ apply_changes = function(changesDf) {
       newTaxon[1,"is_deleted"] = "0"
       newTaxon[1,"is_typo"] = "0"
       newTaxon[1,"is_obsolete"] = "0"
+      newTaxon[1,".abolish"] = FALSE
       
       # propagate alternate names/lineages
       if( !is.na(destParentTaxon$.otherLineage) ) {
@@ -4471,36 +4530,21 @@ apply_changes = function(changesDf) {
       #
       # check for kids - can't abolish before kids
       #
+      # abolish is sorted before move, so the kids may still be moved out
+      # by a later change: mark it, and re-check once all changes are applied
+      # (see "abolish taxa - deferred")
+      #
       # Use the scalar ID; a single-column data.table subset remains a table.
       srcKids=(.GlobalEnv$newMSL$parent_id==.GlobalEnv$newMSL$taxnode_id[srcNewTarget])
       if(sum(srcKids,na.rm=TRUE)>0) {
-        log_change_error(curChangeDf, "ERROR", "ABOLISH.KIDS", "Change=ABOLISH, taxon still has un-abolished children", 
-                         notes=paste0("taxon=", srcTaxonName, ", lineage=",srcLineage,", kids: N=",sum(srcKids,na.rm=TRUE),
-                                      ", NAMES=[", paste(.GlobalEnv$newMSL$rank[srcKids],.GlobalEnv$newMSL$name[srcKids],sep=":"),"]" ) 
-        )
+        .GlobalEnv$newMSL[srcNewTarget,".abolish"] = TRUE
+        .GlobalEnv$newMSL[srcNewTarget,".abolish_row"] = row
+        .GlobalEnv$newMSL[srcNewTarget,".abolish_actionOrder"] = actionOrder
         next;
-      }     
-      
-      #
-      # remove taxon from NEW
-      #
-      .GlobalEnv$newMSL = .GlobalEnv$newMSL[!srcNewTarget,]
-      
-      # put out_* changes on curMSL
-      .GlobalEnv$curMSL[srcPrevTarget,"out_updated"] = TRUE  # admin; mark this to save to db
-      .GlobalEnv$curMSL[srcPrevTarget,"out_change"] = "abolish"
-      .GlobalEnv$curMSL[srcPrevTarget,"out_filename"] = 
-        ifelse(is.na(.GlobalEnv$curMSL[srcPrevTarget,"out_filename"]),proposalZip,
-               paste0(.GlobalEnv$curMSL[srcPrevTarget,"out_filename"],";",proposalZip))
-      .GlobalEnv$curMSL[srcPrevTarget,"out_target"] = destTaxonName
-      .GlobalEnv$curMSL[srcPrevTarget,"out_notes"] = paste0("linenum=",linenum) # add comments?
-      .GlobalEnv$curMSL[srcPrevTarget,".actionOrder"] = actionOrder
-      
-      # success note
-      log_change_error(curChangeDf, "SUCCESS", "ABOLISH.OK", "Change=ABOLISH, applied successfully", 
-                       notes=paste0("ABOLISH ",srcTaxonRank, " named ",srcTaxonName)
-      )
-      
+      }
+
+      abolish_taxon(curChangeDf, srcNewTarget)
+
     } # ABOLISH
     else if(curChangeDf$.action %in% c("move","promote","demote") 
             || ( curChangeDf$.action =='split' && !is.na(srcTaxonName) && !is.na(destTaxonName) && srcTaxonName == destTaxonName) 
@@ -5393,18 +5437,23 @@ apply_changes = function(changesDf) {
   #
   # ........................................................................
   .GlobalEnv$actionOrder = .GlobalEnv$actionOrder+1
-  
-  ##### split taxa - delete #####
+
+  ##### abolish taxa - deferred / split taxa - delete #####
+  #
+  # ABOLISH of a taxon that still had kids was deferred, as the kids
+  # may have been moved out by a later change.
   #
   # if a taxon is split, and no split keeps it's original name
   # then quietly delete the original name from the new MSL
   # (it would have been created when the curMSL was copied to create
   # the new one)
   #
+  # Either may be the last kid of the other, so remove both together,
+  # lowest rank first, so kids are removed before their parents are checked.
+  #
   # do this BEFORE the empty taxa scan, since we're deleting empty things.
   #
   splitDeleteIdx = .GlobalEnv$newMSL$.split & !.GlobalEnv$newMSL$.split_kept
-  splitKeepIdx   = .GlobalEnv$newMSL$.split & .GlobalEnv$newMSL$.split_kept
   if( sum(splitDeleteIdx) > 0 ) {
     # count these as actions
     .GlobalEnv$actionOrder = .GlobalEnv$actionOrder+1
@@ -5420,37 +5469,60 @@ apply_changes = function(changesDf) {
               notes=paste0("removed ",.GlobalEnv$newMSL$rank[splitDeleteIdx]," ",.GlobalEnv$newMSL$name[splitDeleteIdx],
                            " from ",.GlobalEnv$newMSL$lineage[splitDeleteIdx] )
     )
-    
-    # check for kids - work back to front for rowIdx stability across row deletions
-    for(rowIdx in rev(which(splitDeleteIdx)) ) {
+  }
+
+  # check for kids - by taxnode_id for stability across row deletions
+  removeIdx = which(.GlobalEnv$newMSL$.abolish | splitDeleteIdx)
+  removeIds = .GlobalEnv$newMSL$taxnode_id[removeIdx[order(.GlobalEnv$newMSL$level_id[removeIdx],decreasing=TRUE)]]
+  for(removeId in removeIds) {
+    rowIdx = which(.GlobalEnv$newMSL$taxnode_id==removeId)
+    srcKids=(.GlobalEnv$newMSL$parent_id==removeId)
+
+    if(isTRUE(.GlobalEnv$newMSL$.abolish[rowIdx])) {
+      # deferred ABOLISH
+      srcNewTarget=(.GlobalEnv$newMSL$taxnode_id==removeId)
+
+      # restore the original ABOLISH change
+      curChangeDf = changesDf[.GlobalEnv$newMSL$.abolish_row[rowIdx],]
+      curChangeDf$.order = .GlobalEnv$newMSL$.abolish_actionOrder[rowIdx]
+
+      if(sum(srcKids,na.rm=TRUE)>0) {
+        log_change_error(curChangeDf, "ERROR", "ABOLISH.KIDS", "Change=ABOLISH, taxon still has un-abolished children",
+                         notes=paste0("taxon=", taxon_get_name(curChangeDf[xlsx_change_srcCols]),
+                                      ", lineage=",taxon_get_lineage(curChangeDf[xlsx_change_srcCols]),", kids: N=",sum(srcKids,na.rm=TRUE),
+                                      ", NAMES=[", paste(.GlobalEnv$newMSL$rank[srcKids],.GlobalEnv$newMSL$name[srcKids],sep=":"),"]" )
+        )
+      } else {
+        abolish_taxon(curChangeDf, srcNewTarget)
+      }
+    } else {
+      # SPLIT implicit abolish
       # count these as actions
       .GlobalEnv$actionOrder = .GlobalEnv$actionOrder+1
-      
-      # get kid count for that taxon
-      srcKids=(.GlobalEnv$newMSL$parent_id==.GlobalEnv$newMSL$taxnode_id[rowIdx])
-      
+
       if(sum(srcKids,na.rm=TRUE)>0) {
         # error: can't abolish something with kids
         log_error(code=.GlobalEnv$newMSL[rowIdx,]$.split_code,
                   linenum=.GlobalEnv$newMSL[rowIdx,]$.split_linenum,
                   action="split_abolish",actionOrder=actionOrder,
                   rank=as.character(.GlobalEnv$newMSL[rowIdx,]$rank),.GlobalEnv$newMSL[rowIdx,]$name,
-                  levelStr= "ERROR", errorCode="SPLIT.IMPLICIT_ABOLISH_WITH_KIDS", 
-                  errorStr="Change=ABOLISH, taxon still has un-abolished/moved children", 
+                  levelStr= "ERROR", errorCode="SPLIT.IMPLICIT_ABOLISH_WITH_KIDS",
+                  errorStr="Change=ABOLISH, taxon still has un-abolished/moved children",
                   notes=paste0("taxon=", .GlobalEnv$newMSL[rowIdx,]$name, ", lineage=",.GlobalEnv$newMSL[rowIdx,]$lineage,", kids: N=",sum(srcKids,na.rm=TRUE),
                                ", NAMES=[",paste(.GlobalEnv$newMSL$rank[srcKids],.GlobalEnv$newMSL$name[srcKids],sep=":"),"]"
-                  ) 
+                  )
         )
       } else {
         # no kids, nuke it
         # remove the rows from newMSL
         .GlobalEnv$newMSL = .GlobalEnv$newMSL[-rowIdx,]
-        # and from the keep list
-        splitKeepIdx=splitKeepIdx[-rowIdx]
       }
-    } # for taxon to split_abolish (implicit)
-  }
-  
+    }
+  } # for taxon to abolish (deferred) or split_abolish (implicit)
+
+  # remaining split taxa that kept their name
+  splitKeepIdx = .GlobalEnv$newMSL$.split & .GlobalEnv$newMSL$.split_kept
+
   if( sum(splitKeepIdx) > 0 && params$verbose ) {
     # log that we're NOT removing them
     # function(errorDf,code,row,change,rank,taxon,levelStr,errorCode,errorStr,notes
