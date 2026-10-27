@@ -1,0 +1,1 @@
+cut -f 4-14,23-31 current_msl/msl40v2/taxonomy_node_export.utf8.txt | egrep "^40\t" > testResults/msl40v2/proposals_msl41_msl40v2/msl40v2.tsv
