@@ -773,6 +773,52 @@ is_pending_accession <- function(accession) {
   grepl("\\bpending\\b", accession, ignore.case=TRUE)
 }
 
+# ............... ictv_dump_legacy_file() ..................
+#
+# ICTVdatabase data dumps come in two formats:
+#   legacy  (MSSQL export, up to MSL41.v1_20260320): bare values, NULL for null
+#   MariaDB (from MSL41.v1_20260721): strings enclosed in "...", with \" and \\
+#           escaped, \N for null, and numbers bare
+# A MariaDB-format file is converted to the legacy format in a temp file, so
+# the readers in load_reference() see the same values from either format.
+# A legacy file is returned unchanged.
+ictv_dump_legacy_file = function(filename) {
+  lines = readLines(filename, encoding="UTF-8", warn=FALSE)
+  if(length(lines) < 2) { return(filename) }
+  fields = stringi::stri_split_fixed(lines[-1], "\t")
+  fieldCts = lengths(fields)
+  values = unlist(fields)
+  isNull = values == "\\N"
+  isQuoted = nchar(values) >= 2 & startsWith(values, '"') & endsWith(values, '"')
+  isBare = values == "" | grepl("^-?[0-9]+([.][0-9]+)?$", values)
+  # MariaDB quotes every string; legacy has bare strings (incl. NULL)
+  if(!any(isNull | isQuoted) || !all(isNull | isQuoted | isBare)) { return(filename) }
+  # an escaped tab or newline inside a value would split it across fields/lines
+  headerCt = length(stringi::stri_split_fixed(lines[1], "\t")[[1]])
+  if(any(fieldCts != headerCt)) {
+    stop(paste0("ERROR: ", filename, ": MariaDB-format dump has rows that do not have ", headerCt, " fields"))
+  }
+
+  values[isQuoted] = gsub("\\\\(.)", "\\1", substr(values[isQuoted], 2, nchar(values[isQuoted])-1))
+  values[isNull] = "NULL"
+  rows = vapply(split(values, rep.int(seq_along(fieldCts), fieldCts)), paste, character(1), collapse="\t")
+
+  legacyFilename = tempfile(pattern=paste0(basename(filename), "."), fileext=".legacy.txt")
+  writeLines(c(lines[1], rows), legacyFilename, useBytes=TRUE)
+  if(params$verbose) { cat("CONVERTED: MariaDB-format dump ", filename, " to legacy format ", legacyFilename, "\n") }
+  return(legacyFilename)
+}
+
+# read an ICTVdatabase dump in either format with reader (fread, read.delim)
+read_ictv_dump = function(filename, reader, ...) {
+  legacyFilename = ictv_dump_legacy_file(filename)
+  if(legacyFilename == filename) {
+    return(reader(filename, ...))
+  }
+  # converted values are written bare, so read them without quote processing
+  reader(legacyFilename, ..., quote="")
+}
+
 load_reference=function() {
   #
   # this uses the DATABASE schema for the taxonomy_node table (ie, naming convention)
@@ -832,7 +878,7 @@ load_reference=function() {
     warning = function(cnd) {
       stop(paste0("ERROR: bad export in ",dbTaxonomyNodeFilename,": ",cnd$message ))
     },
-    fread(file=dbTaxonomyNodeFilename,
+    read_ictv_dump(dbTaxonomyNodeFilename, fread,
                      header=TRUE,#header=FALSE,col.names=names(taxonomy_node_names),
                      colClasses=as.character(taxonomy_node_names),
                      stringsAsFactors=FALSE,na.strings=c("","NULL","\\N"),
@@ -869,7 +915,7 @@ load_reference=function() {
   
   ##### CVs from db dumps #####
   dbRankFilename=file.path(params$ref_dir, params$db_rank_fname)
-  rankCV = read.delim(file=dbRankFilename,header=TRUE, stringsAsFactors=TRUE,na.strings=c("NULL"))
+  rankCV = read_ictv_dump(dbRankFilename, read.delim, header=TRUE, stringsAsFactors=TRUE,na.strings=c("NULL"))
   rownames(rankCV) = rankCV$id
   .GlobalEnv$dbCvList[["rank"]] = rankCV
   .GlobalEnv$dbCvMapList[["rank"]] = rankCV$id
@@ -878,7 +924,7 @@ load_reference=function() {
   
   
   dbMoleculeFilename=file.path(params$ref_dir, params$db_molecule_fname)
-  moleculeCV = read.delim(file=dbMoleculeFilename,header=TRUE, stringsAsFactors=TRUE,na.strings=c("NULL"))
+  moleculeCV = read_ictv_dump(dbMoleculeFilename, read.delim, header=TRUE, stringsAsFactors=TRUE,na.strings=c("NULL"))
   rownames(moleculeCV) = moleculeCV$id
   .GlobalEnv$dbCvList[["molecule"]] = moleculeCV
   .GlobalEnv$dbCvMapList[["molecule"]] = moleculeCV$id
@@ -1008,7 +1054,7 @@ load_reference=function() {
   # this is just names, no IDs
   #
   dbHostSourceFilename=file.path(params$ref_dir, params$db_host_source_fname)
-  hostSourceCV = read.delim(file=dbHostSourceFilename,header=TRUE, stringsAsFactors=TRUE,na.strings=c("NULL"))
+  hostSourceCV = read_ictv_dump(dbHostSourceFilename, read.delim, header=TRUE, stringsAsFactors=TRUE,na.strings=c("NULL"))
   #rownames(hostSourceCV) = hostSourceCV$id
   .GlobalEnv$dbCvList[["hostSource"]] = hostSourceCV$host_source
   .GlobalEnv$dbCvMapList[["hostSource"]] = hostSourceCV$host_source
@@ -1020,7 +1066,7 @@ load_reference=function() {
   #
   vmrFilename = file.path(params$ref_dir, params$vmr_fname)
   if (file.exists(vmrFilename)) {
-    .GlobalEnv$vmrDf = read.delim(file=vmrFilename,header=TRUE, stringsAsFactors=TRUE,na.strings=c("NULL"))
+    .GlobalEnv$vmrDf = read_ictv_dump(vmrFilename, read.delim, header=TRUE, stringsAsFactors=TRUE,na.strings=c("NULL"))
   
     # Run the function and store the result in .GlobalEnv
     #.GlobalEnv$vmrAccessions <- parseGenbankAccessionsV1(.GlobalEnv$vmrDf)
