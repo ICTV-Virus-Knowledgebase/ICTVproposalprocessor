@@ -635,20 +635,21 @@ parseGenbankAccessions <- function(df, accessionCol, extraCols) {
     )
   
   # Extract segment_name, accession, and accession_range
+  # (a range may follow the accession with or without a space: "AH009795(1.3949)", "LK928904 (2253.10260)")
   validDf <- expandedDf %>%
-    filter(str_detect(.data[[accessionCol]], "^[a-zA-Z0-9._-]*:?[^:()]+(?: \\([0-9]+\\.[0-9]+\\))?$")) %>%
+    filter(str_detect(.data[[accessionCol]], "^[a-zA-Z0-9._-]*:?[^:()]+(?: ?\\([0-9]+\\.[0-9]+\\))?$")) %>%
     mutate(
       segment_name = str_extract(.data[[accessionCol]], "^[^:]+(?=:)"),
       accession_full = str_extract(.data[[accessionCol]], "[^:]+$"),  # Includes possible range
       accession_range = str_extract(accession_full, "(?<=\\()[0-9]+\\.[0-9]+(?=\\))"),  # Extract range
-      accession = str_trim(str_remove(accession_full, " \\([0-9]+\\.[0-9]+\\)")),  # Remove range from accession
+      accession = str_trim(str_remove(accession_full, " ?\\([0-9]+\\.[0-9]+\\)")),  # Remove range from accession
       segment_name = ifelse(is.na(segment_name), NA, str_trim(segment_name))  # Remove spaces
     ) %>%
     select(all_of(extraCols), segment_name, accession, accession_range, accession_index)
   
   # Identify invalid records
   invalidDf <- expandedDf %>%
-    filter(!str_detect(.data[[accessionCol]], "^[a-zA-Z0-9._-]*:?[^:()]+(?: \\([0-9]+\\.[0-9]+\\))?$")) %>%
+    filter(!str_detect(.data[[accessionCol]], "^[a-zA-Z0-9._-]*:?[^:()]+(?: ?\\([0-9]+\\.[0-9]+\\))?$")) %>%
     select(all_of(extraCols), !!accessionCol, accession_index)
   
   # Return a list containing valid and invalid data frames
@@ -660,7 +661,7 @@ normalize_accession_value <- function(accession) {
   accession = str_trim(as.character(accession[1]))
   if(is.na(accession) || accession == "") { return(NA_character_) }
   accessionFull = str_extract(accession, "[^:]+$")
-  str_trim(str_remove(accessionFull, " [(][0-9]+[.][0-9]+[)]$"))
+  str_trim(str_remove(accessionFull, " ?[(][0-9]+[.][0-9]+[)]$"))
 }
 
 find_vmr_accession_matches <- function(accession, exclude_taxnode_ids=c()) {
