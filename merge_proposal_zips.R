@@ -4256,6 +4256,9 @@ apply_changes = function(changesDf) {
       newTaxon[1,"is_typo"] = "0"
       newTaxon[1,"is_obsolete"] = "0"
       newTaxon[1,".abolish"] = FALSE
+      # a new taxon is never the original of a split, even if its parent is
+      newTaxon[1,c(".split",".split_kept")] = FALSE
+      newTaxon[1,c(".split_code",".split_linenum",".split_actionOrder",".split_acc_used")] = NA_character_
       
       # propagate alternate names/lineages
       if( !is.na(destParentTaxon$.otherLineage) ) {
