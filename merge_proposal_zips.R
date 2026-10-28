@@ -6206,6 +6206,9 @@ if(params$export_msl) {
   GROUP BY level_id,out_change
   ORDER BY level_id,out_change;
   
+  CALL `VMR_update_from_new_MSL`();
+  CALL `species_isolates_update_sorts`();
+  
   -- QC SPs
   CALL `QC_run_modules`(NULL);
   
