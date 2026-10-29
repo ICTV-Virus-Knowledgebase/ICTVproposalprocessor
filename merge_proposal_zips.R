@@ -664,17 +664,46 @@ normalize_accession_value <- function(accession) {
   str_trim(str_remove(accessionFull, " ?[(][0-9]+[.][0-9]+[)]$"))
 }
 
+# version-independent accession, so "MN013784.1" and "MN013784." match "MN013784"
+accession_key <- function(accession) {
+  str_remove(accession, "[.][0-9]*$")
+}
+
+# keys for every accession in a ;- or ,-separated list, without segment names, ranges or versions
+#   "DNA-A: MN013784.1; DNA-B: MN013785" -> c("MN013784","MN013785")
+# tokens without a digit ("pending", "NA") are not accessions, so are dropped
+accession_keys <- function(accessionList) {
+  if(length(accessionList) == 0 || is.na(accessionList[1])) { return(character()) }
+  accessions = strsplit(as.character(accessionList[1]), "[;,]")[[1]]
+  keys = accession_key(vapply(accessions, normalize_accession_value, character(1), USE.NAMES=FALSE))
+  unique(keys[!is.na(keys) & grepl("[0-9]", keys)])
+}
+
+# for each of accessionLists, TRUE if it equals accession or shares any accession key with it
+accession_list_overlaps <- function(accessionLists, accession) {
+  accessionLists = as.character(accessionLists)
+  if(length(accession) == 0 || is.na(accession[1])) { return(rep(FALSE, length(accessionLists))) }
+  overlaps = !is.na(accessionLists) & accessionLists == as.character(accession[1])
+  keys = accession_keys(accession)
+  if(length(keys) == 0) { return(overlaps) }
+  # substring pre-filter, so only a few candidate lists get parsed
+  candidates = !overlaps & Reduce(`|`, lapply(keys, function(key) grepl(key, accessionLists, fixed=TRUE)))
+  for(i in which(candidates)) {
+    overlaps[i] = any(accession_keys(accessionLists[i]) %in% keys)
+  }
+  overlaps
+}
+
 find_vmr_accession_matches <- function(accession, exclude_taxnode_ids=c()) {
   if(!exists("vmrAccessions", envir=.GlobalEnv)) {
     return(character())
   }
-  accession = normalize_accession_value(accession)
-  if(is.na(accession) || accession == "") {
+  keys = accession_keys(accession)
+  if(length(keys) == 0) {
     return(character())
   }
   
-  matches = !is.na(.GlobalEnv$vmrAccessions$accession) &
-    (.GlobalEnv$vmrAccessions$accession == accession)
+  matches = .GlobalEnv$vmrAccessions$accession_key %in% keys
   
   exclude_taxnode_ids = exclude_taxnode_ids[!is.na(exclude_taxnode_ids)]
   if(length(exclude_taxnode_ids) > 0) {
@@ -689,15 +718,14 @@ vmr_taxon_has_accession <- function(accession, taxnode_ids) {
     return(FALSE)
   }
 
-  accession = normalize_accession_value(accession)
+  keys = accession_keys(accession)
   taxnode_ids = as.character(taxnode_ids[!is.na(taxnode_ids)])
-  if(is.na(accession) || accession == "" || length(taxnode_ids) == 0) {
+  if(length(keys) == 0 || length(taxnode_ids) == 0) {
     return(FALSE)
   }
 
   any(
-    !is.na(.GlobalEnv$vmrAccessions$accession) &
-      (.GlobalEnv$vmrAccessions$accession == accession) &
+    (.GlobalEnv$vmrAccessions$accession_key %in% keys) &
       (as.character(.GlobalEnv$vmrAccessions$taxnode_id) %in% taxnode_ids),
     na.rm=TRUE
   )
@@ -708,6 +736,7 @@ load_abolished_accessions <- function() {
     accession=character(),
     species=character(),
     virus_name=character(),
+    accession_key=character(),
     stringsAsFactors=FALSE
   )
   abolishedFilename = params$abolished_accessions_fname
@@ -739,8 +768,11 @@ load_abolished_accessions <- function() {
   if(!("species" %in% names(abolishedDf))) { abolishedDf$species = NA_character_ }
   if(!("virus_name" %in% names(abolishedDf))) { abolishedDf$virus_name = NA_character_ }
 
-  abolishedDf$accession = vapply(abolishedDf$accession, normalize_accession_value, character(1))
-  abolishedDf = abolishedDf[!is.na(abolishedDf$accession) & abolishedDf$accession != "", c("accession", "species", "virus_name")]
+  # one row per accession key, so lists and versioned values match like VMR accessions
+  abolishedKeys = lapply(abolishedDf$accession, accession_keys)
+  abolishedDf = abolishedDf[rep(seq_len(nrow(abolishedDf)), lengths(abolishedKeys)), c("accession", "species", "virus_name")]
+  abolishedDf$accession = str_trim(as.character(abolishedDf$accession))
+  abolishedDf$accession_key = as.character(unlist(abolishedKeys))
   .GlobalEnv$abolishedAccessions = unique(abolishedDf)
   if(params$verbose) { cat("AbolishedAccessions: ", dim(.GlobalEnv$abolishedAccessions), " from ", abolishedFilename, "\n") }
   invisible(.GlobalEnv$abolishedAccessions)
@@ -751,13 +783,12 @@ find_abolished_accession_matches <- function(accession) {
   if(!exists("abolishedAccessions", envir=.GlobalEnv) || length(accession) == 0) {
     return(emptyDf)
   }
-  accession = normalize_accession_value(accession)
-  if(is.na(accession) || accession == "") {
+  keys = accession_keys(accession)
+  if(length(keys) == 0) {
     return(emptyDf)
   }
 
-  matches = !is.na(.GlobalEnv$abolishedAccessions$accession) &
-    (.GlobalEnv$abolishedAccessions$accession == accession)
+  matches = .GlobalEnv$abolishedAccessions$accession_key %in% keys
   unique(.GlobalEnv$abolishedAccessions[matches, c("accession", "species", "virus_name")])
 }
 
@@ -1078,6 +1109,7 @@ load_reference=function() {
       c("isolate_id", "taxnode_id", "species_name", "isolate_type", "isolate_names"))
       
     .GlobalEnv$vmrAccessions = accessionList[["validAccessions"]]
+    .GlobalEnv$vmrAccessions$accession_key = accession_key(.GlobalEnv$vmrAccessions$accession)
     badAccessions = accessionList[["invalidAccessions"]]
     if( nrow(badAccessions) ) {
       cat(paste0("ERROR: VMR accession badly formated: species:",badAccessions$species_name," iso_id:",badAccessions$isolate_id," value: ",badAccessions$genbank_accessions))
@@ -3990,13 +4022,11 @@ apply_changes = function(changesDf) {
         splitSourceTaxnodeIDs = .GlobalEnv$curMSL$taxnode_id[srcCurTaxonIdx]
         sourceTaxonomyAccessions = .GlobalEnv$curMSL$genbank_accession_csv[srcCurTaxonIdx]
         splitReusesSourceAccession = any(
-          !is.na(sourceTaxonomyAccessions) &
-            sourceTaxonomyAccessions == curChangeDf$exemplarAccession,
-          na.rm=TRUE
+          accession_list_overlaps(sourceTaxonomyAccessions, curChangeDf$exemplarAccession)
         ) || vmr_taxon_has_accession(curChangeDf$exemplarAccession, splitSourceTaxnodeIDs)
       }
 
-      isDupAccession = (.GlobalEnv$newMSL$genbank_accession_csv == curChangeDf$exemplarAccession)
+      isDupAccession = accession_list_overlaps(.GlobalEnv$newMSL$genbank_accession_csv, curChangeDf$exemplarAccession)
       vmrDupAccessionTaxa = character()
       if(sum(isDupAccession, na.rm=TRUE)==0) {
         vmrDupAccessionTaxa = find_vmr_accession_matches(curChangeDf$exemplarAccession)
@@ -4746,7 +4776,7 @@ apply_changes = function(changesDf) {
       #
       #  !srcNewTarget - prevents checking against ourself
       #
-      isDupAccession = (.GlobalEnv$newMSL$genbank_accession_csv == curChangeDf$exemplarAccession & !srcNewTarget)
+      isDupAccession = (accession_list_overlaps(.GlobalEnv$newMSL$genbank_accession_csv, curChangeDf$exemplarAccession) & !srcNewTarget)
       vmrDupAccessionTaxa = character()
       if(sum(isDupAccession, na.rm=TRUE)==0) {
         vmrDupAccessionTaxa = find_vmr_accession_matches(curChangeDf$exemplarAccession, srcPrevTaxnodeID)
