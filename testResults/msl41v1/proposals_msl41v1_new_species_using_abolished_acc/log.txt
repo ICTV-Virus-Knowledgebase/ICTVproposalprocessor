@@ -1,0 +1,26 @@
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl41v1 --proposalsDir=/tmp/ictv-regression.wSk6Kn/43/testData/msl41v1/proposals_msl41v1_new_species_using_abolished_acc --outDir=testResults/msl41v1/proposals_msl41v1_new_species_using_abolished_acc --msl --qcTsvRegression=QC.regression.new.tsv
+VERSION: msl41v1_20261009.20260921.23622b6
+Previous taxa: 195370 34  from  current_msl/msl41v1/taxonomy_node_export.utf8.txt 
+WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+# LOAD_PROPOSAL_DOCX( 2026.030B )
+# LOADED:  2026.030B  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 2026.030B , NA )
+# LOADED:  2026.030B  XLS with  0  errors/warnings
+# LOADED:  2026.030B 
+# QC start: 2026.030B: proposal loaded (1 out of 1)
+# QCed:      2026.030B  with  0  errors/warnings
+changeList:  2026.030B 
+Wrote: OUTDIR/QC.summary.tsv (0 rows)
+# MERGE PROC: 2026.030B with 1 changes  (1 out of 1)
+# DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 1 
+# APPLIED:   1 changes from 2026.030B.Kagunavirus_3ns  with ERROR:1 
+# TOTAL  :   1 changes  from 1 proposals  with ERROR:1 
+Wrote: OUTDIR/QC.summary.tsv (1 rows)
+Writing  testResults/msl41v1/proposals_msl41v1_new_species_using_abolished_acc/msl.tsv 
+WROTE   testResults/msl41v1/proposals_msl41v1_new_species_using_abolished_acc/msl.tsv (22671 rows)
+Writing  testResults/msl41v1/proposals_msl41v1_new_species_using_abolished_acc/QC.docx_summary.tsv 
+WROTE   testResults/msl41v1/proposals_msl41v1_new_species_using_abolished_acc/QC.docx_summary.tsv (1)
+Writing  testResults/msl41v1/proposals_msl41v1_new_species_using_abolished_acc/msl_load.sql 
+Writing out_* updates for prevMSL
+WROTE    testResults/msl41v1/proposals_msl41v1_new_species_using_abolished_acc/msl_load.sql 
+# COMPLETED.

@@ -1,0 +1,2 @@
+subcommittee	code	docx	xlsx	row	change	rank	taxon	level	error	message	notes	scAbbrev	order
+Bacterial viruses (B) proposals	2026.030B	MISSING	2026.030B.Kagunavirus_3ns.xlsx	5	Create new	species	Kagunavirus newSpecies	ERROR	CREATE.ABOLISHED_ACC	Change=NEW, accession number was used previously and is no longer a current VMR accession	accession=AB005795, previousSpecies=Murine respirovirus	NA	1
