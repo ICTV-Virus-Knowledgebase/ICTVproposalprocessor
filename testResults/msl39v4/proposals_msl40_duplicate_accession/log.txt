@@ -1,4 +1,4 @@
-# Rscript merge_proposal_zips.R --refDir=current_msl/msl39v4 --proposalsDir=testData/msl39v4/proposals_msl40_duplicate_accession_TODO --outDir=testResults/msl39v4/proposals_msl40_duplicate_accession_TODO --msl --qcTsvRegression=QC.regression.new.tsv
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl39v4 --proposalsDir=testData/msl39v4/proposals_msl40_duplicate_accession --outDir=testResults/msl39v4/proposals_msl40_duplicate_accession --msl --qcTsvRegression=QC.regression.new.tsv
 VERSION: msl41v1_20261009.20260921.23622b6
 Previous taxa: 151832 34  from  current_msl/msl39v4/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
@@ -16,11 +16,11 @@ Wrote: OUTDIR/QC.summary.tsv (0 rows)
 # APPLIED:  19 changes from 2024.010P.Geminiviridae_Begomovirus_19nsp  with ERROR:1 SUCCESS:19 
 # TOTAL  :  19 changes  from 1 proposals  with ERROR:1 SUCCESS:19 
 Wrote: OUTDIR/QC.summary.tsv (20 rows)
-Writing  testResults/msl39v4/proposals_msl40_duplicate_accession_TODO/msl.tsv 
-WROTE   testResults/msl39v4/proposals_msl40_duplicate_accession_TODO/msl.tsv (18999 rows)
-Writing  testResults/msl39v4/proposals_msl40_duplicate_accession_TODO/QC.docx_summary.tsv 
-WROTE   testResults/msl39v4/proposals_msl40_duplicate_accession_TODO/QC.docx_summary.tsv (1)
-Writing  testResults/msl39v4/proposals_msl40_duplicate_accession_TODO/msl_load.sql 
+Writing  testResults/msl39v4/proposals_msl40_duplicate_accession/msl.tsv 
+WROTE   testResults/msl39v4/proposals_msl40_duplicate_accession/msl.tsv (18999 rows)
+Writing  testResults/msl39v4/proposals_msl40_duplicate_accession/QC.docx_summary.tsv 
+WROTE   testResults/msl39v4/proposals_msl40_duplicate_accession/QC.docx_summary.tsv (1)
+Writing  testResults/msl39v4/proposals_msl40_duplicate_accession/msl_load.sql 
 Writing out_* updates for prevMSL
-WROTE    testResults/msl39v4/proposals_msl40_duplicate_accession_TODO/msl_load.sql 
+WROTE    testResults/msl39v4/proposals_msl40_duplicate_accession/msl_load.sql 
 # COMPLETED.

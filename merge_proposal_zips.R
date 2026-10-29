@@ -213,7 +213,7 @@ option_list <- list(
               help="Filename for refDir/cache [default \"%default\"]"),
   
   # input filenames
-  make_option(c("--infileSupplPat"), default="(^|[_. -])(suppl|viridic|table|matrix|sup)([_. -]|$)", dest="infile_suppl_pat",
+  make_option(c("--infileSupplPat"), default="(^|[_. -])(suppl[a-z0-9]*|viridic|table|matrix|sup)([_. -]|$)", dest="infile_suppl_pat",
               help="Input files (in proposalDir/) containing this pattern in filename are ignored [default \"%default\"]"),
   make_option(c("--mode"), default="validate", dest="processing_mode",
               help="Stringency Mode: 'validate' (any .doc|docx|xls|xlsx), 'draft' (YYYY.###A.v#.'), or 'final' (no '.v#') [default \"%default\"]"),

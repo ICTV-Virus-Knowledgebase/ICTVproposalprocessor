@@ -1,5 +1,5 @@
-# Rscript merge_proposal_zips.R --refDir=current_msl/msl40v1 --proposalsDir=testData/msl40v1/proposals_msl41_min_extra_file --outDir=testResults/msl40v1/proposals_msl41_min_extra_file --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: msl41v1_20260320.20261020.f0e638e
+# Rscript merge_proposal_zips.R --refDir=current_msl/msl40v1 --proposalsDir=testData/msl40v1/proposals_msl41_min_extra_file --outDir=testResults/msl40v1/proposals_msl41_min_extra_file --msl --qcTsvRegression=QC.regression.new.tsv
+VERSION: msl41v1_20261009.20260921.23622b6
 Previous taxa: 172682 34  from  current_msl/msl40v1/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 Wrote: OUTDIR/QC.summary.tsv (1 rows)
