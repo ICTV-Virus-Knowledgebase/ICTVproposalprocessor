@@ -11,6 +11,18 @@ echo "# cleaning out $TEST_DIR/..."
 echo "find testResultsDocker/$TEST -name '*new*' -o -name '*diff*' -exec rm {} +"
 find testResultsDocker/$TEST -name '*new*' -o -name '*diff*' -exec rm {} +
 
+#
+# target docker container naem
+#
+NAME_FILE=docker_container_name.txt
+if [ ! -e "$NAME_FILE" ]; then 
+	echo "ERROR: $NAME_FILE not found"
+	exit 1
+fi
+echo READING $NAME_FILE
+DOCKER_CONTAINER_NAME=$(egrep -v "^#" $NAME_FILE| sed 's/[ \t\r\n]*//g')
+echo DOCKER_CONTAINER_NAME=$DOCKER_CONTAINER_NAME
+echo ""
 
 
 
@@ -25,7 +37,7 @@ EOT
 sudo docker run -it \
 	-v "$(pwd)/$SRC_DIR:/testData":ro \
 	-v "$(pwd)/$TEST_DIR:/testResults" \
-	ictv_proposal_processor  \
+	${DOCKER_CONTAINER_NAME}  \
 	bash
 
 

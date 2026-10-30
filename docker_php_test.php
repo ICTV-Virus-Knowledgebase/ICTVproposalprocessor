@@ -11,8 +11,8 @@ $totals;
 // Variables used by the command below.
 $proposalsPath = "/var/www/drupal/apps/proposal_validator/taxon_proposal_qc_and_load/testData/msl39v3/proposals_msl39v3_crash1";
 $resultsPath = "/var/www/drupal/apps/proposal_validator/taxon_proposal_qc_and_load/testResultsDocker/msl39v3/proposals_msl39v3_crash1";
-$scriptName = "curtish/ictv_proposal_processor:v2.1.096009a"; // crash
-$scriptName = "curtish/ictv_proposal_processor:v2.2.acb51d8"; // no crash
+$scriptName = "ictvglobal/ictv_proposal_processor:v2.1.096009a"; // crash
+$scriptName = "ictvglobal/ictv_proposal_processor:v2.2.acb51d8"; // no crash
 echo("proposalsPath: ".$proposalsPath."\n");
 echo("resultsPath:   ".$resultsPath."\n");
 echo("scriptName:    ".$scriptName."\n");
