@@ -13,24 +13,34 @@ VER_STR=$(cat $VER_FILE)
 #
 # tag
 # 
-echo sudo docker tag ictv_proposal_processor curtish/ictv_proposal_processor:$VER_STR
-     sudo docker tag ictv_proposal_processor curtish/ictv_proposal_processor:$VER_STR
+echo "RUNNING (local tagging):"
+echo sudo docker tag ictv_proposal_processor ictvglobal/ictv_proposal_processor:$VER_STR
+     sudo docker tag ictv_proposal_processor ictvglobal/ictv_proposal_processor:$VER_STR
  
-echo sudo docker tag ictv_proposal_processor curtish/ictv_proposal_processor:latest
-     sudo docker tag ictv_proposal_processor curtish/ictv_proposal_processor:latest
+echo sudo docker tag ictv_proposal_processor ictvglobal/ictv_proposal_processor:latest
+     sudo docker tag ictv_proposal_processor ictvglobal/ictv_proposal_processor:latest
+
+echo ""
+echo "SUGGEST (local tagging):"
+echo sudo docker tag ictv_proposal_processor ictvglobal/ictv_proposal_processor:prod
 
 #
 # tag
 #
-echo sudo docker push curtish/ictv_proposal_processor:$VER_STR
-#     sudo docker push curtish/ictv_proposal_processor:$VER_STR
-
-echo sudo docker push curtish/ictv_proposal_processor:latest
-#     sudo docker push curtish/ictv_proposal_processor:latest
+echo ""
+echo "SUGGEST (push to docker hub):"
+echo sudo docker push ictvglobal/ictv_proposal_processor:$VER_STR
+#     sudo docker push ictvglobal/ictv_proposal_processor:$VER_STR
+echo sudo docker push ictvglobal/ictv_proposal_processor:latest
+#     sudo docker push ictvglobal/ictv_proposal_processor:latest
+echo sudo docker push ictvglobal/ictv_proposal_processor:prod
+#     sudo docker push ictvglobal/ictv_proposal_processor:prod
 
 #
 # to pull instructions
 #
-echo "# to pull, run:"
-echo "docker pull curtish/ictv_proposal_processor:$VER_STR"
-echo "docker pull curtish/ictv_proposal_processor:latest"
+echo ""
+echo "# to pull, run (on app.ictv.global, for example):"
+echo "docker pull ictvglobal/ictv_proposal_processor:$VER_STR"
+echo "docker pull ictvglobal/ictv_proposal_processor:latest"
+echo "docker pull ictvglobal/ictv_proposal_processor:prod"
