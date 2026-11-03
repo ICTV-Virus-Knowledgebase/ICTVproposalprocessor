@@ -59,14 +59,20 @@ RUN /usr/bin/R -e "install.packages('yaml',dependencies=TRUE, repos='http://cran
 #RUN R -e "install.packages('tidyverse',dependencies=TRUE, repos='http://cran.rstudio.com/')"
 RUN /usr/bin/R -e "install.packages('stringr',dependencies=TRUE, repos='http://cran.rstudio.com/')"
 RUN /usr/bin/R -e "install.packages('dplyr',dependencies=TRUE, repos='http://cran.rstudio.com/')"
+RUN /usr/bin/R -e "install.packages('tidyr',dependencies=TRUE, repos='http://cran.rstudio.com/')"
 RUN /usr/bin/R -e "install.packages('readr',dependencies=TRUE, repos='http://cran.rstudio.com/')"
 
-RUN /usr/bin/R -e "install.packages('readxl',dependencies=TRUE, repos='http://cran.rstudio.com/')"
+# readxl 1.6.0 requires R >= 4.2; ubuntu:22.04 has R 4.1.2
+RUN /usr/bin/R -e "install.packages(c('rematch','cellranger'), repos='http://cran.rstudio.com/')"
+RUN /usr/bin/R -e "install.packages('https://cran.rstudio.com/src/contrib/Archive/readxl/readxl_1.5.0.1.tar.gz', repos=NULL, type='source')"
 RUN /usr/bin/R -e "install.packages('writexl',dependencies=TRUE, repos='http://cran.rstudio.com/')"
 # fails (not available) on R 3.6.3 / ubuntu:20.04
 #RUN /usr/bin/R -e "install.packages('DescTools',dependencies=TRUE, repos='http://cran.rstudio.com/')"
 # # read docx
 RUN /usr/bin/R -e "install.packages('qdapTools',dependencies=TRUE, repos='http://cran.rstudio.com/')"
+
+# install.packages() only warns on failure, so fail the build here
+RUN /usr/bin/Rscript -e "pkgs <- c('data.table','dplyr','optparse','qdapTools','readr','readxl','stringi','stringr','tidyr','writexl','XML'); ok <- vapply(pkgs, requireNamespace, logical(1), quietly=TRUE); if (!all(ok)) stop('missing R packages: ', paste(pkgs[!ok], collapse=', '))"
 
 # UTF-8 mode
 RUN set -e \
