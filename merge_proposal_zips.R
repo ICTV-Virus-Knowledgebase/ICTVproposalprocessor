@@ -3688,6 +3688,18 @@ apply_changes = function(changesDf) {
   .GlobalEnv$newMSL[,".abolish_row"] = NA_character_
   .GlobalEnv$newMSL[,".abolish_actionOrder"] = NA_real_
 
+  # for names that differ from a proposed name only in capitalization
+  curNamesLower = tolower(as.character(.GlobalEnv$curMSL$name))
+  oldNamesLower = tolower(as.character(.GlobalEnv$oldMSLs$name))
+  # rows whose name equals destName apart from capitalization; only renames
+  # may exclude their source, because they preserve the taxon's identity
+  # (taxon_get_name() returns a 1x1 data.frame, or NA when there is no taxon)
+  case_only_name_matches = function(names, namesLower, destName, excludedName) {
+    destName = as.character(destName[[1]])
+    excludedName = as.character(excludedName[[1]])
+    which(namesLower == tolower(destName) & (is.na(excludedName) | as.character(names) != excludedName))
+  }
+
   rowsWoErrors = rownames(changesDf[changesDf$.noErrors,])
   actionOrder = 0
   #### FOR(row) ####
@@ -3850,6 +3862,45 @@ apply_changes = function(changesDf) {
         log_change_error(curChangeDf, "ERROR", "DEST.IN_NEW", 
                          errorStr=paste0("Change=",toupper(action),", but taxon name already created in new MSL"), 
                          notes=paste0("proposed ",destTaxonRank,"=", destTaxonName, 
+                                      "; existing ",matchDf$rank,"=", matchLineage,
+                                      "; otherProposal=", matchDf[1,"in_filename"]
+                         )
+        )
+        next;
+      }
+      # Reject capitalization collisions before applying the change to newMSL/SQL.
+      # A split can introduce a new taxon, so its source must also be checked.
+      caseMatchExcludedName = if(curChangeDf$.action == "rename") srcTaxonName else NA_character_
+      destCurCaseMatches = case_only_name_matches(.GlobalEnv$curMSL$name, curNamesLower, destTaxonName, caseMatchExcludedName)
+      destOldCaseMatches = case_only_name_matches(.GlobalEnv$oldMSLs$name, oldNamesLower, destTaxonName, caseMatchExcludedName)
+      destNewCaseMatches = case_only_name_matches(.GlobalEnv$newMSL$name, tolower(as.character(.GlobalEnv$newMSL$name)), destTaxonName, caseMatchExcludedName)
+      if(length(destCurCaseMatches)>0) {
+        matchDf = .GlobalEnv$curMSL[destCurCaseMatches,]
+        matchDf = matchDf[order(matchDf$msl_release_num,decreasing = T)[1],]
+        matchLineage = paste0( "MSL", matchDf$msl_release_num,":",matchDf$lineage)
+        log_change_error(curChangeDf=curChangeDf,levelStr="ERROR", errorCode="DEST.IN_CUR_CASE",
+                         errorStr=paste0("Change=",toupper(action),", but taxon name already exists with different capitalization"),
+                         notes=paste0("proposed ",destTaxonRank,"=", destTaxonName,
+                                      "; existing ",matchDf$rank,"=", matchLineage)
+        )
+        next;
+      } else if(length(destOldCaseMatches)>0) {
+        matchDf = .GlobalEnv$oldMSLs[destOldCaseMatches,]
+        matchDf = matchDf[order(matchDf$msl_release_num,decreasing = T)[1],]
+        matchLineage = paste0( "MSL", matchDf$msl_release_num,":",matchDf$lineage)
+        log_change_error(curChangeDf,levelStr="ERROR", errorCode="DEST.IN_OLD_CASE",
+                         errorStr=paste0("Change=",toupper(action),", but taxon name existed historically with different capitalization"),
+                         notes=paste0("proposed ",destTaxonRank,"=", destTaxonName,
+                                      "; existing ",matchDf$rank,"=", matchLineage)
+        )
+        next;
+      } else if(length(destNewCaseMatches)>0) {
+        matchDf = .GlobalEnv$newMSL[destNewCaseMatches,]
+        matchDf = matchDf[order(matchDf$msl_release_num,decreasing = T)[1],]
+        matchLineage = paste0( "MSL", matchDf$msl_release_num,":",matchDf$lineage)
+        log_change_error(curChangeDf, "ERROR", "DEST.IN_NEW_CASE",
+                         errorStr=paste0("Change=",toupper(action),", but taxon name already created in new MSL with different capitalization"),
+                         notes=paste0("proposed ",destTaxonRank,"=", destTaxonName,
                                       "; existing ",matchDf$rank,"=", matchLineage,
                                       "; otherProposal=", matchDf[1,"in_filename"]
                          )
