@@ -3624,6 +3624,57 @@ update_lineage = function(parent_id,parent_lineage,
 
 # ............................................................................
 #
+# newmsl_lineage_from_parents (.GlobalEnv$newMSL)
+#
+# ............................................................................
+# Lineage of a newMSL taxon, built from parent_id up to the tree root.
+# The lineage column is not always current: MOVE (and PROMOTE/DEMOTE) update
+# a taxon's parent_id but not its own lineage.
+#
+newmsl_lineage_from_parents = function(taxnode_id) {
+  lineageNames = c()
+  curId = taxnode_id
+  for( depth in seq_len(50) ) {
+    row = which(.GlobalEnv$newMSL$taxnode_id == curId)
+    # stop at the tree root (level 100), or if the parent is missing
+    if( length(row) != 1 || as.numeric(.GlobalEnv$newMSL$level_id[row]) <= 100 ) { break }
+    lineageNames = c(as.character(.GlobalEnv$newMSL$name[row]), lineageNames)
+    parentId = .GlobalEnv$newMSL$parent_id[row]
+    if( is.na(parentId) || parentId == curId ) { break }
+    curId = parentId
+  }
+  return(paste(lineageNames, collapse=";"))
+}
+
+# ............................................................................
+#
+# newmsl_resolve_merged_id (.GlobalEnv$newMSL, .GlobalEnv$curMSL)
+#
+# ............................................................................
+# A merge into an existing taxon removes the merge source from newMSL, and
+# records the newMSL taxnode_id it removed in curMSL$.merge_src_taxnode_id.
+# Returns taxnode_id if it is still in newMSL. If a merge removed it, follows
+# that merge to its target, and so on: for MERGE A->B, then MERGE B->C, B's
+# taxnode_id returns C's. Returns NA if no taxon remains (eg the target was
+# abolished, or the merges loop).
+#
+newmsl_resolve_merged_id = function(taxnode_id) {
+  seenIds = c()
+  curId = taxnode_id
+  while( length(curId) == 1 && !is.na(curId) && !(curId %in% seenIds) ) {
+    if( curId %in% .GlobalEnv$newMSL$taxnode_id ) { return(curId) }
+    seenIds = c(seenIds, curId)
+    if( is.null(.GlobalEnv$curMSL$.merge_src_taxnode_id) ) { break }
+    mergedRow = which(.GlobalEnv$curMSL$out_change %in% "merge" &
+                        .GlobalEnv$curMSL$.merge_src_taxnode_id %in% curId)
+    if( length(mergedRow) != 1 ) { break }
+    curId = .GlobalEnv$curMSL$.out_taxnode_id[mergedRow]
+  }
+  return(NA)
+}
+
+# ............................................................................
+#
 # abolish_taxon
 #
 # remove a taxon from newMSL, and record the abolish on curMSL
@@ -3671,6 +3722,10 @@ apply_changes = function(changesDf) {
   # iterate over changes
   # 
   errorDf = allErrorDf[FALSE,]
+  # Successful rename/move outcomes keyed by proposal change row. A later
+  # rename can replace the name again, so final names do not prove whether
+  # an earlier operation succeeded on the merge's intended target.
+  appliedRenameMoves = list()
   
   # genera to scan for binomial issues when we're done
   # QQQQ: should replace this with an admin column on newMSL!
@@ -4599,6 +4654,11 @@ apply_changes = function(changesDf) {
         .GlobalEnv$curMSL[srcPrevTarget,".out_taxnode_id"] = .GlobalEnv$newMSL[srcNewTarget,"taxnode_id"]
         .GlobalEnv$curMSL[srcPrevTarget,".actionOrder"] = actionOrder
         
+        appliedRenameMoves[[row]] = list(
+          taxnode_id=.GlobalEnv$newMSL$taxnode_id[srcNewTarget],
+          name=as.character(.GlobalEnv$newMSL$name[srcNewTarget]),
+          rank=as.character(.GlobalEnv$newMSL$rank[srcNewTarget]))
+
         # success note
         errorDf=log_change_error(curChangeDf, "SUCCESS", "RENAME.OK", "Change=RENAME, applied successfully", 
                                  paste0("RENAME ",srcTaxonRank, 
@@ -5144,6 +5204,12 @@ apply_changes = function(changesDf) {
       } # other: move, promote, demote
       # success note
       errorCodeMoveMap=c("move"="MOVE.OK","promote"="PROMOTE.OK","demote"="DEMOTE.OK","split"="SPLIT=.OK","merge"="MERGE=.OK")
+      if(curChangeDf$.action == "move") {
+        appliedRenameMoves[[row]] = list(
+          taxnode_id=.GlobalEnv$newMSL$taxnode_id[srcNewTarget],
+          name=as.character(.GlobalEnv$newMSL$name[srcNewTarget]),
+          rank=as.character(.GlobalEnv$newMSL$rank[srcNewTarget]))
+      }
       if(!is.na(srcPrevTaxnodeID)) {
         # moving something that existed in prev MSL
         log_change_error(curChangeDf, "SUCCESS",  errorCodeMoveMap[curChangeDf$.action], 
@@ -5230,12 +5296,36 @@ apply_changes = function(changesDf) {
         else { 
           # found in newMSL, but not in curMSL; go find original curMSL name
           srcCurTaxon = curMSL %>% filter(taxnode_id==srcNewTaxon$.prev_taxnode_id)
+          if(nrow(srcCurTaxon)==0) {
+            # created in this MSL, so there is no current taxon to merge
+            log_change_error(curChangeDf, "ERROR", "MERGE.SRC_NOT_IN_CUR", "Change=MERGE, but taxon does not exist in the current MSL",
+                             notes=paste0("Looked for=",srcTaxonName,
+                                          "; found only in new MSL, from proposal(s)=", srcNewTaxon$in_filename)
+            )
+            next;
+          }
           # warn about discrepancy
-          log_change_error(curChangeDf, "WARN", "MERGE.SRC_ALREADY_CHANGED", "Change=MERGE, but current taxon already changed", 
-                           errorStr=paste0("Looked for=",srcTaxonName,
-                                           "; ORIGNAL//FOUND=", diff_lineages(srcCurTaxon$lineage,srcNewTaxon$lineage),
-                                           "; proposal=",," already did=",)
+          # (was: paste0(..., "; proposal=",," already did=",), which stopped R with "argument is missing")
+          log_change_error(curChangeDf, "WARNING", "MERGE.SRC_ALREADY_CHANGED", "Change=MERGE, but current taxon already changed",
+                           notes=paste0("Looked for=",srcTaxonName,
+                                        "; ORIGNAL//FOUND=", diff_lineages(srcCurTaxon$lineage,srcNewTaxon$lineage),
+                                        "; proposal(s)=", srcCurTaxon$out_filename,
+                                        " already did a '", srcCurTaxon$out_change, "' to '", srcCurTaxon$out_target, "'")
           )
+        }
+      } else {
+        # found in curMSL: use its copy in newMSL, by taxnode_id, not the srcNewTaxon
+        # left by the checks above (only set when the name matches exactly once in
+        # newMSL, so it could be from an earlier change)
+        srcNewTaxon = .GlobalEnv$newMSL %>% filter(.prev_taxnode_id==srcCurTaxon$taxnode_id)
+        if(nrow(srcNewTaxon)!=1) {
+          log_change_error(curChangeDf, "ERROR", "MERGE.SRC_NOT_IN_NEW", "Change=MERGE, but taxon is no longer in the new MSL",
+                           notes=paste0("Looked for=",srcTaxonName,
+                                        "; matches in new MSL=", nrow(srcNewTaxon),
+                                        "; proposal(s)=", srcCurTaxon$out_filename,
+                                        " already did a '", srcCurTaxon$out_change, "' to '", srcCurTaxon$out_target, "'")
+          )
+          next;
         }
       }
       
@@ -5261,6 +5351,7 @@ apply_changes = function(changesDf) {
       ##### look for DEST #####
       
       foundMergeTarget=FALSE
+      pendingDestChange=NULL # set if a later rename/move in this proposal gives the target its proposed name
       destNewTaxon=.GlobalEnv$newMSL %>% filter(name==as.character(destTaxonName))
       if(params$verbose) {cat(paste0("MERGE:             ",toupper(curChangeDf$rank)," code:",code," line:",linenum," dest.findTarget(new,",destTaxonName,")=",nrow(destNewTaxon),"\n"))}
       if(nrow(destNewTaxon)==1) {
@@ -5271,22 +5362,106 @@ apply_changes = function(changesDf) {
         # check if someone else already modified it
         destCurTaxon = curMSL %>% filter(name==as.character(destTaxonName))
         if(nrow(destCurTaxon)==0) {
-          # just not there - we'll be creating it!
-          foundMergeTarget = FALSE
+          # Not in the current or new MSL. Merges run before renames/moves, so
+          # the proposed name may come from a rename/move later in this proposal
+          # (eg 2026.009F renames 'Marseillevirus massiliense' to
+          # 'Alphamarseillevirus massiliense' and merges another species into it).
+          # If so, merge into the taxon that change renames/moves: it keeps its
+          # taxnode_id, and out_target is set to its final name after all
+          # changes are applied (see "merged taxa - final merge target").
+          pendingDestIdx = which(
+            .GlobalEnv$allChangeDf$.code == code &
+              .GlobalEnv$allChangeDf$.action %in% c("rename","move") &
+              .GlobalEnv$allChangeDf$.destRank %in% as.character(destTaxonRank) &
+              .GlobalEnv$allChangeDf$.destTaxon %in% as.character(destTaxonName) &
+              !is.na(.GlobalEnv$allChangeDf$.srcTaxon) &
+              .GlobalEnv$allChangeDf$.codeLine != curChangeDf$.codeLine
+          )
+          if(length(pendingDestIdx)==1) {
+            pendingDestChange = .GlobalEnv$allChangeDf[pendingDestIdx,]
+            destNewTaxon = .GlobalEnv$newMSL %>% filter(name==as.character(pendingDestChange$.srcTaxon))
+          }
+          if(length(pendingDestIdx)==1 && nrow(destNewTaxon)==1) {
+            # found it, under its current name
+            pendingDestNotes = paste0("line ", pendingDestChange$.linenum, " does a '", pendingDestChange$change, "' of ",
+                                      pendingDestChange$.srcRank, " '", pendingDestChange$.srcTaxon, "' to '", pendingDestChange$.destTaxon, "'")
+            if(destNewTaxon$taxnode_id %in% srcNewTaxon$taxnode_id) {
+              # MERGE A->C and RENAME A->C: that change renames/moves the merge
+              # source itself, which can not be merged into itself (it would be
+              # removed from the new MSL, and the rename would then fail)
+              log_change_error(curChangeDf, "ERROR", "MERGE.DEST_IS_SRC",
+                               errorStr="Change=MERGE, but the proposed taxon is the current taxon, renamed/moved later in this proposal; a taxon can not be merged into itself",
+                               notes=pendingDestNotes
+              )
+              next;
+            }
+            foundMergeTarget = TRUE
+            log_change_error(curChangeDf, "INFO", "MERGE.DEST_PENDING_RENAME",
+                             errorStr="Change=MERGE, proposed taxon is renamed/moved to that name later in this proposal; merged into that taxon",
+                             notes=paste0(pendingDestNotes, "; merge into ", destNewTaxon$lineage)
+            )
+          } else if(length(pendingDestIdx)>0) {
+            # A change in this proposal gives a taxon the proposed name, but that
+            # taxon can't be identified, so that change will fail too. Merging as
+            # a rename to the proposed name (below) would conflict with it.
+            log_change_error(curChangeDf, "ERROR", "MERGE.DEST_PENDING_RENAME_FAILED",
+                             errorStr="Change=MERGE, proposed taxon is renamed/moved to that name later in this proposal, but the taxon that change renames/moves was not found",
+                             notes=paste0(paste0("line ", .GlobalEnv$allChangeDf$.linenum[pendingDestIdx], " does a '", .GlobalEnv$allChangeDf$change[pendingDestIdx], "' of ",
+                                                 .GlobalEnv$allChangeDf$.srcRank[pendingDestIdx], " '", .GlobalEnv$allChangeDf$.srcTaxon[pendingDestIdx], "'",
+                                                 collapse="; "),
+                                          "; matches in new MSL for the renamed/moved taxon: ", ifelse(length(pendingDestIdx)==1, nrow(destNewTaxon), "not checked, several changes"))
+            )
+            next;
+          } else {
+            # just not there - we'll be creating it!
+            foundMergeTarget = FALSE
+          }
         } 
         else if(nrow(destCurTaxon)==1 ) {
           # previous record - must have been modified already this MSL
           # find current matching record in newMSL
-          destNewTaxon = (.GlobalEnv$newMSL$.prev_taxnode_id==destCurTaxon$taxnode_id)
+          # (was a logical vector, so nrow() below stopped R with "argument is of length zero")
+          destNewTaxon = .GlobalEnv$newMSL %>% filter(.prev_taxnode_id==destCurTaxon$taxnode_id)
           if(nrow(destNewTaxon)==1) {
             # great, found it
             foundMergeTarget = TRUE
             # warn about it (possibly contradictory) change
             log_change_error(curChangeDf, "WARNING", "MERGE.DEST_ALREADY_CHANGED", "Change=MERGE, but proposed taxon already modified", 
                              errorStr=paste0("proposal(s)=", destCurTaxon$out_filename, " also did a '",destCurTaxon$out_change,"' to '", destCurTaxon$out_target,"'",
-                                             "; PROPOSED//OBSERVED=",diff_lineage(destLineage,destCurTaxon$lineage))
+                                             "; PROPOSED//OBSERVED=",diff_lineages(destLineage,destCurTaxon$lineage))
             )
           } 
+          else if(nrow(destNewTaxon) == 0 && !is.null(destCurTaxon$.merge_src_taxnode_id) && !is.na(destCurTaxon$.merge_src_taxnode_id)) {
+            # the proposed taxon was merged into another taxon already (eg MERGE
+            # B->C ran before MERGE A->B): merge into the taxon it was merged into.
+            # (Without this, A would be renamed to B, a name merged away.)
+            # Change ordering usually runs MERGE A->B first instead; that case is
+            # resolved after all changes (see "merged taxa - final merge target").
+            mergedDestId = newmsl_resolve_merged_id(destCurTaxon$.out_taxnode_id)
+            mergedDestNotes = paste0("proposal(s)=", destCurTaxon$out_filename, " line ", destCurTaxon$.merge_linenum,
+                                     " merged '", destCurTaxon$name, "' into '", destCurTaxon$out_target, "'")
+            if(is.na(mergedDestId)) {
+              log_change_error(curChangeDf, "ERROR", "MERGE.DEST_NOT_IN_NEW",
+                               errorStr="Change=MERGE, but the proposed taxon was merged into a taxon that is no longer in the new MSL",
+                               notes=mergedDestNotes
+              )
+              next;
+            }
+            if(mergedDestId %in% srcNewTaxon$taxnode_id) {
+              # MERGE A->B, then MERGE B->A: A is already part of B
+              log_change_error(curChangeDf, "ERROR", "MERGE.DEST_IS_SRC",
+                               errorStr="Change=MERGE, but the proposed taxon was already merged into the current taxon; a taxon can not be merged into itself",
+                               notes=mergedDestNotes
+              )
+              next;
+            }
+            destNewTaxon = .GlobalEnv$newMSL %>% filter(taxnode_id==mergedDestId)
+            foundMergeTarget = TRUE
+            log_change_error(curChangeDf, "WARNING", "MERGE.DEST_MERGED",
+                             errorStr="Change=MERGE, but the proposed taxon is itself merged into another taxon; merged into that taxon",
+                             notes=paste0(mergedDestNotes, "; merge into ", destNewTaxon$lineage)
+            )
+          }
           else if(nrow(destNewTaxon) == 0) { 
             # just not there - we'll be creating it!
             foundMergeTarget = FALSE
@@ -5308,6 +5483,15 @@ apply_changes = function(changesDf) {
         } # dest multiple in curMSL
       } # dest not in newMSL
       
+      # a taxon can not be merged into itself: merging would remove it from the new MSL
+      if( foundMergeTarget && any(destNewTaxon$taxnode_id %in% srcNewTaxon$taxnode_id) ) {
+        log_change_error(curChangeDf, "ERROR", "MERGE.DEST_IS_SRC",
+                         errorStr="Change=MERGE, but the proposed taxon is the current taxon; a taxon can not be merged into itself",
+                         notes=paste0("current taxon '", srcNewTaxon$lineage, "', proposed taxon found as '", destNewTaxon$lineage, "'")
+        )
+        next;
+      }
+
       ##### rename/move or merge #####  
       if( foundMergeTarget )  {
         ###### . merge into existing ######
@@ -5321,6 +5505,9 @@ apply_changes = function(changesDf) {
         .GlobalEnv$curMSL[srcCurSelect,"out_notes"] = paste0("linenum=",linenum)
         .GlobalEnv$curMSL[srcCurSelect,".out_taxnode_id"] = destNewTaxon$taxnode_id
         .GlobalEnv$curMSL[srcCurSelect,".actionOrder"] = actionOrder
+        # this change, to report on it after all changes (see "merged taxa - final merge target")
+        .GlobalEnv$curMSL[srcCurSelect,".merge_row"] = row
+        .GlobalEnv$curMSL[srcCurSelect,".merge_order"] = actionOrder
         
         # set admin columns in newMSL for DEST
         destNewSelect = newMSL$taxnode_id == destNewTaxon$taxnode_id
@@ -5343,6 +5530,18 @@ apply_changes = function(changesDf) {
         
         # remove taxon from NEW
         .GlobalEnv$newMSL = .GlobalEnv$newMSL[!srcNewSelect,]
+        # record which newMSL taxon was removed, so a merge into it can be followed here
+        # (see newmsl_resolve_merged_id)
+        .GlobalEnv$curMSL[srcCurSelect,".merge_src_taxnode_id"] = srcNewTaxon$taxnode_id
+        # Remember the exact dependent rename/move and intended identity, so its
+        # successful outcome can be checked even after further renames or merges.
+        if(!is.null(pendingDestChange)) {
+          .GlobalEnv$curMSL[srcCurSelect,".merge_pending_name"] = as.character(destTaxonName)
+          .GlobalEnv$curMSL[srcCurSelect,".merge_pending_rank"] = as.character(destTaxonRank)
+          .GlobalEnv$curMSL[srcCurSelect,".merge_pending_linenum"] = as.character(pendingDestChange$.linenum)
+          .GlobalEnv$curMSL[srcCurSelect,".merge_pending_row"] = rownames(pendingDestChange)
+          .GlobalEnv$curMSL[srcCurSelect,".merge_pending_taxnode_id"] = destNewTaxon$taxnode_id
+        }
         
         # message setup
         logNotes =paste0(toupper(curChangeDf$.action)," ",
@@ -5427,10 +5626,12 @@ apply_changes = function(changesDf) {
             }
           }
           else if(nrow(parentDestCurTaxon)>1) {
+            # (notes used changedParent, which is not set on this branch: R stopped
+            # with "object not found", or reported a parent from an earlier change)
             log_change_error(curChangeDf, "ERROR", "MERGE_MOVE_RENAME.PARENT_MULTIPLE_MATCH", 
                              errorStr="Probably parent was split by another proposal", 
-                             notes=paste0("proposal(s)=", changedParent$.code, " did a '",changedParent$change,"' ",
-                                          "of '",changedParent$.srcTaxon, "' to '", changedParent$.destTaxon,"'")
+                             notes=paste0("parent '", destParentName, "' matches ", nrow(parentDestCurTaxon),
+                                          " taxa in the current MSL: ", paste(parentDestCurTaxon$lineage, collapse=", "))
             )
             next
           } 
@@ -5533,6 +5734,9 @@ apply_changes = function(changesDf) {
         .GlobalEnv$curMSL[srcCurSelect,"out_notes"] = paste0("linenum=",linenum)
         .GlobalEnv$curMSL[srcCurSelect,".out_taxnode_id"] = newMSL[destNewSelect,"taxnode_id"]
         .GlobalEnv$curMSL[srcCurSelect,".actionOrder"] = actionOrder
+        # this change, to report on it after all changes (see "merged taxa - final merge target")
+        .GlobalEnv$curMSL[srcCurSelect,".merge_row"] = row
+        .GlobalEnv$curMSL[srcCurSelect,".merge_order"] = actionOrder
         
         # success note
         errorDf=log_change_error(curChangeDf, "SUCCESS", "MERGE_MOVE_RENAME.OK", "Change=MERGE, applied successfully", 
@@ -5584,6 +5788,23 @@ apply_changes = function(changesDf) {
   #
   # do this BEFORE the empty taxa scan, since we're deleting empty things.
   #
+  # A split source that another change in the same proposal renamed, moved,
+  # promoted or demoted still exists under its new name/rank/parent, so that
+  # change keeps it, like a split line with the original name would. Check
+  # here, after all changes: that change can run before the split (promote,
+  # eg 2023.009F) or after it (rename, eg 2026.009F).
+  #
+  splitSrcIdx = which(.GlobalEnv$newMSL$.split & !.GlobalEnv$newMSL$.split_kept)
+  for(splitSrcRow in splitSrcIdx) {
+    splitPrevRow = which(.GlobalEnv$curMSL$taxnode_id == .GlobalEnv$newMSL$.prev_taxnode_id[splitSrcRow])
+    if(length(splitPrevRow) != 1) { next }
+    splitZip = paste0(proposalsDf[.GlobalEnv$newMSL$.split_code[splitSrcRow],"basename"],".zip")
+    splitPrevOutFiles = strsplit(as.character(.GlobalEnv$curMSL$out_filename[splitPrevRow]), ";", fixed=TRUE)[[1]]
+    if( as.character(.GlobalEnv$curMSL$out_change[splitPrevRow]) %in% c("rename","move","promote","demote")
+        && splitZip %in% splitPrevOutFiles ) {
+      .GlobalEnv$newMSL[splitSrcRow,".split_kept"] = TRUE
+    }
+  }
   splitDeleteIdx = .GlobalEnv$newMSL$.split & !.GlobalEnv$newMSL$.split_kept
   if( sum(splitDeleteIdx) > 0 ) {
     # count these as actions
@@ -5758,6 +5979,88 @@ apply_changes = function(changesDf) {
       )
     }
       
+  }
+
+  ##### merged taxa - final merge target #####
+  #
+  # A merge records its target's lineage in out_target when it is applied.
+  # Merges run before renames/moves, so a later change (eg renaming the target
+  # or its genus) can leave out_target naming a taxon that is not in the new
+  # MSL; the database load (rebuild_delta_nodes, which matches out_target to
+  # the new MSL's lineage or name) then can not find the merge target.
+  # If the target's lineage changed after the merge, record its final name.
+  #
+  # Before that:
+  # - A later merge can remove the target itself (MERGE A->B, then MERGE B->C).
+  #   Follow those merges to the taxon that remains (WARNING MERGE.DEST_MERGED).
+  #   If none remains, report it (ERROR MERGE.DEST_NOT_IN_NEW).
+  # - A merge into a taxon that a later rename/move in the same proposal names
+  #   (INFO MERGE.DEST_PENDING_RENAME) relied on that specific change succeeding
+  #   on that taxon. Check its recorded outcome, not the final name/rank, which
+  #   subsequent successful changes may replace.
+  #
+  if( !is.null(.GlobalEnv$curMSL$.out_taxnode_id) ) {
+    mergedIdx = which(.GlobalEnv$curMSL$out_change %in% "merge" & !is.na(.GlobalEnv$curMSL$.out_taxnode_id))
+    for( mergedRow in mergedIdx ) {
+      # the merge's change line, to report on (NULL if not recorded)
+      mergeChangeDf = NULL
+      if( !is.null(.GlobalEnv$curMSL$.merge_row) && !is.na(.GlobalEnv$curMSL$.merge_row[mergedRow]) ) {
+        mergeChangeDf = changesDf[.GlobalEnv$curMSL$.merge_row[mergedRow],]
+        mergeChangeDf$.order = .GlobalEnv$curMSL$.merge_order[mergedRow]
+      }
+      mergeNotes = paste0("merged ", .GlobalEnv$curMSL$rank[mergedRow], " '", .GlobalEnv$curMSL$name[mergedRow],
+                          "' into '", .GlobalEnv$curMSL$out_target[mergedRow], "'")
+
+      # follow merges of the target
+      recordedTargetId = .GlobalEnv$curMSL$.out_taxnode_id[mergedRow]
+      mergeTargetId = newmsl_resolve_merged_id(recordedTargetId)
+      if( is.na(mergeTargetId) ) {
+        # target no longer in newMSL: leave out_target as is
+        if( !is.null(mergeChangeDf) ) {
+          log_change_error(mergeChangeDf, "ERROR", "MERGE.DEST_NOT_IN_NEW",
+                           errorStr="Change=MERGE, but the taxon it was merged into is no longer in the new MSL",
+                           notes=mergeNotes
+          )
+        }
+        next
+      }
+      mergeTargetRow = which(.GlobalEnv$newMSL$taxnode_id == mergeTargetId)
+      if( mergeTargetId != recordedTargetId ) {
+        if( !is.null(mergeChangeDf) ) {
+          log_change_error(mergeChangeDf, "WARNING", "MERGE.DEST_MERGED",
+                           errorStr="Change=MERGE, but the proposed taxon is itself merged into another taxon; merged into that taxon",
+                           notes=paste0(mergeNotes, ", which was then merged into '", newmsl_lineage_from_parents(mergeTargetId), "'")
+          )
+        }
+        .GlobalEnv$curMSL[mergedRow,".out_taxnode_id"] = mergeTargetId
+      }
+
+      # check a merge into a taxon renamed/moved later in its proposal
+      if( !is.null(.GlobalEnv$curMSL$.merge_pending_name) && !is.na(.GlobalEnv$curMSL$.merge_pending_name[mergedRow]) ) {
+        pendingName = as.character(.GlobalEnv$curMSL$.merge_pending_name[mergedRow])
+        pendingRank = as.character(.GlobalEnv$curMSL$.merge_pending_rank[mergedRow])
+        pendingRow = as.character(.GlobalEnv$curMSL$.merge_pending_row[mergedRow])
+        appliedChange = appliedRenameMoves[[pendingRow]]
+        pendingSucceeded = !is.null(appliedChange) &&
+          isTRUE(appliedChange$taxnode_id == .GlobalEnv$curMSL$.merge_pending_taxnode_id[mergedRow]) &&
+          identical(appliedChange$name, pendingName) && identical(appliedChange$rank, pendingRank)
+        if( !pendingSucceeded ) {
+          if( !is.null(mergeChangeDf) ) {
+            log_change_error(mergeChangeDf, "ERROR", "MERGE.DEST_PENDING_RENAME_FAILED",
+                             errorStr="Change=MERGE, merged into a taxon that a later rename/move in this proposal was to give the proposed name, but that change did not",
+                             notes=paste0("line ", .GlobalEnv$curMSL$.merge_pending_linenum[mergedRow], " was to rename/move it to ",
+                                          pendingRank, " '", pendingName, "'; ", mergeNotes,
+                                          ", which is now ", .GlobalEnv$newMSL$rank[mergeTargetRow], " '", newmsl_lineage_from_parents(mergeTargetId), "'")
+            )
+          }
+        }
+      }
+
+      mergeTargetLineage = newmsl_lineage_from_parents(.GlobalEnv$newMSL$taxnode_id[mergeTargetRow])
+      if( !identical(as.character(.GlobalEnv$curMSL$out_target[mergedRow]), mergeTargetLineage) ) {
+        .GlobalEnv$curMSL[mergedRow,"out_target"] = as.character(.GlobalEnv$newMSL$name[mergeTargetRow])
+      }
+    }
   }
   return(list(errorDf=errorDf))
 } # apply_changes()
