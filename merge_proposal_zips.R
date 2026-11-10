@@ -4282,6 +4282,32 @@ apply_changes = function(changesDf) {
                            errorStr=paste0("Change=",toupper(curChangeDf$.action),", but proposed species must have a host/source value")
           )
         }
+
+        #
+        # check exemplar virus name, genome coverage and genome composition
+        #
+        # Soft errors: the species is still created. These cells fill the new
+        # species' VMR isolate (species_isolates isolate_names, genome_coverage
+        # and molecule). A cell with no letters or digits counts as empty.
+        #
+        speciesInfoCols = c(
+          exemplarName   = "Exemplar virus name",
+          genomeCoverage = "Genome coverage",
+          molecule       = "Genome composition"
+        )
+        speciesInfoCodes = c(
+          exemplarName   = "CREATE.SPECIES_NO_EXEMPLAR_NAME",
+          genomeCoverage = "CREATE.SPECIES_NO_GENOME_COVERAGE",
+          molecule       = "CREATE.SPECIES_NO_GENOME_COMPOSITION"
+        )
+        for( infoCol in names(speciesInfoCols) ) {
+          infoValue = as.character(curChangeDf[[infoCol]])
+          if( is.na(infoValue) || !grepl("[[:alnum:]]", infoValue) || grepl("please.*select", infoValue, ignore.case=T) ) {
+            log_change_error(curChangeDf, "ERROR", speciesInfoCodes[[infoCol]],
+                             errorStr=paste0("Change=",toupper(curChangeDf$.action),", but proposed species is missing '",speciesInfoCols[[infoCol]],"'")
+            )
+          }
+        }
         
         # check if parent is a genus
         if(destParentTaxon$rank=="genus") {
