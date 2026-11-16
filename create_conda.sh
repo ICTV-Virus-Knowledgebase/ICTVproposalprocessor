@@ -1,28 +1,29 @@
 #!/usr/bin/env bash
 #
-# Create conda env for running R 
+# Create the conda env for running the R scripts: ./conda/r_env
 #
-conda create -p ".conda/r_env" R
-
-conda activate ./conda/r_env
-
-# 
-# install needed R packages
+# USAGE: bash create_conda.sh   (from anywhere; the env goes in the repo root)
 #
-R -e "install.packages('optparse',dependencies=TRUE, repos='http://cran.rstudio.com/')"
-R -e "install.packages('data.table',dependencies=TRUE, repos='http://cran.rstudio.com/')"
-R -e "install.packages('yaml',dependencies=TRUE, repos='http://cran.rstudio.com/')"
+# All packages come from conda-forge, so nothing is compiled from CRAN source.
+# R is pinned to 4.3.x: the testResults baselines were made with R 4.3.1 on
+# Linux, but on macOS arm64 R 4.3.1 can't be installed with qdapTools (its
+# dependency r-xml needs icu 75, and the r-base 4.3.1 builds need icu 72-73),
+# so the solver picks 4.3.3 there.
+#
+# The Python env is separate: conda env create -f environment.python.yml
+#
+set -euo pipefail
+cd "$(dirname "$0")"
 
-#R -e "install.packages('tidyverse',dependencies=TRUE, repos='http://cran.rstudio.com/')"
-R -e "install.packages('stringr',dependencies=TRUE, repos='http://cran.rstudio.com/')"
-R -e "install.packages('dplyr',dependencies=TRUE, repos='http://cran.rstudio.com/')"
-R -e "install.packages('readr',dependencies=TRUE, repos='http://cran.rstudio.com/')"
+conda create -p ./conda/r_env --override-channels -c conda-forge \
+    "r-base=4.3" \
+    r-optparse r-data.table r-stringr r-dplyr r-tidyr r-readr \
+    r-readxl r-writexl \
+    r-qdaptools \
+    r-jsonlite r-rjson
 
-R -e "install.packages('readxl',dependencies=TRUE, repos='http://cran.rstudio.com/')"
-R -e "install.packages('writexl',dependencies=TRUE, repos='http://cran.rstudio.com/')"
+# r-qdaptools: read docx
+# r-jsonlite, r-rjson: only for the legacy load_json_msl.R
 
-# fails (not available) on R 3.6.3 / ubuntu:20.04
-#R -e "install.packages('DescTools',dependencies=TRUE, repos='http://cran.rstudio.com/')"
-
-# read docx
-R -e "install.packages('qdapTools',dependencies=TRUE, repos='http://cran.rstudio.com/')"
+echo "# Created ./conda/r_env; check it with:"
+echo "#   conda run -p ./conda/r_env Rscript --version"
