@@ -1,0 +1,3 @@
+subcommittee	code	docx	xlsx	row	change	rank	taxon	level	error	message	notes	scAbbrev	order
+Bacterial viruses (B) proposals	2023.080B	MISSING	2023.080B.N.v1.Bglawtbvirus_ng.xlsx	5	Create new	genus	Bglawtbvirus	SUCCESS	CREATE.OK	Change=NEW, applied successfully	Create genus of 'Duplodnaviria;Heunggongvirae;Uroviricota;Caudoviricetes;Bglawtbvirus'	NA	1
+Bacterial viruses (B) proposals	2023.080B	MISSING	2023.080B.N.v1.Bglawtbvirus_ng.xlsx	6	Create new	species	Bglawtbvirus WTB	SUCCESS	CREATE.OK	Change=NEW, applied successfully	Create species of 'Duplodnaviria;Heunggongvirae;Uroviricota;Caudoviricetes;Bglawtbvirus;Bglawtbvirus WTB'	NA	2

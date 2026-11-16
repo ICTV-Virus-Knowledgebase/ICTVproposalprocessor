@@ -1,0 +1,3 @@
+subcommittee	code	docx	xlsx	row	change	rank	taxon	level	error	message	notes	scAbbrev	order
+Animal +ssRNA (S) proposals	2026.001S	MISSING	2026.001S.Avastrovirus_1nsp_renamed.xlsx	1	OPEN_XLSX			WARNING	XLSX.CODE_BAD	XLSX header code/version does not match filename	XLSX cell E1 is '2025.001S'; expected 2026.001S; filename='2026.001S.Avastrovirus_1nsp_renamed.xlsx'	NA	0
+Animal +ssRNA (S) proposals	2026.001S	MISSING	2026.001S.Avastrovirus_1nsp_renamed.xlsx	5	Rename	species	Avastrovirus marecae	SUCCESS	RENAME.OK	Change=RENAME, applied successfully	RENAME species from 'Avastrovirus marecae' to 'Avastrovirus foreverTesting' in 'Riboviria;Orthornavirae;Pisuviricota;Stelpaviricetes;Stellavirales;Astroviridae;Avastrovirus'	NA	1

@@ -1,0 +1,27 @@
+# /opt/anaconda3/envs/ictv-proposal-validator-python/bin/python merge_proposal_zips.py --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposals2023.009F4 --outDir=testResultsPython/msl38/proposals2023.009F4 --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: msl41v1.20261031.0ab4232
+Previous taxa: 132852 34  from  current_msl/msl38/taxonomy_node_export.utf8.txt 
+WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+[1] "# SKIP VMR LOAD: current_msl/msl38/species_isolates.utf8.txt"
+# LOAD_PROPOSAL_DOCX( 2023.009F )
+# LOADED:  2023.009F  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 2023.009F , NA )
+# LOADED:  2023.009F  XLS with  0  errors/warnings
+# LOADED:  2023.009F 
+# QC start: 2023.009F: proposal loaded (1 out of 1)
+# QCed:      2023.009F  with  0  errors/warnings
+changeList:  2023.009F 
+Wrote: OUTDIR/QC.summary.tsv (0 rows)
+# MERGE PROC: 2023.009F with 25 changes  (1 out of 1)
+# DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 25 
+# APPLIED:  25 changes from 2023.009F.A.v4.Virophages_reorg.split_promote  with INFO:1 SUCCESS:25 
+# TOTAL  :  25 changes  from 1 proposals  with INFO:1 SUCCESS:25 
+Wrote: OUTDIR/QC.summary.tsv (26 rows)
+Writing  testResultsPython/msl38/proposals2023.009F4/msl.tsv 
+WROTE   testResultsPython/msl38/proposals2023.009F4/msl.tsv (14796 rows)
+Writing  testResultsPython/msl38/proposals2023.009F4/QC.docx_summary.tsv 
+WROTE   testResultsPython/msl38/proposals2023.009F4/QC.docx_summary.tsv (1)
+Writing  testResultsPython/msl38/proposals2023.009F4/msl_load.sql 
+Writing out_* updates for prevMSL
+WROTE    testResultsPython/msl38/proposals2023.009F4/msl_load.sql 
+# COMPLETED.

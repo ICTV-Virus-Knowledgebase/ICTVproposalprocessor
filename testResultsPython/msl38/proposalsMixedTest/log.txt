@@ -1,0 +1,48 @@
+# /opt/anaconda3/envs/ictv-proposal-validator-python/bin/python merge_proposal_zips.py --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposalsMixedTest --outDir=testResultsPython/msl38/proposalsMixedTest --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: msl41v1.20261031.0ab4232
+Previous taxa: 132852 34  from  current_msl/msl38/taxonomy_node_export.utf8.txt 
+WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+[1] "# SKIP VMR LOAD: current_msl/msl38/species_isolates.utf8.txt"
+Wrote: OUTDIR/QC.summary.tsv (3 rows)
+# SKIPPED:  2  (no .xlsx)
+# LOAD_PROPOSAL_DOCX( 2023.002A )
+# LOADED:  2023.002A  DOCX with  3  errors/warnings
+# LOAD_PROPOSAL( 2023.002A , NA )
+# LOADED:  2023.002A  XLS with  3  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (3 rows)
+# LOADED:  2023.002A 
+# QC start: 2023.002A: proposal loaded (2 out of 4)
+# QCed:      2023.002A  with  9  errors/warnings
+# LOAD_PROPOSAL_DOCX( 3 )
+# LOADED:  3  DOCX with  9  errors/warnings
+# LOAD_PROPOSAL( 3 , NA )
+# LOADED:  3  XLS with  9  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (9 rows)
+# LOADED:  3 
+# QC start: 3: proposal loaded (3 out of 4)
+# QCed:      3  with  10  errors/warnings
+# LOAD_PROPOSAL_DOCX( 4 )
+# LOADED:  4  DOCX with  10  errors/warnings
+# LOAD_PROPOSAL( 4 , NA )
+code 4: A worksheet name matching 'proposal*' was not found: logging error
+# LOADED:  4  XLS with  11  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (11 rows)
+# LOADED:  4 
+SKIP:  4 : proposal could not be loaded
+changeList:  2023.002A 3 
+Wrote: OUTDIR/QC.summary.tsv (11 rows)
+# MERGE PROC: 2023.002A with 3 changes  (2 out of 4)
+# MERGE PROC: 3 with 2 changes  (3 out of 4)
+# DONE. MERGED 2  proposal(s), skipped 2 ; total changes: 5 
+# APPLIED:   3 changes from 2023.002A.N.v4.create_subgenus_move_sp_create_sp  with ERROR:7 SUCCESS:2 
+# APPLIED:   2 changes from new_proposal  with ERROR:2 INFO:1 
+# TOTAL  :   5 changes  from 2 proposals  with ERROR:12 WARNING:2 INFO:1 SUCCESS:2 
+Wrote: OUTDIR/QC.summary.tsv (17 rows)
+Writing  testResultsPython/msl38/proposalsMixedTest/msl.tsv 
+WROTE   testResultsPython/msl38/proposalsMixedTest/msl.tsv (14779 rows)
+Writing  testResultsPython/msl38/proposalsMixedTest/QC.docx_summary.tsv 
+WROTE   testResultsPython/msl38/proposalsMixedTest/QC.docx_summary.tsv (4)
+Writing  testResultsPython/msl38/proposalsMixedTest/msl_load.sql 
+Writing out_* updates for prevMSL
+WROTE    testResultsPython/msl38/proposalsMixedTest/msl_load.sql 
+# COMPLETED.

@@ -1,0 +1,116 @@
+# /opt/anaconda3/envs/ictv-proposal-validator-python/bin/python merge_proposal_zips.py --refDir=current_msl/msl40v1 --proposalsDir=testData/msl40v1/proposals_msl41_holly10 --outDir=testResultsPython/msl40v1/proposals_msl41_holly10 --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: msl41v1.20261031.0ab4232
+Previous taxa: 172682 34  from  current_msl/msl40v1/taxonomy_node_export.utf8.txt 
+WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+# LOAD_PROPOSAL_DOCX( 2025.001M )
+# LOADED:  2025.001M  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 2025.001M , NA )
+# LOADED:  2025.001M  XLS with  0  errors/warnings
+# LOADED:  2025.001M 
+# QC start: 2025.001M: proposal loaded (1 out of 10)
+# QCed:      2025.001M  with  1  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2025.002M )
+# LOADED:  2025.002M  DOCX with  1  errors/warnings
+# LOAD_PROPOSAL( 2025.002M , NA )
+# LOADED:  2025.002M  XLS with  1  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (1 rows)
+# LOADED:  2025.002M 
+# QC start: 2025.002M: proposal loaded (2 out of 10)
+# QCed:      2025.002M  with  2  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2025.003M )
+# LOADED:  2025.003M  DOCX with  2  errors/warnings
+# LOAD_PROPOSAL( 2025.003M , NA )
+# LOADED:  2025.003M  XLS with  2  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (2 rows)
+# LOADED:  2025.003M 
+# QC start: 2025.003M: proposal loaded (3 out of 10)
+# QCed:      2025.003M  with  3  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2025.004M )
+# LOADED:  2025.004M  DOCX with  3  errors/warnings
+# LOAD_PROPOSAL( 2025.004M , NA )
+# LOADED:  2025.004M  XLS with  3  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (3 rows)
+# LOADED:  2025.004M 
+# QC start: 2025.004M: proposal loaded (4 out of 10)
+# QCed:      2025.004M  with  4  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2025.005M )
+# LOADED:  2025.005M  DOCX with  4  errors/warnings
+# LOAD_PROPOSAL( 2025.005M , NA )
+# LOADED:  2025.005M  XLS with  4  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (4 rows)
+# LOADED:  2025.005M 
+# QC start: 2025.005M: proposal loaded (5 out of 10)
+# QCed:      2025.005M  with  5  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2025.006M )
+# LOADED:  2025.006M  DOCX with  5  errors/warnings
+# LOAD_PROPOSAL( 2025.006M , NA )
+# LOADED:  2025.006M  XLS with  5  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (5 rows)
+# LOADED:  2025.006M 
+# QC start: 2025.006M: proposal loaded (6 out of 10)
+# QCed:      2025.006M  with  6  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2025.007M )
+# LOADED:  2025.007M  DOCX with  6  errors/warnings
+# LOAD_PROPOSAL( 2025.007M , NA )
+# LOADED:  2025.007M  XLS with  6  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (6 rows)
+# LOADED:  2025.007M 
+# QC start: 2025.007M: proposal loaded (7 out of 10)
+# QCed:      2025.007M  with  7  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2025.008M )
+# LOADED:  2025.008M  DOCX with  7  errors/warnings
+# LOAD_PROPOSAL( 2025.008M , NA )
+# LOADED:  2025.008M  XLS with  7  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (7 rows)
+# LOADED:  2025.008M 
+# QC start: 2025.008M: proposal loaded (8 out of 10)
+# QCed:      2025.008M  with  8  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2025.009M )
+# LOADED:  2025.009M  DOCX with  8  errors/warnings
+# LOAD_PROPOSAL( 2025.009M , NA )
+# LOADED:  2025.009M  XLS with  8  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (8 rows)
+# LOADED:  2025.009M 
+# QC start: 2025.009M: proposal loaded (9 out of 10)
+# QCed:      2025.009M  with  9  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2025.010M )
+# LOADED:  2025.010M  DOCX with  9  errors/warnings
+# LOAD_PROPOSAL( 2025.010M , NA )
+# LOADED:  2025.010M  XLS with  9  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (9 rows)
+# LOADED:  2025.010M 
+# QC start: 2025.010M: proposal loaded (10 out of 10)
+# QCed:      2025.010M  with  10  errors/warnings
+changeList:  2025.001M 2025.002M 2025.003M 2025.004M 2025.005M 2025.006M 2025.007M 2025.008M 2025.009M 2025.010M 
+Wrote: OUTDIR/QC.summary.tsv (10 rows)
+# MERGE PROC: 2025.001M with 21 changes  (1 out of 10)
+# MERGE PROC: 2025.002M with 1 changes  (2 out of 10)
+# MERGE PROC: 2025.003M with 5 changes  (3 out of 10)
+# MERGE PROC: 2025.004M with 7 changes  (4 out of 10)
+# MERGE PROC: 2025.005M with 4 changes  (5 out of 10)
+# MERGE PROC: 2025.006M with 4 changes  (6 out of 10)
+# MERGE PROC: 2025.007M with 63 changes  (7 out of 10)
+# MERGE PROC: 2025.008M with 4 changes  (8 out of 10)
+# MERGE PROC: 2025.009M with 1 changes  (9 out of 10)
+# MERGE PROC: 2025.010M with 10 changes  (10 out of 10)
+# DONE. MERGED 10  proposal(s), skipped 0 ; total changes: 120 
+# APPLIED:  21 changes from 2025.001M.N.v1.Alpharhabdovirinae_2ng14nsp  with INFO:1 SUCCESS:21 
+# APPLIED:   1 changes from 2025.002M.N.v1.Crustavirus_1nsp  with INFO:1 SUCCESS:1 
+# APPLIED:   5 changes from 2025.003M.N.v1.Konkoviridae_5nsp  with WARNING:1 SUCCESS:5 
+# APPLIED:   7 changes from 2025.004M.N.v1.Lispiviridae_1ngen_6nsp  with WARNING:1 SUCCESS:7 
+# APPLIED:   4 changes from 2025.005M.N.v1.Phasmaviridae_4nsp  with WARNING:4 INFO:1 SUCCESS:4 
+# APPLIED:   4 changes from 2025.006M.N.v1.Phenuiviridae_1ng_3nsp_250605  with WARNING:1 SUCCESS:4 
+# APPLIED:  63 changes from 2025.007M.N.v1.Phenuiviridae_62nsp+1asp  with INFO:1 SUCCESS:63 
+# APPLIED:   4 changes from 2025.008M.N.v1.Rhabdoviridae_4nsp  with WARNING:1 SUCCESS:4 
+# APPLIED:   1 changes from 2025.009M.N.v1.Tupavirus_1nsp  with WARNING:2 SUCCESS:1 
+# APPLIED:  10 changes from 2025.010M.N.v1.Xinmoviridae_5ng_5nsp  with WARNING:1 SUCCESS:10 
+# TOTAL  : 120 changes  from 10 proposals  with WARNING:11 INFO:4 SUCCESS:120 
+Wrote: OUTDIR/QC.summary.tsv (135 rows)
+Writing  testResultsPython/msl40v1/proposals_msl41_holly10/msl.tsv 
+WROTE   testResultsPython/msl40v1/proposals_msl41_holly10/msl.tsv (20963 rows)
+Writing  testResultsPython/msl40v1/proposals_msl41_holly10/QC.docx_summary.tsv 
+WROTE   testResultsPython/msl40v1/proposals_msl41_holly10/QC.docx_summary.tsv (10)
+Writing  testResultsPython/msl40v1/proposals_msl41_holly10/msl_load.sql 
+Writing out_* updates for prevMSL
+WROTE    testResultsPython/msl40v1/proposals_msl41_holly10/msl_load.sql 
+# COMPLETED.

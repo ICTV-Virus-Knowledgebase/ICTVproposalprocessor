@@ -1,0 +1,37 @@
+# /opt/anaconda3/envs/ictv-proposal-validator-python/bin/python merge_proposal_zips.py --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposalsTest6_split --outDir=testResultsPython/msl38/proposalsTest6_split --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: msl41v1.20261031.0ab4232
+Previous taxa: 132852 34  from  current_msl/msl38/taxonomy_node_export.utf8.txt 
+WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+[1] "# SKIP VMR LOAD: current_msl/msl38/species_isolates.utf8.txt"
+# LOAD_PROPOSAL_DOCX( 2023.007D )
+# LOADED:  2023.007D  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 2023.007D , NA )
+# LOADED:  2023.007D  XLS with  0  errors/warnings
+# LOADED:  2023.007D 
+# QC start: 2023.007D: proposal loaded (1 out of 2)
+# QCed:      2023.007D  with  1  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2023.907D )
+# LOADED:  2023.907D  DOCX with  1  errors/warnings
+# LOAD_PROPOSAL( 2023.907D , NA )
+# LOADED:  2023.907D  XLS with  1  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (1 rows)
+# LOADED:  2023.907D 
+# QC start: 2023.907D: proposal loaded (2 out of 2)
+# QCed:      2023.907D  with  4  errors/warnings
+changeList:  2023.007D 2023.907D 
+Wrote: OUTDIR/QC.summary.tsv (4 rows)
+# MERGE PROC: 2023.007D with 15 changes  (1 out of 2)
+# MERGE PROC: 2023.907D with 10 changes  (2 out of 2)
+# DONE. MERGED 2  proposal(s), skipped 0 ; total changes: 25 
+# APPLIED:  15 changes from 2023.007D.N.v1.Parvoviridae_12nsp  with ERROR:4 SUCCESS:14 
+# APPLIED:  10 changes from 2023.907D.N.v1.Correct_split  with ERROR:9 INFO:1 SUCCESS:6 
+# TOTAL  :  25 changes  from 2 proposals  with ERROR:13 INFO:1 SUCCESS:20 
+Wrote: OUTDIR/QC.summary.tsv (34 rows)
+Writing  testResultsPython/msl38/proposalsTest6_split/msl.tsv 
+WROTE   testResultsPython/msl38/proposalsTest6_split/msl.tsv (14793 rows)
+Writing  testResultsPython/msl38/proposalsTest6_split/QC.docx_summary.tsv 
+WROTE   testResultsPython/msl38/proposalsTest6_split/QC.docx_summary.tsv (2)
+Writing  testResultsPython/msl38/proposalsTest6_split/msl_load.sql 
+Writing out_* updates for prevMSL
+WROTE    testResultsPython/msl38/proposalsTest6_split/msl_load.sql 
+# COMPLETED.

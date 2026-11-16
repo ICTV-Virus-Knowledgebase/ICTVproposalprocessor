@@ -1,0 +1,24 @@
+# /opt/anaconda3/envs/ictv-proposal-validator-python/bin/python merge_proposal_zips.py --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposalsTest1 --outDir=testResultsPython/msl38/proposalsTest1 --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: msl41v1.20261031.0ab4232
+Previous taxa: 132852 34  from  current_msl/msl38/taxonomy_node_export.utf8.txt 
+WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+[1] "# SKIP VMR LOAD: current_msl/msl38/species_isolates.utf8.txt"
+# LOAD_PROPOSAL_DOCX( 2023.001A )
+# LOADED:  2023.001A  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 2023.001A , NA )
+# LOADED:  2023.001A  XLS with  0  errors/warnings
+# LOADED:  2023.001A 
+# QC start: 2023.001A: proposal loaded (1 out of 1)
+# QCed:      2023.001A  with  1  errors/warnings
+changeList:   
+Wrote: OUTDIR/QC.summary.tsv (1 rows)
+# DONE. MERGED 0  proposal(s), skipped 1 ; total changes: 0 
+Wrote: OUTDIR/QC.summary.tsv (1 rows)
+Writing  testResultsPython/msl38/proposalsTest1/msl.tsv 
+WROTE   testResultsPython/msl38/proposalsTest1/msl.tsv (14777 rows)
+Writing  testResultsPython/msl38/proposalsTest1/QC.docx_summary.tsv 
+WROTE   testResultsPython/msl38/proposalsTest1/QC.docx_summary.tsv (1)
+Writing  testResultsPython/msl38/proposalsTest1/msl_load.sql 
+Writing out_* updates for prevMSL
+WROTE    testResultsPython/msl38/proposalsTest1/msl_load.sql 
+# COMPLETED.

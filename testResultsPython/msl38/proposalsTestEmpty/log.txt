@@ -1,0 +1,7 @@
+# /opt/anaconda3/envs/ictv-proposal-validator-python/bin/python merge_proposal_zips.py --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposalsTestEmpty --outDir=testResultsPython/msl38/proposalsTestEmpty --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: msl41v1.20261031.0ab4232
+Previous taxa: 132852 34  from  current_msl/msl38/taxonomy_node_export.utf8.txt 
+WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+[1] "# SKIP VMR LOAD: current_msl/msl38/species_isolates.utf8.txt"
+Wrote: OUTDIR/QC.summary.tsv (1 rows)
+# ERROR: NO_INPUT_FILES found in  testData/msl38/proposalsTestEmpty 

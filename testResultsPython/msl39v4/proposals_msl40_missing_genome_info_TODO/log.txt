@@ -1,0 +1,36 @@
+# /opt/anaconda3/envs/ictv-proposal-validator-python/bin/python merge_proposal_zips.py --refDir=current_msl/msl39v4 --proposalsDir=testData/msl39v4/proposals_msl40_missing_genome_info_TODO --outDir=testResultsPython/msl39v4/proposals_msl40_missing_genome_info_TODO --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
+VERSION: msl41v1.20261031.0ab4232
+Previous taxa: 151832 34  from  current_msl/msl39v4/taxonomy_node_export.utf8.txt 
+WARNING: no host_source column in taxonomy_node dump!!! (Adding)
+# LOAD_PROPOSAL_DOCX( 2024.008F )
+# LOADED:  2024.008F  DOCX with  0  errors/warnings
+# LOAD_PROPOSAL( 2024.008F , NA )
+# LOADED:  2024.008F  XLS with  0  errors/warnings
+# LOADED:  2024.008F 
+# QC start: 2024.008F: proposal loaded (1 out of 2)
+# QCed:      2024.008F  with  26  errors/warnings
+# LOAD_PROPOSAL_DOCX( 2024.030B )
+# LOADED:  2024.030B  DOCX with  26  errors/warnings
+# LOAD_PROPOSAL( 2024.030B , NA )
+# LOADED:  2024.030B  XLS with  26  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (26 rows)
+# LOADED:  2024.030B 
+# QC start: 2024.030B: proposal loaded (2 out of 2)
+# QCed:      2024.030B  with  27  errors/warnings
+changeList:  2024.008F 2024.030B 
+Wrote: OUTDIR/QC.summary.tsv (27 rows)
+# MERGE PROC: 2024.008F with 14 changes  (1 out of 2)
+# MERGE PROC: 2024.030B with 10 changes  (2 out of 2)
+# DONE. MERGED 2  proposal(s), skipped 0 ; total changes: 24 
+# APPLIED:  14 changes from 2024.008F.Uc.v2.Orpoviricetes_newclass  with ERROR:26 SUCCESS:14 
+# APPLIED:  10 changes from 2024.030B.A.v2.Trautnerviridae_1nf_1nsf_3ng_6ns  with ERROR:1 SUCCESS:10 
+# TOTAL  :  24 changes  from 2 proposals  with ERROR:35 SUCCESS:24 
+Wrote: OUTDIR/QC.summary.tsv (59 rows)
+Writing  testResultsPython/msl39v4/proposals_msl40_missing_genome_info_TODO/msl.tsv 
+WROTE   testResultsPython/msl39v4/proposals_msl40_missing_genome_info_TODO/msl.tsv (19004 rows)
+Writing  testResultsPython/msl39v4/proposals_msl40_missing_genome_info_TODO/QC.docx_summary.tsv 
+WROTE   testResultsPython/msl39v4/proposals_msl40_missing_genome_info_TODO/QC.docx_summary.tsv (2)
+Writing  testResultsPython/msl39v4/proposals_msl40_missing_genome_info_TODO/msl_load.sql 
+Writing out_* updates for prevMSL
+WROTE    testResultsPython/msl39v4/proposals_msl40_missing_genome_info_TODO/msl_load.sql 
+# COMPLETED.

@@ -1,0 +1,8 @@
+# track only the Python baselines (QC.regression.tsv, log.txt)
+supplemental/
+supplemental-suite-enabled/
+comparison/
+*.log
+comparison.status.tsv
+comparison.summary.txt
+QC.pretty_summary.issues.xlsx
