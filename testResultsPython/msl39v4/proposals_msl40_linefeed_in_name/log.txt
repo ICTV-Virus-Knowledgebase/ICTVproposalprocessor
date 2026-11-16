@@ -8,14 +8,14 @@ WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # LOADED:  2024.037B  XLS with  0  errors/warnings
 # LOADED:  2024.037B 
 # QC start: 2024.037B: proposal loaded (1 out of 1)
-# QCed:      2024.037B  with  0  errors/warnings
+# QCed:      2024.037B  with  3  errors/warnings
 changeList:  2024.037B 
-Wrote: OUTDIR/QC.summary.tsv (0 rows)
+Wrote: OUTDIR/QC.summary.tsv (3 rows)
 # MERGE PROC: 2024.037B with 23 changes  (1 out of 1)
 # DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 23 
-# APPLIED:  23 changes from 2024.037B.A.v2.Vandenendeviridae_1nf_2msf_8ng_1mg_11ns  with INFO:17 SUCCESS:23 
-# TOTAL  :  23 changes  from 1 proposals  with INFO:17 SUCCESS:23 
-Wrote: OUTDIR/QC.summary.tsv (40 rows)
+# APPLIED:  23 changes from 2024.037B.A.v2.Vandenendeviridae_1nf_2msf_8ng_1mg_11ns  with ERROR:3 INFO:17 SUCCESS:23 
+# TOTAL  :  23 changes  from 1 proposals  with ERROR:3 INFO:17 SUCCESS:23 
+Wrote: OUTDIR/QC.summary.tsv (43 rows)
 Writing  testResultsPython/msl39v4/proposals_msl40_linefeed_in_name/msl.tsv 
 WROTE   testResultsPython/msl39v4/proposals_msl40_linefeed_in_name/msl.tsv (19000 rows)
 Writing  testResultsPython/msl39v4/proposals_msl40_linefeed_in_name/QC.docx_summary.tsv 

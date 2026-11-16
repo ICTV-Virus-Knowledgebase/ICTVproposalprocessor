@@ -556,36 +556,67 @@ def _cell_text(value: Any, na_strings: Sequence[str]) -> Any:
         return rstr(value)
     if isinstance(value, (datetime.datetime, datetime.date, datetime.time)):
         return str(value)
-    result = str(value).strip(" \t\r\n\f\v")
-    if result == "" or result in na_strings:
+    result = str(value)
+    # readxl: a cell of only whitespace is blank; trim_ws trims only spaces
+    # and tabs, so a line break at either end is kept
+    if result.strip(" \t\r\n\f\v") == "":
+        return None
+    result = result.strip(" \t")
+    if result in na_strings:
         return None
     return result
 
 
-def _readxl_shared_strings(path: Path) -> dict[str, str]:
+# the text of a <t> element in sharedStrings.xml
+_SHARED_STRING_TEXT = re.compile(rb"(<(?:\w+:)?t(?:\s[^>]*)?>)(.*?)(</(?:\w+:)?t>)", re.S)
+
+
+def _readxl_shared_strings(path: Path, drop_space_runs: bool) -> dict[str, str]:
     """Shared strings that readxl returns differently from openpyxl.
 
-    readxl drops a rich-text run that holds only whitespace, even one marked
-    xml:space="preserve". Used only when PYTHON_ONLY["rich_text_spaces"] is off.
+    Keys are the strings as openpyxl returns them, values as readxl does.
+    openpyxl's XML parser turns a stored CRLF (or CR) into LF, as XML
+    requires; readxl keeps the CR. The CRs are recovered by parsing a copy in
+    which each CR inside a <t> element is the character reference &#13;.
+
+    With drop_space_runs, a rich-text run that holds only whitespace is also
+    dropped, even one marked xml:space="preserve", as readxl does. Used only
+    when PYTHON_ONLY["rich_text_spaces"] is off.
     """
     namespace = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
-    mapping: dict[str, str] = {}
     try:
         with zipfile.ZipFile(path) as archive:
-            root = ElementTree.fromstring(archive.read("xl/sharedStrings.xml"))
-    except (KeyError, OSError, zipfile.BadZipFile, ElementTree.ParseError):
-        return mapping
-    for item in root.iter(namespace + "si"):
-        runs = [node.text or "" for node in item.findall(namespace + "t")]
+            raw = archive.read("xl/sharedStrings.xml")
+    except (KeyError, OSError, zipfile.BadZipFile):
+        return {}
+    if b"\r" not in raw and not drop_space_runs:
+        return {}
+    stored = _SHARED_STRING_TEXT.sub(
+        lambda match: match.group(1) + match.group(2).replace(b"\r", b"&#13;") + match.group(3), raw)
+    try:
+        openpyxl_root = ElementTree.fromstring(raw)
+        readxl_root = ElementTree.fromstring(stored)
+    except ElementTree.ParseError:
+        return {}
+
+    def runs(item: ElementTree.Element) -> list[str]:
+        texts = [node.text or "" for node in item.findall(namespace + "t")]
         for run in item.findall(namespace + "r"):
             node = run.find(namespace + "t")
             if node is not None:
-                runs.append(node.text or "")
-        full = "".join(runs)
-        kept = "".join(run for run in runs if run.strip(" \t\r\n") != "")
-        if full != kept:
-            mapping[full] = kept
-    return mapping
+                texts.append(node.text or "")
+        return texts
+
+    # every readxl value seen for each openpyxl string; a string that two
+    # different stored strings share is left as openpyxl returns it
+    values: dict[str, set[str]] = {}
+    for seen, item in zip(openpyxl_root.iter(namespace + "si"), readxl_root.iter(namespace + "si")):
+        texts = runs(item)
+        if drop_space_runs:
+            texts = [text for text in texts if text.strip(" \t\r\n") != ""]
+        values.setdefault("".join(runs(seen)), set()).add("".join(texts))
+    return {key: next(iter(found)) for key, found in values.items()
+            if len(found) == 1 and key not in found}
 
 
 def excel_sheets(path: str | Path) -> list[str]:
@@ -611,8 +642,8 @@ def read_excel_raw(path: str | Path, sheet: str, na_strings: Sequence[str] = (),
     except ImportError as exc:
         raise RuntimeError("Legacy .xls input requires the xlrd package") from exc
     width = columns if columns is not None else frame.shape[1]
-    as_readxl = ({} if PYTHON_ONLY["rich_text_spaces"] or engine != "openpyxl"
-                 else _readxl_shared_strings(source))
+    as_readxl = ({} if engine != "openpyxl"
+                 else _readxl_shared_strings(source, drop_space_runs=not PYTHON_ONLY["rich_text_spaces"]))
     rows: list[list[Any]] = []
     for values in frame.itertuples(index=False, name=None):
         cells = [_cell_text(as_readxl.get(value, value) if isinstance(value, str) else value,
