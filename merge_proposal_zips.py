@@ -57,6 +57,10 @@ except ImportError as exc:
 # and the named items behave exactly as the R script does.
 
 PYTHON_ONLY = {
+    # Supplemental, nonblocking QC: R skips E1 for modern templates and
+    # accession validation for rename actions. Neither check alters taxonomy.
+    "modern_header_code": True,
+    "rename_duplicate_accession": True,
     # Hard error XLSX.GENOME_COVERAGE_MISSING drops a "new" species without a
     # genome coverage. R creates the species and logs the soft error
     # CREATE.SPECIES_NO_GENOME_COVERAGE (882245b).
@@ -2082,6 +2086,38 @@ def _template_mismatch_text(prefix: str, mismatches: Sequence[int], shown: Seque
     return f"{prefix}  " + "; ".join(items)
 
 
+def qc_modern_header_code(code: str, value: Any) -> None:
+    """Check E1 identity and explicit version; descriptions/status are optional.
+
+    Modern templates often calculate just the proposal ID. Do not require a
+    version in those headers, or treat a descriptive suffix as part of the ID.
+    This is advisory: header metadata must not suppress valid change rows.
+    """
+    if is_na(value):
+        return
+    header = rstr(value).strip()
+    if header.startswith("Code"):
+        if params["show.xlsx.code_miss"]:
+            log_error(code, 1, "OPEN_XLSX", "", "", "INFO", "XLSX.CODE_MISS",
+                      "XLSX code missing", f"XLSX cell E1 is '{header}'; expected '{code}'",
+                      actionOrder)
+        return
+    identity = re.match(r"^(\d{4}\.\d{3}[A-Z]X*)(?=$|[._\s])", header)
+    filename = rstr(_proposal_value(code, "xlsx"))
+    version_pattern = r"(?:^|[._])v(\d+)(?=$|[._\s])"
+    header_version = re.search(version_pattern, header)
+    file_version = re.search(version_pattern, filename)
+    wrong_id = identity is None or identity.group(1) != code
+    wrong_version = (header_version is not None and file_version is not None
+                     and int(header_version.group(1)) != int(file_version.group(1)))
+    if wrong_id or wrong_version:
+        expected = code + (f" (version v{file_version.group(1)})" if file_version else "")
+        log_error(code, 1, "OPEN_XLSX", "", "", "WARNING", "XLSX.CODE_BAD",
+                  "XLSX header code/version does not match filename",
+                  f"XLSX cell E1 is '{header}'; expected {expected}; filename='{filename}'",
+                  actionOrder)
+
+
 def qc_proposal(code: str, proposalDf: list[list[Any]]) -> dict[str, Any]:
     """Validate and normalize every change row from one proposal workbook."""
     templateVersion = "error"
@@ -2128,7 +2164,8 @@ def qc_proposal(code: str, proposalDf: list[list[Any]]) -> dict[str, Any]:
                 log_error(code, 2, "OPEN_XLSX", "", "", "ERROR", "XLSX.TEMPLATE_LINE4",
                           "XLSX template version", header_error(4, row4, XLSX_2023_ROW4), actionOrder)
             return {}
-        # R checks the proposal code cell only for the v1/v2 templates below.
+        if PYTHON_ONLY["modern_header_code"]:
+            qc_modern_header_code(code, _row_cell(proposalDf, 1, 4))
     else:
         # figure out v1 or v2 templates from contents of rows 2 & 3
         v1_count, v1_bad, v1_seen = _old_template_row(proposalDf, 2, code, 0, XLSX_V1_ROW2)
@@ -3333,6 +3370,19 @@ def apply_changes(changesDf: list[dict[str, Any]]) -> None:
                                      "Change=RENAME, but proposed species names does not start with 'genus[space]' per binomial naming convention",
                                      paste0("parent genus name =", genus.get("name")))
                     continue
+            if PYTHON_ONLY["rename_duplicate_accession"] and srcTaxonRank == "species":
+                accession = cur.get("exemplarAccession")
+                dupRows = duplicate_accession_rows(accession, skip=target)
+                vmrDuplicates = find_vmr_accession_matches(
+                    accession, [target.get(".prev_taxnode_id")])
+                existing = list(dict.fromkeys([rstr(row.get("name")) for row in dupRows] + vmrDuplicates))
+                if existing:
+                    # Rename does not change exemplar metadata. Flag the sheet
+                    # for correction, but preserve R's taxonomy/dependency behavior.
+                    log_change_error(cur, "WARNING", "RENAME.DUP_ACC",
+                                     "Change=RENAME, a species with this accession number already exists",
+                                     paste0("accession=", accession, ", existingSpecies=",
+                                            "; ".join(existing)))
             ##### rename apply changes  #####
             oldLineage = target.get("lineage")
             newMSL.set_name(target, destTaxonName)
