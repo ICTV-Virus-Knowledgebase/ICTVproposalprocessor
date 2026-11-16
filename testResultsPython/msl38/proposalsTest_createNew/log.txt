@@ -10,12 +10,15 @@ WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # LOADED:  2022.002G 
 # QC start: 2022.002G: proposal loaded (1 out of 1)
 # QCed:      2022.002G  with  1  errors/warnings
-changeList:   
+changeList:  2022.002G 
 Wrote: OUTDIR/QC.summary.tsv (1 rows)
-# DONE. MERGED 0  proposal(s), skipped 1 ; total changes: 0 
-Wrote: OUTDIR/QC.summary.tsv (1 rows)
+# MERGE PROC: 2022.002G with 22 changes  (1 out of 1)
+# DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 22 
+# APPLIED:  22 changes from 2022.002G.Ud.v1.Orthornavirae_4nphy_9nsp  with ERROR:9 WARNING:13 INFO:1 SUCCESS:13 
+# TOTAL  :  22 changes  from 1 proposals  with ERROR:18 WARNING:13 INFO:1 SUCCESS:13 
+Wrote: OUTDIR/QC.summary.tsv (45 rows)
 Writing  testResultsPython/msl38/proposalsTest_createNew/msl.tsv 
-WROTE   testResultsPython/msl38/proposalsTest_createNew/msl.tsv (14777 rows)
+WROTE   testResultsPython/msl38/proposalsTest_createNew/msl.tsv (14790 rows)
 Writing  testResultsPython/msl38/proposalsTest_createNew/QC.docx_summary.tsv 
 WROTE   testResultsPython/msl38/proposalsTest_createNew/QC.docx_summary.tsv (1)
 Writing  testResultsPython/msl38/proposalsTest_createNew/msl_load.sql 

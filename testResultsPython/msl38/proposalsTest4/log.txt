@@ -9,11 +9,14 @@ WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # LOADED:  2022.002P  XLS with  0  errors/warnings
 # LOADED:  2022.002P 
 # QC start: 2022.002P: proposal loaded (1 out of 1)
-# QCed:      2022.002P  with  1  errors/warnings
-changeList:   
-Wrote: OUTDIR/QC.summary.tsv (1 rows)
-# DONE. MERGED 0  proposal(s), skipped 1 ; total changes: 0 
-Wrote: OUTDIR/QC.summary.tsv (1 rows)
+# QCed:      2022.002P  with  0  errors/warnings
+changeList:  2022.002P 
+Wrote: OUTDIR/QC.summary.tsv (0 rows)
+# MERGE PROC: 2022.002P with 44 changes  (1 out of 1)
+# DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 44 
+# APPLIED:  44 changes from 2022.002P.Ud.v1.Avsunviroidae_Pospiviroidae_rename  with SUCCESS:44 
+# TOTAL  :  44 changes  from 1 proposals  with SUCCESS:44 
+Wrote: OUTDIR/QC.summary.tsv (44 rows)
 Writing  testResultsPython/msl38/proposalsTest4/msl.tsv 
 WROTE   testResultsPython/msl38/proposalsTest4/msl.tsv (14777 rows)
 Writing  testResultsPython/msl38/proposalsTest4/QC.docx_summary.tsv 

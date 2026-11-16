@@ -2060,6 +2060,10 @@ def _old_template_row(rows: list[list[Any]], row_number: int, code: str, first: 
 
     proposalDf has 42 columns in R (A:AO plus "code"); positions past the
     sheet compare as NA. Returns the match count and the mismatch positions.
+
+    Header cells such as "Exemplar \\r\\nvirus name" are stored with a CRLF.
+    readxl returns it as stored, but openpyxl's XML parser turns it into LF,
+    so line breaks are compared as LF on both sides.
     """
     observed = [(_row_cell(rows, row_number, column) if column < 41 else code)
                 for column in range(first, min(len(expected) + first, 42))]
@@ -2068,7 +2072,7 @@ def _old_template_row(rows: list[list[Any]], row_number: int, code: str, first: 
     for position, (actual, wanted) in enumerate(zip(observed, expected)):
         if is_na(actual) or is_na(wanted):
             continue
-        if actual == wanted:
+        if actual.replace("\r\n", "\n") == wanted.replace("\r\n", "\n"):
             matches += 1
         else:
             mismatches.append(position)
