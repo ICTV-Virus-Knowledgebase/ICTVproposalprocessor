@@ -1,5 +1,5 @@
 # Rscript merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposalsMultiFileLinking --outDir=testResults/msl38/proposalsMultiFileLinking --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v3.20250222.34b9f9e
+VERSION: msl41v1.20261031.0ab4232
 Previous taxa: 132852 34  from  current_msl/msl38/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 [1] "# SKIP VMR LOAD: current_msl/msl38/species_isolates.utf8.txt"
@@ -32,11 +32,11 @@ Wrote: OUTDIR/QC.summary.tsv (6 rows)
 # MERGE PROC: 2 with 5 changes  (2 out of 3)
 # MERGE PROC: 3 with 3 changes  (3 out of 3)
 # DONE. MERGED 3  proposal(s), skipped 0 ; total changes: 15 
-# APPLIED:   7 changes from 2023.10M.N.v1.CreateSpeciesFirst  with ERROR:2 INFO:2 SUCCESS:5 
+# APPLIED:   7 changes from 2023.10M.N.v1.CreateSpeciesFirst  with ERROR:10 INFO:2 SUCCESS:5 
 # APPLIED:   5 changes from 2023.20M.N.v1.CreateGenusAfter  with ERROR:3 SUCCESS:5 
-# APPLIED:   3 changes from 2023.30M.N.v1.RenameFutureGenus  with ERROR:1 SUCCESS:3 
-# TOTAL  :  15 changes  from 3 proposals  with ERROR:7 INFO:2 SUCCESS:13 
-Wrote: OUTDIR/QC.summary.tsv (22 rows)
+# APPLIED:   3 changes from 2023.30M.N.v1.RenameFutureGenus  with ERROR:4 SUCCESS:3 
+# TOTAL  :  15 changes  from 3 proposals  with ERROR:18 INFO:2 SUCCESS:13 
+Wrote: OUTDIR/QC.summary.tsv (33 rows)
 Writing  testResults/msl38/proposalsMultiFileLinking/msl.tsv 
 WROTE   testResults/msl38/proposalsMultiFileLinking/msl.tsv (14785 rows)
 Writing  testResults/msl38/proposalsMultiFileLinking/QC.docx_summary.tsv 

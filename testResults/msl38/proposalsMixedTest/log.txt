@@ -1,5 +1,5 @@
 # Rscript merge_proposal_zips.R --refDir=current_msl/msl38 --proposalsDir=testData/msl38/proposalsMixedTest --outDir=testResults/msl38/proposalsMixedTest --msl --qcTsvRegression=QC.regression.new.tsv 2>&1
-VERSION: v3.20250222.34b9f9e
+VERSION: msl41v1.20261031.0ab4232
 Previous taxa: 132852 34  from  current_msl/msl38/taxonomy_node_export.utf8.txt 
 WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 [1] "# SKIP VMR LOAD: current_msl/msl38/species_isolates.utf8.txt"
@@ -35,10 +35,10 @@ Wrote: OUTDIR/QC.summary.tsv (9 rows)
 # MERGE PROC: 2023.002A with 4 changes  (2 out of 4)
 # MERGE PROC: 3 with 2 changes  (3 out of 4)
 # DONE. MERGED 2  proposal(s), skipped 2 ; total changes: 6 
-# APPLIED:   4 changes from 2023.002A.N.v4.create_subgenus_move_sp_create_sp  with ERROR:8 SUCCESS:2 
+# APPLIED:   4 changes from 2023.002A.N.v4.create_subgenus_move_sp_create_sp  with ERROR:11 SUCCESS:2 
 # APPLIED:   2 changes from new proposal  with ERROR:2 
-# TOTAL  :   6 changes  from 2 proposals  with ERROR:14 WARNING:1 SUCCESS:2 
-Wrote: OUTDIR/QC.summary.tsv (17 rows)
+# TOTAL  :   6 changes  from 2 proposals  with ERROR:17 WARNING:1 SUCCESS:2 
+Wrote: OUTDIR/QC.summary.tsv (20 rows)
 Writing  testResults/msl38/proposalsMixedTest/msl.tsv 
 WROTE   testResults/msl38/proposalsMixedTest/msl.tsv (14779 rows)
 Writing  testResults/msl38/proposalsMixedTest/QC.docx_summary.tsv 

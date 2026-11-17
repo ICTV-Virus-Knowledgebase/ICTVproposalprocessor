@@ -52,7 +52,7 @@ except ImportError as exc:
 # For equivalence testing set, for example:
 #
 #     MERGE_PROPOSAL_ZIPS_R_COMPAT=all
-#     MERGE_PROPOSAL_ZIPS_R_COMPAT=accession_ranges,move_lineage_text
+#     MERGE_PROPOSAL_ZIPS_R_COMPAT=in_change_text,move_lineage_text
 #
 # and the named items behave exactly as the R script does.
 
@@ -61,9 +61,6 @@ PYTHON_ONLY = {
     # accession validation for rename actions. Neither check alters taxonomy.
     "modern_header_code": True,
     "rename_duplicate_accession": True,
-    # AB000001-AB000003 is expanded to its members before accessions are
-    # compared. R compares the range text as one accession.
-    "accession_ranges": True,
     # msl.tsv / the SQL lineage comment get the lineage rebuilt from parent_id.
     # R leaves the lineage text of a moved/promoted/demoted taxon and of its
     # descendants stale (open defect), and keeps the tree name in the lineage
@@ -1000,6 +997,14 @@ VALUE_VALIDATION.extend([
     {"col": "exemplarAccession", "regex": r"([^\w:;/. \-]+)",
      "type": "replace", "class": "ERROR", "code": "XLSX.ACCESSION.REMOVED_ILLEGAL_CHARS",
      "warn": "unexpected characters in accession list: should be a semi-colon separated list, with optional colon-separated name prefixes", "replace": ""},
+    # each ;-separated item is one [name:]accession[(range)]: a range
+    # ("A10004-A10006") or a list separated with spaces or dashes is an error.
+    # \Z, not $: R's $ doesn't match before a trailing line break.
+    {"col": "exemplarAccession",
+     "regex": r"^ *([^:;]+: *)?[A-Za-z0-9_./]+( ?[(][0-9]+[.][0-9]+[)])? *"
+              r"(; *([^:;]+: *)?[A-Za-z0-9_./]+( ?[(][0-9]+[.][0-9]+[)])? *)*;? *\Z",
+     "type": "required", "class": "ERROR", "code": "XLSX.ACCESSION.NOT_A_LIST",
+     "warn": "accession must be a semicolon-separated list of single accessions, with optional colon-separated name prefixes: no ranges (A10004-A10006) or lists separated by spaces or dashes", "replace": ""},
 ])
 for _col in ["exemplarIsolate", "genomeCoverage", "molecule", "hostSource"]:
     VALUE_VALIDATION.append({
@@ -1145,20 +1150,6 @@ def accession_key(accession: str) -> str:
     return re.sub(r"[.][0-9]*$", "", accession, count=1)
 
 
-def _expand_accession_range(value: str) -> list[str]:
-    """PYTHON_ONLY accession_ranges: AB000001-AB000003 (or AB000001-000003)."""
-    match = re.fullmatch(r"([A-Za-z_]+)(\d+)(?:\.\d+)?\s*[-–—]\s*([A-Za-z_]*)(\d+)(?:\.\d+)?", value)
-    if not match:
-        return [value]
-    prefix1, start_s, prefix2, end_s = match.groups()
-    prefix2 = prefix2 or prefix1
-    start, end = int(start_s), int(end_s)
-    if prefix1 != prefix2 or end < start or end - start > 10000:
-        return [value]
-    width = max(len(start_s), len(end_s))
-    return [f"{prefix1}{number:0{width}d}" for number in range(start, end + 1)]
-
-
 def accession_keys(accessionList: Any) -> list[str]:
     if is_na(accessionList):
         return []
@@ -1167,11 +1158,9 @@ def accession_keys(accessionList: Any) -> list[str]:
         value = normalize_accession_value(token)
         if is_na(value):
             continue
-        values = _expand_accession_range(value) if PYTHON_ONLY["accession_ranges"] else [value]
-        for item in values:
-            key = accession_key(item)
-            if re.search(r"[0-9]", key) and key not in keys:
-                keys.append(key)
+        key = accession_key(value)
+        if re.search(r"[0-9]", key) and key not in keys:
+            keys.append(key)
     return keys
 
 
@@ -1182,15 +1171,13 @@ def accession_list_overlaps(accessionLists: Sequence[Any], accession: Any) -> li
     target = rstr(accession)
     keys = accession_keys(accession)
     key_set = set(keys)
-    ranges = PYTHON_ONLY["accession_ranges"]
     result = []
     for value in accessionLists:
         if is_na(value):
             result.append(False)
         elif value == target:
             result.append(True)
-        elif keys and (any(key in value for key in keys)
-                       or (ranges and re.search(r"\d\s*[-–—]", value))):
+        elif keys and any(key in value for key in keys):
             # substring pre-filter, so only a few candidate lists get parsed
             result.append(any(key in key_set for key in accession_keys(value)))
         else:
@@ -1498,11 +1485,8 @@ def load_reference() -> None:
                 for bad in invalid))
             raise RuntimeError(f"ERROR: {vmr_filename} contains {len(invalid)} badly formatted accessions")
         for position, row in enumerate(parsed["validAccessions"]):
-            values = (_expand_accession_range(row["accession"])
-                      if PYTHON_ONLY["accession_ranges"] else [row["accession"]])
-            for value in values:
-                vmrAccessions.setdefault(accession_key(value), []).append(
-                    (position, _taxnode_int(row.get("taxnode_id")), row.get("species_name")))
+            vmrAccessions.setdefault(accession_key(row["accession"]), []).append(
+                (position, _taxnode_int(row.get("taxnode_id")), row.get("species_name")))
     else:
         print(f'[1] "# SKIP VMR LOAD: {vmr_filename}"')
 

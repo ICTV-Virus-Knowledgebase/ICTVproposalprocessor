@@ -8,23 +8,24 @@ WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # LOADED:  2024.001P  XLS with  0  errors/warnings
 # LOADED:  2024.001P 
 # QC start: 2024.001P: proposal loaded (1 out of 2)
-# QCed:      2024.001P  with  0  errors/warnings
+# QCed:      2024.001P  with  1  errors/warnings
 # LOAD_PROPOSAL_DOCX( 2024.005M )
-# LOADED:  2024.005M  DOCX with  0  errors/warnings
+# LOADED:  2024.005M  DOCX with  1  errors/warnings
 # LOAD_PROPOSAL( 2024.005M , NA )
-# LOADED:  2024.005M  XLS with  0  errors/warnings
+# LOADED:  2024.005M  XLS with  1  errors/warnings
+Wrote: OUTDIR/QC.summary.tsv (1 rows)
 # LOADED:  2024.005M 
 # QC start: 2024.005M: proposal loaded (2 out of 2)
-# QCed:      2024.005M  with  0  errors/warnings
+# QCed:      2024.005M  with  2  errors/warnings
 changeList:  2024.001P 2024.005M 
-Wrote: OUTDIR/QC.summary.tsv (0 rows)
+Wrote: OUTDIR/QC.summary.tsv (2 rows)
 # MERGE PROC: 2024.001P with 1 changes  (1 out of 2)
 # MERGE PROC: 2024.005M with 1 changes  (2 out of 2)
 # DONE. MERGED 2  proposal(s), skipped 0 ; total changes: 2 
-# APPLIED:   1 changes from 2024.001P.A.v2.Fimoviridae_1nsp  with SUCCESS:1 
-# APPLIED:   1 changes from 2024.005M.A.v2.Cardoreovirus_1nsp  with SUCCESS:1 
-# TOTAL  :   2 changes  from 2 proposals  with SUCCESS:2 
-Wrote: OUTDIR/QC.summary.tsv (2 rows)
+# APPLIED:   1 changes from 2024.001P.A.v2.Fimoviridae_1nsp  with ERROR:1 SUCCESS:1 
+# APPLIED:   1 changes from 2024.005M.A.v2.Cardoreovirus_1nsp  with ERROR:1 SUCCESS:1 
+# TOTAL  :   2 changes  from 2 proposals  with ERROR:2 SUCCESS:2 
+Wrote: OUTDIR/QC.summary.tsv (4 rows)
 Writing  testResultsPython/msl39v4/proposals_msl40_accession_range_TODO/msl.tsv 
 WROTE   testResultsPython/msl39v4/proposals_msl40_accession_range_TODO/msl.tsv (18982 rows)
 Writing  testResultsPython/msl39v4/proposals_msl40_accession_range_TODO/QC.docx_summary.tsv 

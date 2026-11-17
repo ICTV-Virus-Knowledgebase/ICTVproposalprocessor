@@ -1809,6 +1809,21 @@ value_validation = rbind(value_validation, data.frame(
   replace = ""
 ))
 
+# Accession:  each ;-separated item must be one [name:]accession[(range)], so a
+# range ("A10004-A10006") or a list separated with spaces or dashes ("A1 - A2")
+# is an error. Checked after the fixes above (dashes, "and", commas, illegal chars).
+# Soft error: the change is still applied.
+value_validation = rbind(value_validation, data.frame(
+  pat_name = "accession.semi-colon-sep-list-required",
+  col = c("exemplarAccession"),
+  regex = "^ *([^:;]+: *)?[A-Za-z0-9_./]+( ?[(][0-9]+[.][0-9]+[)])? *(; *([^:;]+: *)?[A-Za-z0-9_./]+( ?[(][0-9]+[.][0-9]+[)])? *)*;? *$",
+  type = "required",
+  class = "ERROR",
+  code = "XLSX.ACCESSION.NOT_A_LIST",
+  warn = "accession must be a semicolon-separated list of single accessions, with optional colon-separated name prefixes: no ranges (A10004-A10006) or lists separated by spaces or dashes",
+  replace = ""
+))
+
 
 # Accession:  semi-colon separated list, with colon-separated labels
 value_validation = rbind(value_validation, data.frame(
