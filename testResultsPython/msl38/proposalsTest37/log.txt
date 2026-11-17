@@ -9,14 +9,14 @@ WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # LOADED:  2023.003A  XLS with  0  errors/warnings
 # LOADED:  2023.003A 
 # QC start: 2023.003A: proposal loaded (1 out of 1)
-# QCed:      2023.003A  with  4  errors/warnings
+# QCed:      2023.003A  with  3  errors/warnings
 changeList:  2023.003A 
-Wrote: OUTDIR/QC.summary.tsv (4 rows)
-# MERGE PROC: 2023.003A with 3 changes  (1 out of 1)
-# DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 3 
-# APPLIED:   3 changes from 2023.003A.N.v1.test_xls  with ERROR:5 SUCCESS:2 
-# TOTAL  :   3 changes  from 1 proposals  with ERROR:6 SUCCESS:2 
-Wrote: OUTDIR/QC.summary.tsv (8 rows)
+Wrote: OUTDIR/QC.summary.tsv (3 rows)
+# MERGE PROC: 2023.003A with 4 changes  (1 out of 1)
+# DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 4 
+# APPLIED:   4 changes from 2023.003A.N.v1.test_xls  with ERROR:9 SUCCESS:2 
+# TOTAL  :   4 changes  from 1 proposals  with ERROR:10 SUCCESS:2 
+Wrote: OUTDIR/QC.summary.tsv (12 rows)
 Writing  testResultsPython/msl38/proposalsTest37/msl.tsv 
 WROTE   testResultsPython/msl38/proposalsTest37/msl.tsv (14779 rows)
 Writing  testResultsPython/msl38/proposalsTest37/QC.docx_summary.tsv 

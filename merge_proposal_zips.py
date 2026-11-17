@@ -52,7 +52,7 @@ except ImportError as exc:
 # For equivalence testing set, for example:
 #
 #     MERGE_PROPOSAL_ZIPS_R_COMPAT=all
-#     MERGE_PROPOSAL_ZIPS_R_COMPAT=genome_coverage_required,move_lineage_text
+#     MERGE_PROPOSAL_ZIPS_R_COMPAT=accession_ranges,move_lineage_text
 #
 # and the named items behave exactly as the R script does.
 
@@ -61,10 +61,6 @@ PYTHON_ONLY = {
     # accession validation for rename actions. Neither check alters taxonomy.
     "modern_header_code": True,
     "rename_duplicate_accession": True,
-    # Hard error XLSX.GENOME_COVERAGE_MISSING drops a "new" species without a
-    # genome coverage. R creates the species and logs the soft error
-    # CREATE.SPECIES_NO_GENOME_COVERAGE (882245b).
-    "genome_coverage_required": True,
     # AB000001-AB000003 is expanded to its members before accessions are
     # compared. R compares the range text as one accession.
     "accession_ranges": True,
@@ -2440,16 +2436,9 @@ def qc_proposal(code: str, proposalDf: list[list[Any]]) -> dict[str, Any]:
         # remove bad rows from further processing
         changeDf = [row for row in changeDf if not is_na(row[".action"])]
 
-    if PYTHON_ONLY["genome_coverage_required"]:
-        # Genome coverage is required for an explicitly new species; the row is dropped.
-        missing_coverage = [row for row in changeDf
-                            if row[".destRank"] == "species" and row[".action"] == "new"
-                            and (is_na(row["genomeCoverage"]) or row["genomeCoverage"].strip() == "")]
-        for row in missing_coverage:
-            row[".noErrors"] = False
-        log_rows(missing_coverage, "ERROR", "XLSX.GENOME_COVERAGE_MISSING",
-                 "Proposed species must have a Genome Coverage value",
-                 ["Genome Coverage is empty"] * len(missing_coverage))
+    # A species without a genome coverage is not dropped here: apply_changes
+    # logs the soft error CREATE.SPECIES_NO_GENOME_COVERAGE and still creates
+    # it, as R does (882245b).
 
     #### QC suffixes ####
     rank_rows = dbCvList["rank"].rows

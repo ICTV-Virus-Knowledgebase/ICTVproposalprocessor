@@ -9,16 +9,16 @@ WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # LOADED:  2023.002A  XLS with  0  errors/warnings
 # LOADED:  2023.002A 
 # QC start: 2023.002A: proposal loaded (1 out of 1)
-# QCed:      2023.002A  with  13  errors/warnings
+# QCed:      2023.002A  with  11  errors/warnings
 changeList:  2023.002A 
-Wrote: OUTDIR/QC.summary.tsv (13 rows)
-# MERGE PROC: 2023.002A with 6 changes  (1 out of 1)
-# DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 6 
-# APPLIED:   6 changes from 2023.002A.N.v4.create_subgenus_move_sp_create_sp  with ERROR:28 SUCCESS:5 
-# TOTAL  :   6 changes  from 1 proposals  with ERROR:29 SUCCESS:5 
-Wrote: OUTDIR/QC.summary.tsv (34 rows)
+Wrote: OUTDIR/QC.summary.tsv (11 rows)
+# MERGE PROC: 2023.002A with 8 changes  (1 out of 1)
+# DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 8 
+# APPLIED:   8 changes from 2023.002A.N.v4.create_subgenus_move_sp_create_sp  with ERROR:35 SUCCESS:6 
+# TOTAL  :   8 changes  from 1 proposals  with ERROR:36 SUCCESS:6 
+Wrote: OUTDIR/QC.summary.tsv (42 rows)
 Writing  testResultsPython/msl38/proposalsTest3_binomial/msl.tsv 
-WROTE   testResultsPython/msl38/proposalsTest3_binomial/msl.tsv (14779 rows)
+WROTE   testResultsPython/msl38/proposalsTest3_binomial/msl.tsv (14780 rows)
 Writing  testResultsPython/msl38/proposalsTest3_binomial/QC.docx_summary.tsv 
 WROTE   testResultsPython/msl38/proposalsTest3_binomial/QC.docx_summary.tsv (1)
 Writing  testResultsPython/msl38/proposalsTest3_binomial/msl_load.sql 
