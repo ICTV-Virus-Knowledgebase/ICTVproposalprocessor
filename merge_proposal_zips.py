@@ -997,6 +997,12 @@ VALUE_VALIDATION.extend([
     {"col": "exemplarAccession", "regex": r"([^\w:;/. \-]+)",
      "type": "replace", "class": "ERROR", "code": "XLSX.ACCESSION.REMOVED_ILLEGAL_CHARS",
      "warn": "unexpected characters in accession list: should be a semi-colon separated list, with optional colon-separated name prefixes", "replace": ""},
+    # a period ending an accession, at the end of the cell or before a ";":
+    # "MG029287." -> "MG029287" (2026.010M row 16). R's regex engine has no
+    # lookahead, so the ";" is matched and put back with \3, as in R.
+    {"col": "exemplarAccession", "regex": r"(([.]+) *(;|\Z))",
+     "type": "replace", "class": "WARNING", "code": "XLSX.ACCESSION.TRAILING_PERIOD_REMOVED",
+     "warn": "accession ends with a period: period removed", "replace": r"\3"},
     # each ;-separated item is one [name:]accession[(range)]: a range
     # ("A10004-A10006") or a list separated with spaces or dashes is an error.
     # \Z, not $: R's $ doesn't match before a trailing line break.

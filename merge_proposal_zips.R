@@ -1809,6 +1809,20 @@ value_validation = rbind(value_validation, data.frame(
   replace = ""
 ))
 
+# Accession:  remove a period ending an accession, at the end of the cell or
+# before a ";": "MG029287." -> "MG029287" (2026.010M row 16). No lookahead in
+# R's default regex engine, so the ";" is matched and put back with \\3.
+value_validation = rbind(value_validation, data.frame(
+  pat_name = "accession.remove-trailing-period",
+  col = c("exemplarAccession"),
+  regex = "(([.]+) *(;|$))",
+  type = "replace",
+  class = "WARNING",
+  code = "XLSX.ACCESSION.TRAILING_PERIOD_REMOVED",
+  warn = "accession ends with a period: period removed",
+  replace = "\\3"
+))
+
 # Accession:  each ;-separated item must be one [name:]accession[(range)], so a
 # range ("A10004-A10006") or a list separated with spaces or dashes ("A1 - A2")
 # is an error. Checked after the fixes above (dashes, "and", commas, illegal chars).
