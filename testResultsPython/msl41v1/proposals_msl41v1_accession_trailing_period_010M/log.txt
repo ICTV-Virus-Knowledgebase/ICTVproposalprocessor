@@ -8,14 +8,14 @@ WARNING: no host_source column in taxonomy_node dump!!! (Adding)
 # LOADED:  2026.010M  XLS with  0  errors/warnings
 # LOADED:  2026.010M 
 # QC start: 2026.010M: proposal loaded (1 out of 1)
-# QCed:      2026.010M  with  2  errors/warnings
+# QCed:      2026.010M  with  3  errors/warnings
 changeList:  2026.010M 
-Wrote: OUTDIR/QC.summary.tsv (2 rows)
+Wrote: OUTDIR/QC.summary.tsv (3 rows)
 # MERGE PROC: 2026.010M with 22 changes  (1 out of 1)
 # DONE. MERGED 1  proposal(s), skipped 0 ; total changes: 22 
-# APPLIED:  22 changes from 2026.010M.N.v2.orthobunyavirus_22nsp  with ERROR:9 WARNING:1 INFO:1 SUCCESS:22 
-# TOTAL  :  22 changes  from 1 proposals  with ERROR:9 WARNING:1 INFO:1 SUCCESS:22 
-Wrote: OUTDIR/QC.summary.tsv (33 rows)
+# APPLIED:  22 changes from 2026.010M.N.v2.orthobunyavirus_22nsp  with ERROR:9 WARNING:2 INFO:1 SUCCESS:22 
+# TOTAL  :  22 changes  from 1 proposals  with ERROR:9 WARNING:2 INFO:1 SUCCESS:22 
+Wrote: OUTDIR/QC.summary.tsv (34 rows)
 Writing  testResultsPython/msl41v1/proposals_msl41v1_accession_trailing_period_010M/msl.tsv 
 WROTE   testResultsPython/msl41v1/proposals_msl41v1_accession_trailing_period_010M/msl.tsv (22693 rows)
 Writing  testResultsPython/msl41v1/proposals_msl41v1_accession_trailing_period_010M/QC.docx_summary.tsv 
